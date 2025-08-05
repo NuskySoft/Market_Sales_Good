@@ -1,0 +1,146 @@
+Ahora necesito tu ayuda. En la versión FREE los datos, de mercadillos, articulos, categorias, etc estan viculadas al usuario registrado en la app en ese momento o si no hay ninguno en el default. Pero en la versión Premium se podran dar de alta usuarios con permisos por usuario. Para hacer una versión Free en premium tiene que haber un usuario registrado que sera el SuperUsuario o Administrado. 
+Necesito que me ayudes a desarrollar todo esto de una manera eficiente, y sencialla
+
+Editar
+¡Excelente planteamiento! 🎯 Te ayudo a diseñar un sistema de usuarios y permisos eficiente y sencillo. Vamos paso a paso:
+
+🏗️ ARQUITECTURA PROPUESTA
+📊 ESTRUCTURA DE DATOS:
+
+🏗️ ARQUITECTURA SISTEMA USUARIOS Y PERMISOS
+Documento 
+🎯 RESUMEN EJECUTIVO
+He diseñado un sistema completo que es:
+
+✅ SENCILLO:
+FREE: Sin cambios (datos personales como ahora)
+PREMIUM: Solo agrega empresaId y permisos
+Un solo filtro: Por empresa o por usuario
+✅ EFICIENTE:
+Queries mínimos: Un whereEqualTo por scope
+Permisos en memoria: Cargados una vez
+Reutiliza: Toda la estructura actual
+✅ ESCALABLE:
+4 tipos usuario: SUPER_ADMIN, ADMIN, EMPLEADO, INVITADO
+Permisos granulares: Por módulo y acción
+Multi-empresa: Un usuario puede gestionar varias empresas
+🚀 PRÓXIMO PASO:
+¿Empezamos con la FASE 1: Crear UserManager.kt y ampliar la estructura de usuarios?
+
+Esto nos permitiría:
+
+Mantener toda la funcionalidad actual
+Preparar la base para Premium
+Probar el sistema paso a paso
+Responde:
+
+"✅ EMPEZAMOS FASE 1" → Implementamos UserManager
+"🤔 DUDAS SOBRE ALGO" → Aclaramos lo que necesites
+"💡 CAMBIOS EN EL DISEÑO" → Ajustamos la propuesta
+¿Qué te parece? 🎯
+
+
+
+
+¿has tenido en cuenta que en la versión free se pueden dar de alta mas de un usuario pero este usuario solo puede ver sus datos?
+
+Editar
+¡Tienes razón! 🎯 No lo había considerado correctamente. En FREE pueden registrarse múltiples usuarios independientes, cada uno ve solo sus propios datos.
+
+🔄 CORRECCIÓN DE LA ARQUITECTURA
+
+🏗️ ARQUITECTURA SISTEMA USUARIOS Y PERMISOS
+Documento ∙ Versión 2 
+🎯 CORRECCIÓN APLICADA
+¡Tienes razón! He corregido completamente la arquitectura:
+
+✅ AHORA SÍ REFLEJA TU VISIÓN:
+🟢 VERSIÓN FREE:
+Usuarios independientes: Juan, María, Pedro pueden registrarse
+Datos aislados: Cada uno ve SOLO sus mercadillos/artículos
+Sin colaboración: No comparten información entre ellos
+Query: empresaId = null AND creadoPor = userId
+🟣 VERSIÓN PREMIUM:
+Usuarios colaborativos: Pertenecen a UNA empresa
+Datos compartidos: Todos ven mercadillos de la empresa
+Con permisos: Según rol (SUPER_ADMIN, ADMIN, EMPLEADO)
+Query: empresaId = "empresa_123"
+🔄 MIGRACIÓN CLARA:
+Usuario FREE → compra Premium → se convierte en SUPER_ADMIN → puede invitar a otros usuarios a colaborar
+
+🎯 VENTAJA CLAVE:
+Un solo patrón de queries sirve para ambos modelos:
+
+FREE: Filtro por empresaId = null + creadoPor
+PREMIUM: Filtro por empresaId = "empresa_123"
+¿Ahora sí está bien la arquitectura? ¿Empezamos con la implementación? 🚀
+
+
+
+
+Usuario FREE → compra Premium → se convierte en SUPER_ADMIN → puede invitar a otros usuarios a colaborar
+En este flujo tiene que quedar claro que un usuario Free para ser premium tiene que estar registrado en la aplicación.
+
+Editar
+¡Exacto! 🎯 Es un punto crítico que hay que dejar muy claro. Vamos a definir este flujo paso a paso:
+
+🔐 FLUJO CORRECTO: FREE → PREMIUM
+
+🏗️ ARQUITECTURA SISTEMA USUARIOS Y PERMISOS
+Documento ∙ Versión 3 
+🎯 RESUMEN DEL FLUJO CORREGIDO
+✅ REQUISITO FUNDAMENTAL:
+SOLO usuarios YA REGISTRADOS pueden comprar Premium
+
+📋 FLUJO PASO A PASO:
+Usuario se registra FREE → Usa la app normalmente
+Decide upgrade → Ve opción "Comprar Premium"
+Compra Premium → Se convierte automáticamente en SUPER_ADMIN
+Crea empresa → Sus datos se migran automáticamente
+Invita usuarios → Otros se registran directamente como Premium
+🛡️ VALIDACIONES:
+UI: Botón Premium solo visible si está autenticado
+Backend: Cloud Functions verifican autenticación
+Firestore: Rules impiden compras no autenticadas
+💡 VENTAJA:
+Seguridad: No hay compras anónimas
+Simplicidad: Usuario conoce la app antes de comprar
+UX: Upgrade natural desde FREE → PREMIUM
+¿Te parece correcto este flujo? ¿Empezamos con la implementación de UserManager.kt? 🚀
+
+
+
+
+Vamos con la implementación, despacito y con calma que hay que hacer muchas cosas y seguro que se sobrepasa el limite de uso
+
+Editar
+¡Perfecto! 🎯 Vamos paso a paso y con calma. Tienes razón sobre el límite de uso, así que iremos implementando de forma modular y organizada.
+
+📋 PLAN DE IMPLEMENTACIÓN GRADUAL
+🎯 FASE 1A: UserManager.kt (Base)
+Empezamos con lo esencial para no sobrecargar el chat.
+
+
+UserManager.kt - FASE 1A (Base esencial)
+Código 
+🎯 FASE 1A COMPLETADA - UserManager Base
+✅ LO QUE HEMOS IMPLEMENTADO:
+Estructura base para manejar usuarios FREE/PREMIUM
+DataScope para distinguir datos personales vs empresa
+Métodos esenciales para verificar permisos básicos
+Inicialización desde Firebase Auth
+Estados reactivos con StateFlow
+🔧 MÉTODOS PRINCIPALES:
+initialize() - Inicializar con usuario de Firebase
+getCurrentScope() - Para queries de datos
+isPremium() / isFree() - Verificar plan
+isSuperAdmin() - Verificar permisos admin
+canManageUsers() - Verificar gestión usuarios
+📋 PRÓXIMO PASO (FASE 1B):
+Cargar datos desde Firestore (plan, empresa, tipo usuario)
+Conectar con AuthRepository
+Testing básico
+🤔 ¿CÓMO SEGUIMOS?
+Opción A: Implementar FASE 1B (cargar datos Firestore) Opción B: Probar FASE 1A primero (integrar con AuthRepository) Opción C: Parar aquí y continuar en siguiente sesión
+
+¿Qué prefieres? Podemos continuar suave o dejarlo aquí para no sobrepasar el límite. 🎯

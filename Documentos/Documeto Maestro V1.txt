@@ -1,0 +1,372 @@
+# DOCUMENTO MAESTRO - MARKET SALES
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Descripción:** Aplicación para control de caja específicamente diseñada para vendedores ambulantes en mercadillos
+### **Estado Actual:** En desarrollo - Fase de migración desde Caja Mercadillos
+
+---
+
+## 🎯 **CAMBIOS FUNDAMENTALES RESPECTO AL PROYECTO ORIGINAL**
+
+### **1. NUEVO FLUJO DE NAVEGACIÓN**
+- **ANTES:** Splash → Verificar isConfigured → Configuración/Home → Mercadillos
+- **AHORA:** Splash → Crear configuración automática → Mercadillos (pantalla principal)
+- **ELIMINADO:** PantallaHome como intermediaria
+- **AÑADIDO:** Menú hamburguesa como navegación principal
+
+### **2. MENÚ HAMBURGUESA (Nueva navegación)**
+**Opciones del menú:**
+- Mercadillos (principal)
+- Artículos
+- Categorías  
+- Listados
+- Configuración
+- Login/Logout (condicional según autenticación)
+- Salir
+
+### **3. CAMBIOS EN ConfiguracionEntity**
+```kotlin
+// ELIMINADO:
+val isConfigurated: Boolean = false  // Ya no se necesita
+val controlStock: Int = 0           // Se maneja en PantallaArticulos
+val controlCoste: Int = 0           // Se maneja en PantallaArticulos
+
+// CAMBIADO:
+val versionApp: String = "FREE"     // ANTES
+val versionApp: Int = 0             // AHORA (0=FREE, 1=PREMIUM)
+```
+
+### **4. SISTEMA DE PERSONALIZACIÓN COMPLETO**
+- **Idiomas:** Español/Inglés con strings.xml
+- **Fuentes:** Montserrat, Poppins, Roboto (selección dinámica)
+- **Temas:** Claro/Oscuro dinámico
+- **Integración:** Todo controlado desde ConfiguracionEntity
+
+---
+
+## 🏗️ **PLAN DE DESARROLLO COMPLETO**
+
+### **PASO 1: Crear Proyecto Base** ✅ COMPLETADO
+- [x] Crear proyecto Market Sales
+- [x] Configurar Firebase con SHA-1: `DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A:2D:8A`
+- [x] Copiar archivos gradle (funcionando)
+- [x] Sincronizar proyecto exitosamente
+
+### **PASO 2: Navegación Base + ConfiguracionEntity** ⏳ EN PROGRESO
+**Archivos a crear:**
+1. `ConfiguracionEntity.kt` (sin controlStock/controlCoste)
+2. `ConfiguracionDao.kt` (copiar original)
+3. `AppDatabase.kt` (solo configuración inicialmente)
+4. `ConfiguracionRepository.kt`
+5. `ConfiguracionViewModel.kt` 
+6. `PantallaSplash.kt` (nuevo flujo → mercadillos)
+7. `PantallaMercadillos.kt` (básica, sin datos)
+8. `MainActivity.kt` (tema dinámico)
+
+### **PASO 3: Menú Hamburguesa Reutilizable**
+1. Crear componente `MenuHamburguesa.kt`
+2. Actualizar `HeaderBar.kt` para soporte de menú
+3. Implementar `DrawerNavigation.kt`
+4. Integrar en todas las pantallas principales
+
+### **PASO 4: Opciones del Menú Funcionando**
+1. Navegación a Mercadillos ✅
+2. Navegación a Artículos
+3. Navegación a Categorías
+4. Navegación a Listados (placeholder)
+5. Navegación a Configuración
+6. Login/Logout (placeholder)
+7. Funcionalidad Salir
+
+### **PASO 5: Sistema de Personalización**
+**5.1 Fuentes Dinámicas:**
+- `Type.kt` con múltiples familias tipográficas
+- `MarketSalesTheme` con parámetro fuente
+- Integración con ConfiguracionEntity
+
+**5.2 Idiomas (Internacionalización):**
+- `res/values/strings.xml` (español)
+- `res/values-en/strings.xml` (inglés)
+- `LocaleManager.kt` para cambio dinámico
+- Migrar todos los textos hardcodeados
+
+**5.3 Tema Claro/Oscuro:**
+- `MarketSalesTheme` con parámetro darkTheme
+- Aplicación automática desde ConfiguracionEntity
+- Testing en todas las pantallas
+
+### **PASO 6: Autenticación (Firebase Auth)**
+1. Firebase Auth setup
+2. Google OAuth implementation
+3. `AuthViewModel` + `AuthRepository`
+4. Pantalla Login/Register
+5. Integración con menú hamburguesa
+6. Control de acceso a funcionalidades Premium
+
+### **PASO 7: Migrar Funcionalidades Existentes**
+1. **Categorías:** Homogeneizar UI con modelo PantallaArticulos
+2. **Artículos:** Migrar con lógica Premium existente
+3. **Sistema de avisos:** Migrar campanita y funcionalidad
+4. Aplicar menú hamburguesa, idiomas y fuentes a todo
+
+### **PASO 8: Nuevas Funcionalidades**
+1. Sistema de mercadillos completo
+2. Ventas con recibos (email/SMS/WhatsApp)
+3. Gastos y arqueos
+4. Listados y reportes
+5. Funcionalidades Premium avanzadas
+
+---
+
+## 🔍 **ANÁLISIS DEL CÓDIGO EXISTENTE**
+
+### **📊 ESTADO GENERAL: MUY BUENO** ✅
+
+#### **MÓDULOS 100% REUTILIZABLES:**
+- ✅ **DAOs:** Todos perfectos (ArticuloDao, CategoriaDao, AvisoDao)
+- ✅ **Entities:** ArticuloEntity, CategoriaEntity, AvisoEntity
+- ✅ **Repositories:** Patrón offline-first implementado perfectamente
+- ✅ **ViewModels:** Todos excelentes y reutilizables
+- ✅ **Componentes UI:** BotonHome, CampanaAvisos, CustomDialogConfirmacion
+- ✅ **Utils:** EstadosMercadillo, FooterMarca, NetworkMonitor
+
+#### **MODELO A SEGUIR: PantallaArticulos** 🎯
+**Esta pantalla es PERFECTA:**
+- ✅ Ya incluye verificación Premium: `esPremium = configuracion?.versionApp?.trim()?.uppercase() == "PREMIUM"`
+- ✅ UI responsive con orientación
+- ✅ LazyColumn con Cards perfectas
+- ✅ HeaderBar con campana funcionando
+- ✅ DialogoNuevoArticulo con lógica Premium completa
+- ✅ Sistema de FAB posicionado correctamente
+
+#### **CAMBIOS NECESARIOS:**
+- 🔄 **PantallaCategorias:** Homogeneizar layout con PantallaArticulos
+- 🔄 **PantallaMercadillos:** Cambiar `mostrarBack = true` → menú hamburguesa
+- 🔄 **ConfiguracionEntity:** Aplicar cambios definidos
+
+---
+
+## 📁 **ESTRUCTURA DE DIRECTORIOS MARKET SALES**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   ├── ConfiguracionDao.kt ✅ (copiar)
+│   │   │   ├── CategoriaDao.kt 📋 (futuro)
+│   │   │   ├── ArticuloDao.kt 📋 (futuro)
+│   │   │   └── AvisoDao.kt 📋 (futuro)
+│   │   ├── entity/
+│   │   │   ├── ConfiguracionEntity.kt 🔄 (modificada)
+│   │   │   ├── CategoriaEntity.kt 📋 (futuro)
+│   │   │   ├── ArticuloEntity.kt 📋 (futuro)
+│   │   │   └── AvisoEntity.kt 📋 (futuro)
+│   │   └── database/
+│   │       └── AppDatabase.kt 🔄 (solo configuración inicial)
+│   └── repository/
+│       ├── ConfiguracionRepository.kt ✅ (copiar)
+│       └── [otros repositories] 📋 (futuro)
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt ✅ (copiar)
+│   │   ├── CustomColors.kt ✅ (copiar)
+│   │   ├── Shape.kt ✅ (copiar)
+│   │   ├── Type.kt 🔄 (múltiples fuentes)
+│   │   └── Theme.kt 🔄 (tema dinámico)
+│   ├── components/
+│   │   ├── MenuHamburguesa.kt 📝 (nuevo)
+│   │   ├── HeaderBar.kt 🔄 (soporte menú)
+│   │   └── [otros componentes] 📋 (futuro)
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt 🔄 (nuevo flujo)
+│   │   ├── PantallaMercadillos.kt 🔄 (menú hamburguesa)
+│   │   └── [otras pantallas] 📋 (futuro)
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt ✅ (copiar)
+│       └── [otros viewmodels] 📋 (futuro)
+├── utils/
+│   ├── LocaleManager.kt 📝 (nuevo - idiomas)
+│   ├── FontManager.kt 📝 (nuevo - fuentes)
+│   └── [otros utils] 📋 (futuro)
+└── MainActivity.kt 🔄 (tema dinámico)
+```
+
+**Leyenda:**
+- ✅ Copiar tal cual
+- 🔄 Copiar con modificaciones
+- 📝 Crear nuevo
+- 📋 Migrar en fases posteriores
+
+---
+
+## 🎨 **SISTEMA DE PERSONALIZACIÓN DEFINIDO**
+
+### **FUENTES DISPONIBLES:**
+1. **Montserrat** (default)
+2. **Poppins** 
+3. **Roboto**
+4. [2 fuentes más por determinar]
+
+### **IDIOMAS SOPORTADOS:**
+1. **Español** (es) - default
+2. **Inglés** (en)
+
+### **TEMAS:**
+1. **Claro** (default)
+2. **Oscuro**
+
+### **INTEGRACIÓN EN ConfiguracionEntity:**
+```kotlin
+val idioma: String = "es"           // es/en
+val temaOscuro: Boolean = false     // true/false
+val fuente: String = "Montserrat"   // Montserrat/Poppins/Roboto
+```
+
+---
+
+## 🔑 **ARCHIVOS CLAVE PENDIENTES DE CREAR**
+
+### **ConfiguracionEntity.kt (Prioridad 1)**
+```kotlin
+@Entity(tableName = "configuracion")
+data class ConfiguracionEntity(
+    @PrimaryKey val id: Int = 1,
+    val versionApp: Int = 0,         // ✅ CAMBIO: Int en vez de String
+    val numeroVersion: String = "V1.0",
+    // ❌ ELIMINADO: isConfigurated, controlStock, controlCoste
+    val ultimoDispositivo: String? = null,
+    val usuarioEmail: String? = null,
+    val usuarioId: String? = null,
+    val idioma: String = "es",       // ✅ Para internacionalización
+    val temaOscuro: Boolean = false, // ✅ Para tema dinámico
+    val fuente: String = "Montserrat", // ✅ Para fuentes dinámicas
+    val moneda: String = "€ Euro",
+    val fechaUltimaSync: String? = null
+)
+```
+
+### **Theme.kt (Prioridad 1)**
+```kotlin
+@Composable
+fun MarketSalesTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    fuente: String = "Montserrat",  // ✅ Parámetro dinámico
+    content: @Composable () -> Unit
+) {
+    val typography = when (fuente) {
+        "Montserrat" -> MontserratTypography
+        "Poppins" -> PoppinsTypography
+        "Roboto" -> RobotoTypography
+        else -> MontserratTypography
+    }
+    // Aplicar tema y tipografía dinámicamente
+}
+```
+
+### **PantallaSplash.kt (Prioridad 1)**
+```kotlin
+LaunchedEffect(config) {
+    delay(1500)
+    
+    // Si no existe configuración, crear por defecto
+    if (config == null) {
+        configuracionViewModel.guardarConfiguracion(
+            ConfiguracionEntity(versionApp = 0) // FREE
+        )
+    }
+    
+    // ✅ SIEMPRE ir a mercadillos
+    navController.navigate("mercadillos") {
+        popUpTo("splash") { inclusive = true }
+    }
+}
+```
+
+---
+
+## 🚀 **PRÓXIMOS PASOS INMEDIATOS**
+
+### **AL CONTINUAR EN NUEVO CHAT:**
+
+1. **Crear estructura de directorios** en proyecto Market Sales
+2. **Implementar ConfiguracionEntity actualizada**
+3. **Crear AppDatabase mínimo** (solo configuración)
+4. **Implementar PantallaSplash** con nuevo flujo
+5. **Crear PantallaMercadillos básica** (sin datos)
+6. **Implementar tema dinámico** en MainActivity
+
+### **ORDEN SUGERIDO DE CREACIÓN:**
+1. ConfiguracionEntity.kt
+2. ConfiguracionDao.kt (copiar)
+3. AppDatabase.kt (minimal)
+4. ConfiguracionRepository.kt (copiar)
+5. ConfiguracionViewModel.kt (copiar)
+6. Type.kt (múltiples fuentes)
+7. Theme.kt (dinámico)
+8. PantallaSplash.kt (nuevo flujo)
+9. PantallaMercadillos.kt (básica)
+10. MainActivity.kt (tema dinámico)
+
+---
+
+## 📝 **DECISIONES TÉCNICAS IMPORTANTES**
+
+### **1. Control Stock/Coste**
+- **Eliminado de ConfiguracionEntity**
+- **Se maneja directamente en PantallaArticulos**
+- **Lógica Premium ya implementada en DialogoNuevoArticulo**
+
+### **2. Navegación Principal**
+- **Mercadillos = pantalla principal** (no Home)
+- **Menú hamburguesa = navegación universal**
+- **HeaderBar reutilizable con soporte menú**
+
+### **3. Personalización**
+- **Tema dinámico** aplicado desde MainActivity
+- **Fuentes dinámicas** en MarketSalesTheme
+- **Idiomas** con sistema strings.xml estándar
+
+### **4. Firebase SHA-1**
+- **Debug SHA-1:** `DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A:2D:8A`
+- **Proyecto Firebase:** Nuevo proyecto "Market Sales"
+- **Package:** es.nuskysoftware.marketsales
+
+---
+
+## 🎯 **ESTADO DEL PROYECTO**
+
+### **✅ COMPLETADO:**
+- Análisis completo del código existente
+- Plan de desarrollo estructurado
+- Decisiones técnicas tomadas
+- Proyecto Firebase configurado
+- Estructura base definida
+
+### **⏳ EN PROGRESO:**
+- Creación de archivos base
+- Implementación de navegación mínima
+- Sistema de personalización
+
+### **📋 PENDIENTE:**
+- Menú hamburguesa
+- Autenticación Firebase
+- Migración funcionalidades existentes
+- Nuevas funcionalidades (ventas, gastos, etc.)
+
+---
+
+## 📞 **INFORMACIÓN DE CONTACTO DEL PROYECTO**
+
+- **Developer:** Nusky Software
+- **Proyecto anterior:** Caja Mercadillos
+- **Proyecto actual:** Market Sales
+- **Tipo:** Aplicación de control de caja para mercadillos ambulantes
+- **Tecnologías:** Kotlin, Jetpack Compose, Room, Firebase
+
+---
+
+**ESTE DOCUMENTO CONTIENE TODA LA INFORMACIÓN NECESARIA PARA CONTINUAR EL DESARROLLO DE MARKET SALES SIN PÉRDIDA DE CONTEXTO.**

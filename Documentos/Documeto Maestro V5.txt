@@ -1,0 +1,227 @@
+# 📄 **DOCUMENTO MAESTRO V5 FINAL - MARKET SALES**
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Estado Actual:** ✅ SISTEMA DINÁMICO COMPLETO + FIREBASE AUTH CONECTADO
+
+---
+
+## ✅ **V5 COMPLETADO - IMPLEMENTACIONES FINALIZADAS**
+
+### **🎨 SISTEMA DINÁMICO 100% FUNCIONAL:**
+- ✅ **Idiomas dinámicos** (Español/English) aplicándose en tiempo real
+- ✅ **Fuentes dinámicas** (Montserrat/Poppins/Roboto) cambiando instantáneamente
+- ✅ **Modo oscuro/claro** funcionando perfectamente
+- ✅ **Restricciones Premium/FREE** operativas con emoji cohete 🚀
+- ✅ **Botón desarrollo** para cambiar FREE ↔ PREMIUM
+
+### **🔐 FIREBASE AUTH BÁSICO IMPLEMENTADO:**
+- ✅ **AuthRepository** conectado a Firebase Auth
+- ✅ **AuthViewModel + Factory** funcionando
+- ✅ **Estados de autenticación** (Loading/Authenticated/Unauthenticated)
+- ✅ **Testing verificado** - conexión Firebase Auth exitosa
+- ✅ **Logs confirmados** - sistema listo para Fase 2
+
+### **🔧 ARQUITECTURA HÍBRIDA OFFLINE-FIRST:**
+- ✅ **ConfigurationManager** singleton global funcionando
+- ✅ **StringResourceManager** localización sin @Composable
+- ✅ **LocalConfigurationManager** acceso vía CompositionLocal
+- ✅ **Firebase sincronización** automática desde AppDatabase
+- ✅ **Room + Firebase** trabajando en armonía
+
+### **📱 NAVEGACIÓN Y UI COMPLETADAS:**
+- ✅ **MenuLateral** (renombrado, sin conflictos) funcionando
+- ✅ **Salir app** con finishAffinity() operativo
+- ✅ **PantallaConfiguracion** con sistema dinámico completo
+- ✅ **FooterMarca** corregido para evitar solapamiento
+- ✅ **Theme dinámico** respondiendo a cambios inmediatamente
+
+---
+
+## 🔐 **FIREBASE AUTH - ESTADO ACTUAL**
+
+### **FASE 1 COMPLETADA - CONEXIÓN VERIFICADA:**
+
+#### **Dependencias configuradas:**
+```kotlin
+implementation 'com.google.firebase:firebase-auth:22.3.0'
+implementation 'com.google.android.gms:play-services-auth:20.7.0'
+implementation 'com.google.firebase:firebase-firestore:24.9.1'
+```
+
+#### **Firebase Console configurado:**
+- ✅ **Email/Password** habilitado
+- ✅ **Google Sign-In** habilitado
+- ✅ **google-services.json** actualizado
+
+#### **AuthRepository funcional:**
+```kotlin
+class AuthRepository {
+    private val firebaseAuth = FirebaseAuth.getInstance()
+    val authState: StateFlow<AuthState>
+    val currentUser: StateFlow<FirebaseUser?>
+    
+    // ✅ VERIFICADO: Conexión Firebase Auth OK
+    fun testConnection(): Boolean // FUNCIONANDO
+    fun isUserAuthenticated(): Boolean // FUNCIONANDO
+    
+    // 📋 PENDIENTE FASE 2:
+    suspend fun registerWithEmail(email: String, password: String): AuthResult
+    suspend fun loginWithEmail(email: String, password: String): AuthResult
+    suspend fun logout(): AuthResult
+}
+```
+
+#### **Logs de verificación exitosos:**
+```
+✅ DEBUG Auth: Conexión Firebase Auth OK - App: [DEFAULT]
+🔍 DEBUG Auth: ¿Usuario autenticado? false
+✅ DEBUG AuthViewModel - Test resultados:
+   - Conexión Firebase: true
+   - Usuario autenticado: false
+   - Usuario actual: null
+```
+
+---
+
+## 📁 **ESTRUCTURA ACTUAL V5 COMPLETADA**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── MainActivity.kt ✅ (configuración + auth testing)
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   └── ConfiguracionDao.kt ✅ (Flow → StateFlow)
+│   │   ├── entity/
+│   │   │   └── ConfiguracionEntity.kt ✅ (con usuarioPassword)
+│   │   └── database/
+│   │       └── AppDatabase.kt ✅ (v2 + Firebase sync automático)
+│   └── repository/
+│       ├── ConfiguracionRepository.kt ✅ (híbrido offline-first)
+│       └── AuthRepository.kt ✅ (NUEVO - Firebase Auth conectado)
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt ✅ (verde pastel completo)
+│   │   ├── Shape.kt ✅
+│   │   ├── Type.kt ✅ (3 fuentes dinámicas)
+│   │   ├── Theme.kt ✅ (dinámico con ConfigurationManager)
+│   │   └── LocalConfiguration.kt ✅ (CompositionLocal)
+│   ├── components/
+│   │   └── MenuLateral.kt ✅ (renombrado, funcionando)
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt ✅ (simplificado)
+│   │   ├── PantallaMercadillos.kt ✅ (sistema dinámico)
+│   │   └── PantallaConfiguracion.kt ✅ (100% funcional)
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt ✅
+│       ├── ConfiguracionViewModelFactory.kt ✅
+│       ├── AuthViewModel.kt ✅ (NUEVO - testing exitoso)
+│       └── AuthViewModelFactory.kt ✅ (NUEVO)
+├── utils/
+│   ├── FooterMarca.kt ✅ (padding corregido)
+│   ├── ConfigurationManager.kt ✅ (singleton global)
+│   └── StringResourceManager.kt ✅ (sin @Composable)
+└── res/drawable/ ✅ (19 iconos personalizados)
+```
+
+---
+
+## 💾 **CONFIGURACIÓN FIREBASE ACTUAL**
+
+### **Firebase Project configurado:**
+- **Project ID:** market-sales-2168b
+- **SHA-1:** DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A:2D:8A
+- **Authentication:** Email/Password + Google habilitados
+- **Firestore:** Colección "configuraciones" funcionando
+- **Auth testing:** Conexión verificada y operativa
+
+### **Estados de Autenticación implementados:**
+```kotlin
+sealed class AuthState {
+    object Loading : AuthState()
+    object Unauthenticated : AuthState()
+    data class Authenticated(val user: FirebaseUser) : AuthState()
+    data class Error(val message: String) : AuthState()
+}
+
+sealed class AuthResult {
+    data class Success(val user: FirebaseUser) : AuthResult()
+    data class Error(val message: String) : AuthResult()
+}
+```
+
+---
+
+## 🚀 **PLAN DE DESARROLLO V6 - FASE 2 AUTENTICACIÓN**
+
+### **PRÓXIMOS PASOS INMEDIATOS:**
+
+#### **FASE 2: Email/Password (siguientes pasos)**
+1. **PantallaLogin.kt** - Interfaz registro/login
+2. **Implementar registerWithEmail()** en AuthRepository
+3. **Implementar loginWithEmail()** en AuthRepository
+4. **Testing registro/login** funcionando
+5. **Integrar con ConfigurationManager** existente
+
+#### **FASE 3: Google Auth**
+1. **Configurar Google Sign-In** completo
+2. **Botón Google** en PantallaLogin
+3. **Testing Google Auth** funcionando
+4. **Sincronización** con configuración usuario
+
+#### **FASE 4: Estados y Navegación**
+1. **Estados autenticación** en MainActivity
+2. **Navegación condicional** (autenticado/no autenticado)
+3. **Persistencia sesión** automática
+4. **Logout completo** funcionando
+
+---
+
+## 🔧 **MÉTODOS PENDIENTES IMPLEMENTAR (FASE 2)**
+
+### **En AuthRepository.kt:**
+```kotlin
+// 📋 PENDIENTE: Implementar en nuevo chat
+suspend fun registerWithEmail(email: String, password: String): AuthResult {
+    // TODO: Crear usuario con Firebase Auth
+    // TODO: Integrar con ConfigurationManager
+    // TODO: Sincronizar con Firestore
+}
+
+suspend fun loginWithEmail(email: String, password: String): AuthResult {
+    // TODO: Autenticar con Firebase Auth
+    // TODO: Actualizar estados
+    // TODO: Cargar configuración usuario
+}
+
+suspend fun logout(): AuthResult {
+    // TODO: Cerrar sesión Firebase
+    // TODO: Limpiar estados
+    // TODO: Volver a configuración por defecto
+}
+```
+
+---
+
+## 🎯 **ESTADO ACTUAL V5 - LISTO PARA FASE 2**
+
+### **✅ COMPLETADO AL 100%:**
+- **Sistema dinámico** idiomas/fuentes/modo oscuro funcionando
+- **Firebase Auth** conectado y verificado
+- **Arquitectura híbrida** offline-first operativa
+- **Navegación completa** sin conflictos
+- **UI/UX** con verde pastel aplicado
+- **Testing exitoso** de todas las funcionalidades
+
+### **🔐 FIREBASE AUTH PREPARADO:**
+- ✅ **Fase 1 COMPLETADA:** Conexión y testing exitoso
+- 📋 **Fase 2 LISTA:** Implementar registro/login Email/Password
+- 📋 **Fase 3 PENDIENTE:** Google Auth completo
+- 📋 **Fase 4 PENDIENTE:** Estados y navegación condicional
+
+---
+
+**TODO FUNCIONANDO PERFECTAMENTE - LISTO PARA FASE 2 AUTENTICACIÓN.**

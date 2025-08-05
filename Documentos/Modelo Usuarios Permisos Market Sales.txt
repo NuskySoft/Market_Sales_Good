@@ -1,0 +1,358 @@
+# 🏗️ **SISTEMA USUARIOS Y PERMISOS - MARKET SALES (CORREGIDO)**
+
+## 📊 **MODELO DE DATOS CORREGIDO**
+
+### **FREE vs PREMIUM - Diferencias Clave:**
+
+#### **🟢 VERSIÓN FREE**
+- **Usuarios:** ∞ usuarios independientes
+- **Scope:** Cada usuario ve SOLO sus datos personales
+- **Datos:** `empresaId = null` + `creadoPor = userId`
+- **Relación:** Sin relación entre usuarios FREE
+
+#### **🟣 VERSIÓN PREMIUM** 
+- **Usuarios:** Múltiples usuarios de UNA empresa
+- **Scope:** Todos ven datos de la MISMA empresa (con permisos)
+- **Datos:** `empresaId = "empresa_123"` (compartido)
+- **Relación:** Usuarios colaboran en misma empresa
+
+---
+
+## 📊 **ESTRUCTURA DE DATOS CORREGIDA**
+
+### **1. COLECCIÓN `usuarios` (ampliada)**
+```javascript
+// Documento: {userId}
+{
+  email: "juan@email.com",
+  uid: "abc123",
+  displayName: "Juan Pérez",
+  photoUrl: "https://...",
+  fechaCreacion: timestamp,
+  
+  // ✅ CAMPOS PARA DETERMINAR SCOPE
+  planUsuario: "FREE" | "PREMIUM",
+  empresaId: null | "empresa_abc123",  // FREE: null, PREMIUM: empresaId
+  
+  // ✅ SOLO PARA PREMIUM
+  tipoUsuario: null | "SUPER_ADMIN" | "ADMIN" | "EMPLEADO" | "INVITADO",
+  permisos: null | {
+    mercadillos: { crear: true, editar: true, eliminar: true, ver: true },
+    articulos: { crear: true, editar: true, eliminar: false, ver: true },
+    // ... otros módulos
+  },
+  
+  configuracion: {
+    idioma: "es",
+    fuente: "Montserrat", 
+    modoOscuro: false
+  },
+  activo: true
+}
+```
+
+### **2. DATOS CON SCOPE CORREGIDO**
+```javascript
+// Ejemplo: mercadillos/{mercadilloId}
+{
+  nombre: "Mercadillo Centro",
+  descripcion: "...",
+  fechaCreacion: timestamp,
+  
+  // ✅ SCOPE UNIVERSAL
+  empresaId: null | "empresa_abc123",  // FREE: null, PREMIUM: empresaId
+  creadoPor: "userId_abc123",          // Siempre presente
+  
+  // ... resto de campos
+}
+```
+
+---
+
+## 🎯 **LÓGICA DE ACCESO CORREGIDA**
+
+### **UserManager.kt (Corregido)**
+```kotlin
+object UserManager {
+    
+    fun getCurrentScope(): DataScope {
+        val user = getCurrentUser()
+        return when (user?.planUsuario) {
+            "FREE" -> DataScope.Personal(user.uid)
+            "PREMIUM" -> DataScope.Empresa(user.empresaId!!)
+            else -> DataScope.Personal(user?.uid ?: "")
+        }
+    }
+    
+    sealed class DataScope {
+        data class Personal(val userId: String) : DataScope()
+        data class Empresa(val empresaId: String) : DataScope()
+    }
+}
+```
+
+### **Repository Pattern Corregido**
+```kotlin
+class MercadillosRepository {
+    
+    suspend fun getMercadillos(): List<Mercadillo> {
+        val scope = UserManager.getCurrentScope()
+        
+        return when (scope) {
+            is DataScope.Personal -> {
+                // FREE: Solo mis datos personales
+                firestore.collection("mercadillos")
+                    .whereEqualTo("empresaId", null)
+                    .whereEqualTo("creadoPor", scope.userId)
+                    .get()
+            }
+            is DataScope.Empresa -> {
+                // PREMIUM: Todos los datos de mi empresa
+                firestore.collection("mercadillos")
+                    .whereEqualTo("empresaId", scope.empresaId)
+                    .get()
+            }
+        }
+    }
+    
+    suspend fun createMercadillo(mercadillo: Mercadillo) {
+        val scope = UserManager.getCurrentScope()
+        val currentUser = FirebaseAuth.getInstance().currentUser!!
+        
+        val mercadilloData = mercadillo.copy(
+            empresaId = when (scope) {
+                is DataScope.Personal -> null
+                is DataScope.Empresa -> scope.empresaId
+            },
+            creadoPor = currentUser.uid
+        )
+        
+        firestore.collection("mercadillos").add(mercadilloData)
+    }
+}
+```
+
+---
+
+## 🔄 **FLUJOS DE USUARIO CORREGIDOS**
+
+### **🟢 FLUJO FREE**
+1. **Juan se registra FREE** → Ve solo sus mercadillos
+2. **María se registra FREE** → Ve solo sus mercadillos  
+3. **Pedro se registra FREE** → Ve solo sus mercadillos
+4. **Sin relación** entre Juan, María y Pedro
+
+### **🟣 FLUJO PREMIUM**
+1. **Juan compra Premium** → Se convierte en SUPER_ADMIN
+2. **Juan crea empresa** → Sus datos migran a `empresaId`
+3. **Juan invita a María** → María ve datos de la empresa
+4. **Juan invita a Pedro** → Pedro ve datos de la empresa  
+5. **Colaboración** entre Juan, María y Pedro
+
+---
+
+## 🚀 **MIGRACIÓN FREE → PREMIUM**
+
+### **Antes (Usuario FREE)**
+```javascript
+// mercadillos/mercadillo1
+{
+  nombre: "Mi Mercadillo",
+  empresaId: null,           // ← FREE
+  creadoPor: "juan_123"
+}
+```
+
+### **Después (Usuario PREMIUM)**
+```javascript
+// 1. Se actualiza el usuario
+// usuarios/juan_123
+{
+  planUsuario: "PREMIUM",     // ← Cambió de FREE
+  empresaId: "empresa_456",   // ← Nueva empresa
+  tipoUsuario: "SUPER_ADMIN"
+}
+
+// 2. Se migran los datos existentes
+// mercadillos/mercadillo1  
+{
+  nombre: "Mi Mercadillo",
+  empresaId: "empresa_456",   // ← Migrado de null
+  creadoPor: "juan_123"       // ← Mantiene creador original
+}
+```
+
+---
+
+## 🔐 **FIRESTORE RULES CORREGIDAS**
+
+```javascript
+// Reglas que soportan FREE y PREMIUM
+match /mercadillos/{mercadilloId} {
+  allow read, write: if request.auth != null && (
+    // CASO 1: Usuario FREE accede a sus datos personales
+    (resource.data.empresaId == null && 
+     resource.data.creadoPor == request.auth.uid) ||
+     
+    // CASO 2: Usuario PREMIUM accede a datos de su empresa
+    (resource.data.empresaId != null && 
+     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.empresaId == resource.data.empresaId &&
+     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.planUsuario == "PREMIUM")
+  );
+}
+```
+
+---
+
+## ✅ **VENTAJAS DEL MODELO CORREGIDO**
+
+### **🎯 Flexibilidad Total**
+- **FREE:** Usuarios independientes (como ahora)
+- **PREMIUM:** Usuarios colaborativos (nuevo)
+- **Migración:** Sin pérdida de datos
+
+### **🔧 Queries Eficientes**
+- **FREE:** `empresaId == null AND creadoPor == userId`
+- **PREMIUM:** `empresaId == "empresa_123"`
+- **Un solo patrón:** Para todos los módulos
+
+### **🛡️ Seguridad Granular**
+- **FREE:** Solo acceso a datos propios
+- **PREMIUM:** Acceso con permisos por rol
+- **Firestore Rules:** Previenen acceso cruzado
+
+---
+
+## 📱 **UX DIFERENCIADA**
+
+### **Usuario FREE**
+```
+Header: "¡Hola Juan!"
+Datos: "Mis 3 mercadillos"
+Upgrade: "🚀 Upgrade a Premium para colaborar"
+```
+
+### **Usuario PREMIUM**
+```  
+Header: "Juan @ Mi Empresa SL"
+Datos: "15 mercadillos del equipo"
+Gestión: "👥 Gestionar usuarios"
+```
+
+---
+
+## 🎉 **RESULTADO FINAL CORREGIDO**
+
+### **FREE (Múltiples usuarios independientes)**
+- ✅ **Infinitos usuarios** pueden registrarse
+- ✅ **Cada uno ve solo** sus datos
+- ✅ **Sin colaboración** entre usuarios
+- ✅ **Mismo UX** que versión actual
+
+### **PREMIUM (Usuarios colaborativos)**
+- ✅ **Un Super Admin** crea empresa
+- ✅ **Invita usuarios** a colaborar  
+- ✅ **Todos ven datos** de la empresa
+- ✅ **Permisos granulares** por rol
+
+¿Ahora sí refleja correctamente tu visión del sistema? 🎯
+
+---
+
+## 📱 **PANTALLAS NUEVAS PREMIUM**
+
+### **1. Gestión de Usuarios** (`PantallaUsuarios.kt`)
+- Lista de usuarios de la empresa
+- Crear/editar/desactivar usuarios
+- Asignar permisos por módulo
+- Solo visible para SUPER_ADMIN y ADMIN
+
+### **2. Configuración Empresa** (`PantallaEmpresa.kt`)
+- Datos de la empresa
+- Configuración global
+- Plan y límites
+- Solo visible para SUPER_ADMIN
+
+### **3. Selector de Contexto** (Widget)
+- "Trabajando como: [Usuario Actual]"
+- "Empresa: [Nombre Empresa]"
+- Visible en header cuando es Premium
+
+---
+
+## 🔐 **REGLAS DE SEGURIDAD FIRESTORE**
+
+```javascript
+// Regla para mercadillos
+match /mercadillos/{mercadilloId} {
+  allow read, write: if request.auth != null && (
+    // FREE: Solo sus datos
+    (resource.data.empresaId == null && resource.data.creadoPor == request.auth.uid) ||
+    // PREMIUM: Datos de su empresa + permisos
+    (resource.data.empresaId != null && 
+     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.empresaId == resource.data.empresaId &&
+     get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.permisos.mercadillos.ver == true)
+  );
+}
+```
+
+---
+
+## ✅ **VENTAJAS DE ESTA ARQUITECTURA**
+
+### **🎯 Simplicidad**
+- **FREE:** Funciona igual que ahora (sin cambios)
+- **PREMIUM:** Solo agrega `empresaId` y permisos
+- **Migración:** Automática y transparente
+
+### **🔧 Eficiencia**
+- **Queries mínimos:** Un filtro por `empresaId`
+- **Permisos en memoria:** Cargados una vez al login
+- **Escalable:** Soporta miles de usuarios
+
+### **🛡️ Seguridad**
+- **Firestore Rules:** Previenen acceso no autorizado
+- **UserManager:** Controla permisos en UI
+- **Tokens JWT:** Validación server-side
+
+---
+
+## 📋 **PLAN DE IMPLEMENTACIÓN**
+
+### **Fase 1: Fundación (1 semana)**
+1. ✅ Crear `UserManager.kt`
+2. ✅ Ampliar `usuarios` collection
+3. ✅ Crear `empresas` collection
+4. ✅ Modificar `AuthRepository` para cargar permisos
+
+### **Fase 2: Repositorios (1 semana)**  
+1. ✅ Modificar repositorios para scope
+2. ✅ Implementar filtros FREE/PREMIUM
+3. ✅ Testing de queries con permisos
+
+### **Fase 3: UI Premium (1 semana)**
+1. ✅ `PantallaUsuarios.kt`
+2. ✅ `PantallaEmpresa.kt` 
+3. ✅ Integrar permisos en pantallas existentes
+
+### **Fase 4: Migración y Testing (1 semana)**
+1. ✅ Flujo FREE → PREMIUM
+2. ✅ Invitaciones de usuarios
+3. ✅ Testing completo
+
+---
+
+## 🎉 **RESULTADO FINAL**
+
+### **Experiencia FREE (sin cambios)**
+- Usuario trabaja con sus datos personales
+- Misma UX que ahora
+- Opción de upgrade visible
+
+### **Experiencia PREMIUM**
+- Super Admin crea empresa y usuarios  
+- Empleados ven solo datos de empresa
+- Permisos granulares por módulo
+- Gestión centralizada
+
+**¿Te parece bien esta arquitectura? ¿Empezamos con la Fase 1?** 🚀

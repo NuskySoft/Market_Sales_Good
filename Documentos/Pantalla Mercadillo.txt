@@ -1,0 +1,508 @@
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+import es.nuskysoftware.cajamercadillos.utils.EstadosMercadillo
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import java.text.SimpleDateFormat
+import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaMercadillos(
+    navController: NavController,
+    avisoViewModel: AvisoViewModel
+) {
+    // Estado para mostrar/ocultar la leyenda
+    var mostrarLeyenda by remember { mutableStateOf(false) }
+    
+    // Estado para la navegación del calendario
+    var fechaActualCalendario by remember { mutableStateOf(Calendar.getInstance()) }
+    
+    // Datos simulados por mes (TODO: Conectar con ViewModel)
+    val mercadillosPorMes = remember {
+        mapOf(
+            "2025-08" to mapOf(
+                15 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL),
+                18 to listOf(EstadosMercadillo.Estado.EN_CURSO),
+                20 to listOf(EstadosMercadillo.Estado.PENDIENTE_ARQUEO, EstadosMercadillo.Estado.PROGRAMADO_PARCIAL),
+                22 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO),
+                25 to listOf(EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO),
+                28 to listOf(EstadosMercadillo.Estado.CANCELADO)
+            ),
+            "2025-09" to mapOf(
+                5 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL),
+                12 to listOf(EstadosMercadillo.Estado.PROGRAMADO_PARCIAL),
+                20 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL)
+            ),
+            "2025-07" to mapOf(
+                10 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO),
+                15 to listOf(EstadosMercadillo.Estado.CANCELADO),
+                25 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO)
+            )
+        )
+    }
+    
+    // Obtener mercadillos del mes actual visible
+    val mesActualKey = "${fechaActualCalendario.get(Calendar.YEAR)}-${String.format("%02d", fechaActualCalendario.get(Calendar.MONTH) + 1)}"
+    val mercadillosDelMes = mercadillosPorMes[mesActualKey] ?: emptyMap()
+    
+    // Próximo mercadillo simulado
+    val proximoMercadillo = remember {
+        ProximoMercadillo(
+            fecha = "15 Agosto 2025",
+            hora = "09:00",
+            lugar = "Plaza Mayor, Madrid",
+            organizador = "Ayuntamiento de Madrid"
+        )
+    }
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            // ========== HEADER ==========
+            HeaderBar(
+                titulo = "Mercadillos",
+                avisoViewModel = avisoViewModel,
+                navController = navController,
+                mostrarBack = true,
+                onClickCampana = {
+                    println(">>> [DEBUG] Campana pulsada en Mercadillos")
+                }
+            )
+
+            // ========== CALENDARIO CON MERCADILLOS ==========
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp) // ✅ Altura fija más corta
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    // Header del calendario con navegación entre meses
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Flecha mes anterior
+                        IconButton(
+                            onClick = {
+                                val nuevaFecha = fechaActualCalendario.clone() as Calendar
+                                nuevaFecha.add(Calendar.MONTH, -1)
+                                fechaActualCalendario = nuevaFecha
+                            }
+                        ) {
+                            Text(
+                                text = "←",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        
+                        // Título del mes y año en español
+                        val mesAño = run {
+                            val mes = when(fechaActualCalendario.get(Calendar.MONTH)) {
+                                0 -> "Enero"
+                                1 -> "Febrero" 
+                                2 -> "Marzo"
+                                3 -> "Abril"
+                                4 -> "Mayo"
+                                5 -> "Junio"
+                                6 -> "Julio"
+                                7 -> "Agosto"
+                                8 -> "Septiembre"
+                                9 -> "Octubre"
+                                10 -> "Noviembre"
+                                11 -> "Diciembre"
+                                else -> ""
+                            }
+                            "$mes ${fechaActualCalendario.get(Calendar.YEAR)}"
+                        }
+                        
+                        Text(
+                            text = mesAño,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        
+                        // Flecha mes siguiente
+                        IconButton(
+                            onClick = {
+                                val nuevaFecha = fechaActualCalendario.clone() as Calendar
+                                nuevaFecha.add(Calendar.MONTH, 1)
+                                fechaActualCalendario = nuevaFecha
+                            }
+                        ) {
+                            Text(
+                                text = "→",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        
+                        // Botón de leyenda
+                        IconButton(
+                            onClick = { mostrarLeyenda = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Ver leyenda de colores",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Días de la semana
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                            Text(
+                                text = dia,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Grid del calendario con días dinámicos
+                    val diasDelMes = fechaActualCalendario.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    val primerDia = Calendar.getInstance().apply {
+                        time = fechaActualCalendario.time
+                        set(Calendar.DAY_OF_MONTH, 1)
+                    }
+                    val diaInicio = (primerDia.get(Calendar.DAY_OF_WEEK) + 5) % 7 // Ajuste para que lunes sea 0
+                    
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(7),
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Espacios vacíos para alinear el primer día del mes
+                        items(diaInicio) {
+                            Box(modifier = Modifier.size(40.dp))
+                        }
+                        
+                        // Días del mes
+                        items((1..diasDelMes).toList()) { dia ->
+                            DiaCalendario(
+                                dia = dia,
+                                mercadillos = mercadillosDelMes[dia] ?: emptyList(),
+                                onClick = {
+                                    println(">>> [DEBUG] Clicked día $dia del mes ${SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(fechaActualCalendario.time)}")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ========== CARD PRÓXIMO MERCADILLO ==========
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp), // ✅ Menos padding vertical
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Próximo Mercadillo",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            // Fecha y hora
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "📅 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = "${proximoMercadillo.fecha} • ${proximoMercadillo.hora}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // Lugar
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "📍 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = proximoMercadillo.lugar,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            // Organizador
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "👥 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = proximoMercadillo.organizador,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        
+                        // Indicador visual
+                        IconButton(
+                            onClick = {
+                                println(">>> [DEBUG] Ver detalle del próximo mercadillo")
+                            }
+                        ) {
+                            Text(
+                                text = "→",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // ========== ESPACIADOR PARA EMPUJAR FOOTER AL FONDO ==========
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // ========== FOOTER ==========
+            FooterMarca()
+        }
+
+        // ========== FAB ==========
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 24.dp, bottom = 80.dp), // ✅ Más arriba para dejar espacio al footer
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    println(">>> [DEBUG] Añadir nuevo mercadillo")
+                },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Añadir mercadillo"
+                )
+            }
+        }
+    }
+    
+    // ========== DIÁLOGO DE LEYENDA ==========
+    if (mostrarLeyenda) {
+        LeyendaColoresDialog(
+            onDismiss = { mostrarLeyenda = false }
+        )
+    }
+}
+
+@Composable
+fun DiaCalendario(
+    dia: Int,
+    mercadillos: List<EstadosMercadillo.Estado>,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clickable { onClick() }
+            .background(
+                color = if (mercadillos.size == 1) {
+                    // Si hay 1 mercadillo: fondo del color del estado
+                    EstadosMercadillo.obtenerColor(mercadillos.first())
+                } else {
+                    // Si hay 0 o múltiples: fondo normal
+                    MaterialTheme.colorScheme.surface
+                },
+                shape = RoundedCornerShape(8.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Número del día
+            Text(
+                text = dia.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (mercadillos.size == 1) {
+                    EstadosMercadillo.obtenerColorTexto(mercadillos.first())
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                fontWeight = if (mercadillos.isNotEmpty()) FontWeight.Bold else FontWeight.Normal
+            )
+            
+            // Puntitos si hay múltiples mercadillos
+            if (mercadillos.size > 1) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp), // ✅ Más espaciado
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    mercadillos.take(2).forEach { estado ->
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp) // ✅ Puntitos más grandes
+                                .background(
+                                    EstadosMercadillo.obtenerColor(estado),
+                                    CircleShape
+                                )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LeyendaColoresDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        title = {
+            Text(
+                text = "Leyenda de Estados",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                EstadosMercadillo.obtenerTodosLosEstados().forEach { estado ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Círculo de color
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .background(
+                                    EstadosMercadillo.obtenerColor(estado),
+                                    CircleShape
+                                )
+                        )
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        // Icono
+                        Text(
+                            text = EstadosMercadillo.obtenerIcono(estado),
+                            fontSize = 16.sp
+                        )
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        // Descripción
+                        Text(
+                            text = estado.descripcion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Entendido")
+            }
+        }
+    )
+}
+
+// Data class para el próximo mercadillo (temporal)
+data class ProximoMercadillo(
+    val fecha: String,
+    val hora: String,
+    val lugar: String,
+    val organizador: String
+)

@@ -1,0 +1,4000 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MarketSales">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MarketSales">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/ConfiguracionDao.kt
+package es.nuskysoftware.marketsales.data.local.dao
+
+import androidx.room.*
+import kotlinx.coroutines.flow.Flow
+import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
+
+@Dao
+interface ConfiguracionDao {
+
+    @Query("SELECT * FROM configuracion WHERE id = 1")
+    suspend fun getConfiguracion(): ConfiguracionEntity?
+
+    @Query("SELECT * FROM configuracion WHERE id = 1")
+    suspend fun getConfiguracionSync(): ConfiguracionEntity?
+
+    @Query("SELECT * FROM configuracion WHERE id = 1")
+    fun getConfiguracionFlow(): Flow<ConfiguracionEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertarConfiguracion(configuracion: ConfiguracionEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdate(configuracion: ConfiguracionEntity)
+
+    @Update
+    suspend fun actualizarConfiguracion(configuracion: ConfiguracionEntity)
+
+    @Query("UPDATE configuracion SET usuarioPassword = :password WHERE id = 1")
+    suspend fun updateUsuarioPassword(password: String?)
+
+    @Query("UPDATE configuracion SET temaOscuro = :esTemaOscuro WHERE id = 1")
+    suspend fun updateTemaOscuro(esTemaOscuro: Boolean)
+
+    @Query("UPDATE configuracion SET fuente = :fuente WHERE id = 1")
+    suspend fun updateFuente(fuente: String)
+
+    @Query("UPDATE configuracion SET idioma = :idioma WHERE id = 1")
+    suspend fun updateIdioma(idioma: String)
+
+    @Query("UPDATE configuracion SET moneda = :moneda WHERE id = 1")
+    suspend fun updateMoneda(moneda: String)
+
+    @Query("UPDATE configuracion SET versionApp = :version WHERE id = 1")
+    suspend fun updateVersionApp(version: Int)
+
+    @Query("UPDATE configuracion SET usuarioEmail = :email WHERE id = 1")
+    suspend fun updateUsuarioEmail(email: String?)
+
+    @Query("UPDATE configuracion SET usuarioId = :usuarioId WHERE id = 1")
+    suspend fun updateUsuarioId(usuarioId: String?)
+
+    @Query("UPDATE configuracion SET ultimoDispositivo = :dispositivo WHERE id = 1")
+    suspend fun updateUltimoDispositivo(dispositivo: String?)
+
+    @Query("UPDATE configuracion SET fechaUltimaSync = :fecha WHERE id = 1")
+    suspend fun updateFechaUltimaSync(fecha: String?)
+
+    @Query("UPDATE configuracion SET numeroVersion = :version WHERE id = 1")
+    suspend fun updateNumeroVersion(version: String)
+
+    @Query("DELETE FROM configuracion")
+    suspend fun eliminarTodasLasConfiguraciones()
+
+    // ————— Nuevos métodos para offline-first —————
+
+    /** Marca si hay pendiente de sincronizar en Firebase */
+    @Query("UPDATE configuracion SET pendienteSync = :pendiente WHERE id = 1")
+    suspend fun updatePendienteSync(pendiente: Boolean)
+
+    /** Flujo que emite true/false según si hay pendienteSync */
+    @Query("SELECT pendienteSync FROM configuracion WHERE id = 1")
+    fun getPendienteSyncFlow(): Flow<Boolean>
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/data/local/database/AppDatabase.kt
+package es.nuskysoftware.marketsales.data.local.database
+
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import android.content.Context
+import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.marketsales.data.local.dao.ConfiguracionDao
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+
+@Database(
+    entities = [ConfiguracionEntity::class],
+    version = 3, // ✅ ACTUALIZADA A VERSIÓN 3
+    exportSchema = false
+)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun configuracionDao(): ConfiguracionDao
+
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        // CoroutineScope para operaciones de base de datos
+        private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "marketsales_database"
+                )
+                    .fallbackToDestructiveMigration() // ✅ DESTRUIR Y RECREAR EN DESARROLLO
+                    .addCallback(DatabaseCallback(applicationScope))
+                    .build()
+
+                INSTANCE = instance
+                instance
+            }
+        }
+
+        // Método para limpiar la instancia (útil para testing)
+        fun clearInstance() {
+            INSTANCE = null
+        }
+    }
+
+    /**
+     * Callback para inicializar la base de datos con datos por defecto
+     * Implementa sistema offline-first
+     */
+    private class DatabaseCallback(
+        private val scope: CoroutineScope
+    ) : RoomDatabase.Callback() {
+
+        override fun onCreate(db: SupportSQLiteDatabase) {
+            super.onCreate(db)
+
+            println("🔍 DEBUG: Base de datos creada, inicializando configuración por defecto...")
+
+            // Inicializar base de datos en background
+            INSTANCE?.let { database ->
+                scope.launch {
+                    try {
+                        // ✅ OFFLINE-FIRST: Crear configuración local primero
+                        crearConfiguracionPorDefecto(database.configuracionDao())
+
+                        println("🚀 DEBUG: Sistema híbrido offline-first iniciado correctamente")
+
+                    } catch (e: Exception) {
+                        println("❌ ERROR al crear configuración por defecto: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        /**
+         * Crea la configuración por defecto siguiendo el patrón offline-first
+         */
+        private suspend fun crearConfiguracionPorDefecto(configuracionDao: ConfiguracionDao) {
+            // Verificar si ya existe configuración
+            val configuracionExistente = configuracionDao.getConfiguracionSync()
+
+            if (configuracionExistente == null) {
+                println("🔍 DEBUG: No existe configuración, creando por defecto...")
+
+                val configuracionPorDefecto = ConfiguracionEntity(
+                    id = 1,
+                    versionApp = 0, // FREE por defecto
+                    numeroVersion = "V1.0",
+                    ultimoDispositivo = android.os.Build.MODEL, // ✅ Dispositivo actual
+                    usuarioEmail = null,
+                    usuarioId = "usuario_default", // ✅ ID por defecto para Firebase
+                    usuarioPassword = null,
+                    idioma = "es", // Español por defecto
+                    temaOscuro = false, // Tema claro por defecto
+                    fuente = "Montserrat", // Fuente por defecto
+                    moneda = "€ Euro", // Moneda por defecto
+                    fechaUltimaSync = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
+                )
+
+                // ✅ PASO 1: Guardar en Room (offline-first)
+                configuracionDao.insertOrUpdate(configuracionPorDefecto)
+                println("✅ DEBUG: Configuración por defecto creada en Room")
+
+                // ✅ PASO 2: Sincronizar inmediatamente con Firebase
+                sincronizarConFirebase(configuracionPorDefecto)
+
+            } else {
+                println("✅ DEBUG: Configuración ya existe: $configuracionExistente")
+
+                // ✅ Intentar sincronizar configuración existente si no está sincronizada
+                if (configuracionExistente.fechaUltimaSync == null) {
+                    sincronizarConFirebase(configuracionExistente)
+                }
+            }
+        }
+
+        /**
+         * Sincroniza la configuración con Firebase inmediatamente
+         * Sistema híbrido offline-first funcionando
+         */
+        private suspend fun sincronizarConFirebase(configuracion: ConfiguracionEntity) {
+            try {
+                val firestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                val documentoId = configuracion.usuarioId ?: "usuario_default"
+                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+
+                val datosParaFirebase = mapOf(
+                    "versionApp" to configuracion.versionApp,
+                    "numeroVersion" to configuracion.numeroVersion,
+                    "ultimoDispositivo" to configuracion.ultimoDispositivo,
+                    "usuarioEmail" to configuracion.usuarioEmail,
+                    "usuarioId" to configuracion.usuarioId,
+                    "usuarioPassword" to configuracion.usuarioPassword,
+                    "idioma" to configuracion.idioma,
+                    "temaOscuro" to configuracion.temaOscuro,
+                    "fuente" to configuracion.fuente,
+                    "moneda" to configuracion.moneda,
+                    "fechaUltimaSync" to dateFormat.format(java.util.Date()),
+                    "fechaCreacion" to dateFormat.format(java.util.Date()),
+                    "dispositivo" to android.os.Build.MODEL
+                )
+
+                // ✅ Sincronización con Firebase
+                firestore.collection("configuraciones")
+                    .document(documentoId)
+                    .set(datosParaFirebase)
+                    .addOnSuccessListener {
+                        println("✅ DEBUG: Configuración sincronizada con Firebase exitosamente")
+                    }
+                    .addOnFailureListener { e ->
+                        println("❌ DEBUG: Error sincronizando con Firebase: ${e.message}")
+                        // El sistema offline-first seguirá funcionando sin Firebase
+                    }
+
+                println("🔄 DEBUG: Sincronización con Firebase iniciada")
+
+            } catch (e: Exception) {
+                println("❌ DEBUG: Error en sincronización Firebase: ${e.message}")
+                // El sistema offline-first continúa funcionando sin problemas
+            }
+        }
+
+        /**
+         * @deprecated Ya no se usa - Firebase está implementado
+         */
+        @Deprecated("Firebase ya está funcionando")
+        private fun marcarComoPendienteSincronizacion(configuracion: ConfiguracionEntity) {
+            // Este método ya no se necesita
+        }
+    }
+}
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/ConfiguracionEntity.kt
+package es.nuskysoftware.marketsales.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "configuracion")
+data class ConfiguracionEntity(
+    @PrimaryKey val id: Int = 1,
+    val versionApp: Int = 0,           // 0=FREE, 1=PREMIUM
+    val numeroVersion: String = "V1.0",
+    val ultimoDispositivo: String? = null,
+    val usuarioEmail: String? = null,
+    val usuarioId: String? = null,
+    val usuarioPassword: String? = null,
+    val idioma: String = "es",         // es/en
+    val temaOscuro: Boolean = false,   // tema dinámico
+    val fuente: String = "Montserrat", // fuentes dinámicas
+    val moneda: String = "€ Euro",
+    val fechaUltimaSync: String? = null,
+    /** true = hay cambios locales pendientes de enviar a Firebase */
+    val pendienteSync: Boolean = false
+)
+
+// EXTENSION PROPERTIES para compatibilidad con código existente
+val ConfiguracionEntity.modoOscuro: Boolean
+    get() = this.temaOscuro
+
+val ConfiguracionEntity.isPremium: Boolean
+    get() = this.versionApp == 1
+
+
+
+package es.nuskysoftware.marketsales.data.repository
+
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.tasks.await
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+
+sealed class AuthState {
+    object Loading : AuthState()
+    object Unauthenticated : AuthState()
+    data class Authenticated(val user: FirebaseUser) : AuthState()
+    data class Error(val message: String) : AuthState()
+}
+
+sealed class AuthResult {
+    data class Success(val user: FirebaseUser?) : AuthResult()  // ✅ CAMBIO: user nullable
+    data class Error(val message: String) : AuthResult()
+}
+
+class AuthRepository {
+    private val firebaseAuth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
+
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
+
+    private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
+    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
+
+    companion object {
+        private const val TAG = "AuthRepository"
+        private const val USERS_COLLECTION = "usuarios"
+    }
+
+    init {
+        // Inicializar estado basado en usuario actual
+        val user = firebaseAuth.currentUser
+        _currentUser.value = user
+        _authState.value = if (user != null) {
+            AuthState.Authenticated(user)
+        } else {
+            AuthState.Unauthenticated
+        }
+
+        // Listener para cambios de autenticación
+        firebaseAuth.addAuthStateListener { auth ->
+            val currentUser = auth.currentUser
+            _currentUser.value = currentUser
+            _authState.value = if (currentUser != null) {
+                AuthState.Authenticated(currentUser)
+            } else {
+                AuthState.Unauthenticated
+            }
+        }
+
+        Log.d(TAG, "AuthRepository inicializado - Usuario actual: ${user?.email ?: "null"}")
+    }
+
+    // ✅ FASE 1 - Funciones de testing (ya funcionando)
+    fun testConnection(): Boolean {
+        return try {
+            val app = firebaseAuth.app
+            Log.d(TAG, "Conexión Firebase Auth OK - App: ${app.name}")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error conexión Firebase Auth", e)
+            false
+        }
+    }
+
+    fun isUserAuthenticated(): Boolean {
+        val authenticated = firebaseAuth.currentUser != null
+        Log.d(TAG, "¿Usuario autenticado? $authenticated")
+        return authenticated
+    }
+
+    // 🔐 FASE 2 - IMPLEMENTACIÓN EMAIL/PASSWORD
+
+    /**
+     * Registrar nuevo usuario con email y contraseña
+     */
+    suspend fun registerWithEmail(email: String, password: String): AuthResult {
+        return try {
+            Log.d(TAG, "Iniciando registro para: $email")
+            _authState.value = AuthState.Loading
+
+            // Crear usuario en Firebase Auth
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
+            val user = authResult.user
+
+            if (user != null) {
+                Log.d(TAG, "Usuario registrado exitosamente: ${user.email}")
+
+                // Crear documento del usuario en Firestore
+                createUserDocument(user)
+
+                // Cargar configuración del usuario (o crear por defecto)
+                loadUserConfiguration(user.uid)
+
+                _authState.value = AuthState.Authenticated(user)
+                AuthResult.Success(user)
+            } else {
+                val error = "Error: Usuario nulo después del registro"
+                Log.e(TAG, error)
+                _authState.value = AuthState.Error(error)
+                AuthResult.Error(error)
+            }
+
+        } catch (e: Exception) {
+            val errorMessage = "Error en registro: ${e.message}"
+            Log.e(TAG, errorMessage, e)
+            _authState.value = AuthState.Error(errorMessage)
+            AuthResult.Error(errorMessage)
+        }
+    }
+
+    /**
+     * Iniciar sesión con email y contraseña
+     */
+    suspend fun loginWithEmail(email: String, password: String): AuthResult {
+        return try {
+            Log.d(TAG, "Iniciando login para: $email")
+            _authState.value = AuthState.Loading
+
+            // Autenticar con Firebase Auth
+            val authResult = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+            val user = authResult.user
+
+            if (user != null) {
+                Log.d(TAG, "Login exitoso: ${user.email}")
+
+                // Cargar configuración del usuario
+                loadUserConfiguration(user.uid)
+
+                _authState.value = AuthState.Authenticated(user)
+                AuthResult.Success(user)
+            } else {
+                val error = "Error: Usuario nulo después del login"
+                Log.e(TAG, error)
+                _authState.value = AuthState.Error(error)
+                AuthResult.Error(error)
+            }
+
+        } catch (e: Exception) {
+            val errorMessage = when (e.message) {
+                "The email address is badly formatted." -> "Email inválido"
+                "The password is invalid or the user does not have a password." -> "Contraseña incorrecta"
+                "There is no user record corresponding to this identifier. The user may have been deleted." -> "Usuario no encontrado"
+                "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> "Error de conexión"
+                else -> "Error en login: ${e.message}"
+            }
+            Log.e(TAG, errorMessage, e)
+            _authState.value = AuthState.Error(errorMessage)
+            AuthResult.Error(errorMessage)
+        }
+    }
+
+    /**
+     * Cerrar sesión - ✅ CORREGIDO
+     */
+    suspend fun logout(): AuthResult {
+        return try {
+            Log.d(TAG, "Cerrando sesión...")
+            _authState.value = AuthState.Loading
+
+            // Cerrar sesión en Firebase
+            firebaseAuth.signOut()
+
+            // Restablecer configuración por defecto
+            ConfigurationManager.resetToDefaults()
+
+            Log.d(TAG, "Sesión cerrada exitosamente")
+            _authState.value = AuthState.Unauthenticated
+
+            // ✅ CORREGIDO: Retornar success con null
+            AuthResult.Success(null)
+
+        } catch (e: Exception) {
+            val errorMessage = "Error al cerrar sesión: ${e.message}"
+            Log.e(TAG, errorMessage, e)
+            _authState.value = AuthState.Error(errorMessage)
+            AuthResult.Error(errorMessage)
+        }
+    }
+
+    /**
+     * Crear documento del usuario en Firestore
+     */
+    private suspend fun createUserDocument(user: FirebaseUser) {
+        try {
+            val configMap = hashMapOf<String, Any>(
+                "idioma" to "es",
+                "fuente" to "Montserrat",
+                "modoOscuro" to false
+            )
+
+            val userDoc = hashMapOf<String, Any>(
+                "email" to (user.email ?: ""),
+                "uid" to user.uid,
+                "fechaCreacion" to System.currentTimeMillis(),
+                "isPremium" to false,
+                "configuracion" to configMap
+            )
+
+            firestore.collection(USERS_COLLECTION)
+                .document(user.uid)
+                .set(userDoc)
+                .await()
+
+            Log.d(TAG, "Documento de usuario creado en Firestore")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creando documento de usuario", e)
+            // No lanzamos la excepción porque el registro ya fue exitoso
+        }
+    }
+
+    /**
+     * Cargar configuración del usuario desde Firestore
+     */
+    private suspend fun loadUserConfiguration(userId: String) {
+        try {
+            Log.d(TAG, "Cargando configuración para usuario: $userId")
+
+            val document = firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .await()
+
+            if (document.exists()) {
+                val config = document.get("configuracion") as? Map<String, Any>
+                val isPremium = document.getBoolean("isPremium") ?: false
+
+                if (config != null) {
+                    // Aplicar configuración del usuario
+                    ConfigurationManager.updateConfiguration(
+                        idioma = config["idioma"] as? String ?: "es",
+                        fuente = config["fuente"] as? String ?: "Montserrat",
+                        modoOscuro = config["modoOscuro"] as? Boolean ?: false,
+                        isPremium = isPremium
+                    )
+                    Log.d(TAG, "Configuración de usuario cargada exitosamente")
+                } else {
+                    Log.d(TAG, "No se encontró configuración, usando valores por defecto")
+                }
+            } else {
+                Log.d(TAG, "Documento de usuario no existe, creando configuración por defecto")
+                // Crear configuración por defecto
+                createUserDocument(firebaseAuth.currentUser!!)
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cargando configuración de usuario", e)
+            // Usar configuración por defecto en caso de error
+            ConfigurationManager.resetToDefaults()
+        }
+    }
+
+    /**
+     * Actualizar configuración del usuario en Firestore
+     */
+    suspend fun updateUserConfiguration(
+        idioma: String,
+        fuente: String,
+        modoOscuro: Boolean,
+        isPremium: Boolean
+    ): Boolean {
+        return try {
+            val userId = firebaseAuth.currentUser?.uid ?: return false
+
+            val configUpdate = mapOf(
+                "configuracion.idioma" to idioma,
+                "configuracion.fuente" to fuente,
+                "configuracion.modoOscuro" to modoOscuro,
+                "isPremium" to isPremium
+            )
+
+            firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .update(configUpdate)
+                .await()
+
+            Log.d(TAG, "Configuración de usuario actualizada en Firestore")
+            true
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error actualizando configuración", e)
+            false
+        }
+    }
+
+    /**
+     * Obtener información del usuario actual
+     */
+    fun getCurrentUserInfo(): Map<String, Any>? {
+        val user = firebaseAuth.currentUser
+        return if (user != null) {
+            mapOf(
+                "uid" to user.uid,
+                "email" to (user.email ?: ""),
+                "isEmailVerified" to user.isEmailVerified,
+                "displayName" to (user.displayName ?: ""),
+                "creationTimestamp" to (user.metadata?.creationTimestamp ?: 0L)
+            )
+        } else null
+    }
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/data/repository/ConfiguracionRepository.kt
+package es.nuskysoftware.marketsales.data.repository
+
+import android.content.Context
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.marketsales.data.local.dao.ConfiguracionDao
+import es.nuskysoftware.marketsales.data.local.database.AppDatabase
+import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.marketsales.utils.ConnectivityObserver
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
+import java.text.SimpleDateFormat
+import java.util.*
+
+class ConfiguracionRepository(
+    context: Context
+) {
+    private val configuracionDao: ConfiguracionDao = AppDatabase.getDatabase(context).configuracionDao()
+    private val firestore = FirebaseFirestore.getInstance()
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Observador de red
+    private val connectivityObserver = ConnectivityObserver(context)
+
+    // Exponer configuración como StateFlow
+    val configuracion = configuracionDao.getConfiguracionFlow()
+        .stateIn(repositoryScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    init {
+        // Cuando volvemos a estar online, reintentamos enviar pendientes
+        repositoryScope.launch {
+            connectivityObserver.isConnected.collect { online ->
+                if (online) {
+                    val cfg = configuracionDao.getConfiguracionSync()
+                    if (cfg?.pendienteSync == true) {
+                        sincronizarConFirebase(cfg)
+                    }
+                }
+            }
+        }
+    }
+
+    suspend fun crearConfiguracionPorDefecto() = withContext(Dispatchers.IO) {
+        val existente = configuracionDao.getConfiguracion()
+        if (existente == null) {
+            val porDefecto = ConfiguracionEntity(
+                numeroVersion = "V1.0",
+                ultimoDispositivo = android.os.Build.MODEL,
+                usuarioId = "usuario_default",
+                fechaUltimaSync = dateFormat.format(Date()),
+                pendienteSync = true
+            )
+            configuracionDao.insertOrUpdate(porDefecto)
+            sincronizarConFirebase(porDefecto)
+        } else {
+            if (existente.fechaUltimaSync == null || existente.pendienteSync) {
+                sincronizarConFirebase(existente)
+            }
+        }
+    }
+
+    suspend fun actualizarIdioma(idioma: String) = withContext(Dispatchers.IO) {
+        configuracionDao.updateIdioma(idioma)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("idioma", idioma)
+    }
+
+    suspend fun actualizarTema(esTemaOscuro: Boolean) = withContext(Dispatchers.IO) {
+        configuracionDao.updateTemaOscuro(esTemaOscuro)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("temaOscuro", esTemaOscuro)
+    }
+
+    suspend fun actualizarFuente(fuente: String) = withContext(Dispatchers.IO) {
+        configuracionDao.updateFuente(fuente)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("fuente", fuente)
+    }
+
+    suspend fun actualizarPassword(password: String) = withContext(Dispatchers.IO) {
+        configuracionDao.updateUsuarioPassword(password)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("usuarioPassword", password)
+    }
+
+    suspend fun actualizarMoneda(moneda: String) = withContext(Dispatchers.IO) {
+        configuracionDao.updateMoneda(moneda)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("moneda", moneda)
+    }
+
+    suspend fun actualizarVersionApp(version: Int) = withContext(Dispatchers.IO) {
+        configuracionDao.updateVersionApp(version)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("versionApp", version)
+    }
+
+    suspend fun actualizarUsuarioEmail(email: String) = withContext(Dispatchers.IO) {
+        configuracionDao.updateUsuarioEmail(email)
+        configuracionDao.updatePendienteSync(true)
+        sincronizarCampoEspecifico("usuarioEmail", email)
+    }
+
+    suspend fun sincronizar() = withContext(Dispatchers.IO) {
+        val cfg = configuracionDao.getConfiguracionSync() ?: return@withContext
+        sincronizarConFirebase(cfg)
+    }
+
+    /**
+     * Sincroniza la configuración completa con Firebase.
+     * Marca o limpia pendienteSync según el resultado.
+     */
+    private fun sincronizarConFirebase(config: ConfiguracionEntity) {
+        try {
+            val datos = mapOf(
+                "versionApp"      to config.versionApp,
+                "numeroVersion"   to config.numeroVersion,
+                "ultimoDispositivo" to config.ultimoDispositivo,
+                "usuarioEmail"    to config.usuarioEmail,
+                "usuarioId"       to config.usuarioId,
+                "usuarioPassword" to config.usuarioPassword,
+                "idioma"          to config.idioma,
+                "temaOscuro"      to config.temaOscuro,
+                "fuente"          to config.fuente,
+                "moneda"          to config.moneda,
+                "fechaUltimaSync" to dateFormat.format(Date()),
+                "dispositivo"     to android.os.Build.MODEL
+            )
+            val docRef = firestore.collection("configuraciones")
+                .document(config.usuarioId ?: "usuario_default")
+
+            docRef.set(datos)
+                .addOnSuccessListener {
+                    repositoryScope.launch {
+                        configuracionDao.updateFechaUltimaSync(dateFormat.format(Date()))
+                        configuracionDao.updatePendienteSync(false)
+                    }
+                }
+                .addOnFailureListener {
+                    repositoryScope.launch {
+                        configuracionDao.updatePendienteSync(true)
+                    }
+                }
+        } catch (e: Exception) {
+            repositoryScope.launch {
+                configuracionDao.updatePendienteSync(true)
+            }
+        }
+    }
+
+    /**
+     * Sincroniza un solo campo con Firebase.
+     * Limpia pendienteSync sólo al éxito global.
+     */
+    private suspend fun sincronizarCampoEspecifico(campo: String, valor: Any) {
+        try {
+            val cfg = configuracionDao.getConfiguracionSync() ?: return
+            val documentoId = cfg.usuarioId ?: "usuario_default"
+            val datos = mapOf(campo to valor, "fechaUltimaSync" to dateFormat.format(Date()))
+            firestore.collection("configuraciones")
+                .document(documentoId)
+                .update(datos)
+                .addOnSuccessListener {
+                    repositoryScope.launch {
+                        configuracionDao.updateFechaUltimaSync(dateFormat.format(Date()))
+                        configuracionDao.updatePendienteSync(false)
+                    }
+                }
+                .addOnFailureListener {
+                    repositoryScope.launch {
+                        configuracionDao.updatePendienteSync(true)
+                    }
+                }
+        } catch (_: Exception) {
+            repositoryScope.launch {
+                configuracionDao.updatePendienteSync(true)
+            }
+        }
+    }
+}
+
+
+
+package es.nuskysoftware.marketsales.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import kotlinx.coroutines.launch
+
+@Composable
+fun MenuHamburguesa(
+    navController: NavController,
+    drawerState: DrawerState
+) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // ✅ OPCIÓN B: AuthViewModel para detectar estado de usuario
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory())
+    val currentUser by authViewModel.currentUser.collectAsState()
+
+    // Obtener valores del ConfigurationManager usando StateFlows
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val versionApp by ConfigurationManager.versionApp.collectAsState()
+
+    // Calcular valores derivados
+    val versionText = if (versionApp == 1) "Premium V1.0" else "Free V1.0"
+
+    ModalDrawerSheet(
+        modifier = Modifier.width(280.dp),
+        drawerContainerColor = MaterialTheme.colorScheme.surface
+    ) {
+        // Header del menú
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = StringResourceManager.getString("app_name", "Market Sales"),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+
+                Text(
+                    text = versionText,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                )
+
+                // ✅ MOSTRAR EMAIL SI ESTÁ AUTENTICADO
+                if (currentUser != null) {
+                    Text(
+                        text = "👤 ${currentUser?.email ?: "Usuario"}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Opciones del menú
+        LazyColumn {
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_store,
+                    title = StringResourceManager.getString("mercadillos", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("mercadillos") {
+                            popUpTo("mercadillos") { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_list,
+                    title = StringResourceManager.getString("articulos", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("articulos")
+                    }
+                )
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_category,
+                    title = StringResourceManager.getString("categorias", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("categorias")
+                    }
+                )
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_inventory,
+                    title = StringResourceManager.getString("inventario", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("inventario")
+                    }
+                )
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_list,
+                    title = StringResourceManager.getString("listados", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("listados")
+                    }
+                )
+            }
+
+            item {
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                )
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_settings,
+                    title = StringResourceManager.getString("configuracion", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("configuracion")
+                    }
+                )
+            }
+
+            // ✅ OPCIÓN B: LÓGICA CONDICIONAL LOGIN/LOGOUT
+            item {
+                if (currentUser != null) {
+                    // Usuario autenticado - mostrar LOGOUT
+                    MenuOption(
+                        iconRes = R.drawable.ic_logout,
+                        title = StringResourceManager.getString("cerrar_sesion", currentLanguage),
+                        onClick = {
+                            scope.launch {
+                                drawerState.close()
+                                authViewModel.logout()
+                            }
+                        }
+                    )
+                } else {
+                    // Usuario NO autenticado - mostrar LOGIN
+                    MenuOption(
+                        iconRes = R.drawable.ic_login,
+                        title = StringResourceManager.getString("iniciar_sesion", currentLanguage),
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            navController.navigate("login")
+                        }
+                    )
+                }
+            }
+
+            item {
+                MenuOption(
+                    iconRes = R.drawable.ic_exit,
+                    title = StringResourceManager.getString("salir", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        // Salir de la aplicación
+                        (context as? androidx.activity.ComponentActivity)?.finishAffinity()
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuOption(
+    iconRes: Int,
+    title: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = title,
+            tint = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.size(24.dp)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+
+package es.nuskysoftware.marketsales.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseUser
+import es.nuskysoftware.marketsales.data.local.entity.isPremium
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaConfiguracion
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+
+@Composable
+fun MenuLateral(
+    configuracionViewModel: ConfiguracionViewModel,
+    authViewModel: AuthViewModel,
+    currentUser: FirebaseUser?,
+    onCloseDrawer: () -> Unit,
+    onLogout: () -> Unit
+) {
+    val context = LocalContext.current
+    val configuracion by configuracionViewModel.configuracion.collectAsState()
+
+    var mostrarConfiguracion by remember { mutableStateOf(false) }
+    var mostrarDialogoSalir by remember { mutableStateOf(false) }
+    var mostrarDialogoLogout by remember { mutableStateOf(false) }
+
+    // ✅ TODO: Implementar PantallaConfiguracion como Modal o Dialog
+    // if (mostrarConfiguracion) {
+    //     PantallaConfiguracion(
+    //         configuracionViewModel = configuracionViewModel,
+    //         onCloseConfiguration = { mostrarConfiguracion = false }
+    //     )
+    // }
+
+    if (mostrarDialogoLogout) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoLogout = false },
+            title = {
+                Text(StringResourceManager.getString("logout_title", "Cerrar Sesión"))
+            },
+            text = {
+                Text(StringResourceManager.getString("logout_message", "¿Estás seguro de que deseas cerrar sesión?"))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogoLogout = false
+                        onLogout()
+                    }
+                ) {
+                    Text(
+                        StringResourceManager.getString("logout_confirm", "Cerrar Sesión"),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoLogout = false }
+                ) {
+                    Text(StringResourceManager.getString("cancel", "Cancelar"))
+                }
+            }
+        )
+    }
+
+    if (mostrarDialogoSalir) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoSalir = false },
+            title = {
+                Text(StringResourceManager.getString("exit_title", "Salir de la App"))
+            },
+            text = {
+                Text(StringResourceManager.getString("exit_message", "¿Estás seguro de que deseas salir de Market Sales?"))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        mostrarDialogoSalir = false
+                        (context as? androidx.activity.ComponentActivity)?.finishAffinity()
+                    }
+                ) {
+                    Text(
+                        StringResourceManager.getString("exit_confirm", "Salir"),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoSalir = false }
+                ) {
+                    Text(StringResourceManager.getString("cancel", "Cancelar"))
+                }
+            }
+        )
+    }
+
+    ModalDrawerSheet(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(300.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            // Header del menú con información del usuario
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp)
+                    )
+                    .padding(24.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Market Sales",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (currentUser != null) {
+                        Text(
+                            text = currentUser.email ?: "Usuario",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (configuracion?.isPremium == true) {
+                                Text(
+                                    text = "🚀",
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = StringResourceManager.getString("premium", "Premium"),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                )
+                            } else {
+                                Text(
+                                    text = StringResourceManager.getString("free", "Gratuito"),
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = StringResourceManager.getString("not_authenticated", "No autenticado"),
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Opciones del menú
+            MenuLateralItem(
+                icon = Icons.Default.Home,
+                texto = StringResourceManager.getString("home", "Inicio"),
+                onClick = {
+                    onCloseDrawer()
+                }
+            )
+
+            MenuLateralItem(
+                icon = Icons.Default.ShoppingCart,
+                texto = StringResourceManager.getString("markets", "Mercadillos"),
+                onClick = {
+                    onCloseDrawer()
+                }
+            )
+
+            if (configuracion?.isPremium == true) {
+                MenuLateralItem(
+                    icon = Icons.Default.Add,
+                    texto = StringResourceManager.getString("add_market", "Añadir Mercadillo"),
+                    onClick = {
+                        onCloseDrawer()
+                        // TODO: Navegar a añadir mercadillo
+                    }
+                )
+
+                MenuLateralItem(
+                    icon = Icons.Default.Star,
+                    texto = StringResourceManager.getString("premium_features", "Funciones Premium"),
+                    onClick = {
+                        onCloseDrawer()
+                        // TODO: Mostrar funciones premium
+                    }
+                )
+            } else {
+                MenuLateralItem(
+                    icon = Icons.Default.Star,
+                    texto = "🚀 ${StringResourceManager.getString("upgrade_premium", "Actualizar a Premium")}",
+                    onClick = {
+                        onCloseDrawer()
+                        // TODO: Mostrar pantalla de upgrade
+                    }
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            MenuLateralItem(
+                icon = Icons.Default.Settings,
+                texto = StringResourceManager.getString("configuration", "Configuración"),
+                onClick = {
+                    // ✅ TODO: Implementar navegación a configuración
+                    onCloseDrawer()
+                }
+            )
+
+            MenuLateralItem(
+                icon = Icons.Default.Info,
+                texto = StringResourceManager.getString("about", "Acerca de"),
+                onClick = {
+                    onCloseDrawer()
+                    // TODO: Mostrar información de la app
+                }
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Sección de logout y salir en la parte inferior
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            if (currentUser != null) {
+                MenuLateralItem(
+                    icon = Icons.Default.ExitToApp,
+                    texto = StringResourceManager.getString("logout", "Cerrar Sesión"),
+                    onClick = {
+                        mostrarDialogoLogout = true
+                    },
+                    isDestructive = true
+                )
+            }
+
+            MenuLateralItem(
+                icon = Icons.Default.Close,
+                texto = StringResourceManager.getString("exit_app", "Salir de la App"),
+                onClick = {
+                    mostrarDialogoSalir = true
+                },
+                isDestructive = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun MenuLateralItem(
+    icon: ImageVector,
+    texto: String,
+    onClick: () -> Unit,
+    isDestructive: Boolean = false
+) {
+    NavigationDrawerItem(
+        icon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = texto,
+                tint = if (isDestructive) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+        },
+        label = {
+            Text(
+                text = texto,
+                color = if (isDestructive) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+        },
+        selected = false,
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+    )
+}
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaConfiguracion.kt
+package es.nuskysoftware.marketsales.ui.pantallas
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavController
+import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.data.repository.ConfiguracionRepository
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.FooterMarca
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaConfiguracion(
+    navController: NavController? = null
+) {
+    // Contexto, repo y scope para offline-first
+    val context = LocalContext.current
+    val repo = remember { ConfiguracionRepository(context) }
+    val scope = rememberCoroutineScope()
+
+    // Observar estados desde ConfigurationManager usando StateFlows
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val currentFont     by ConfigurationManager.fuente.collectAsState()
+    val isDarkTheme     by ConfigurationManager.temaOscuro.collectAsState()
+    val versionApp      by ConfigurationManager.versionApp.collectAsState()
+    val usuarioEmail    by ConfigurationManager.usuarioEmail.collectAsState()
+
+    // Calcular valores derivados
+    val isPremium = versionApp == 1
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        StringResourceManager.getString("configuracion", currentLanguage),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController?.popBackStack() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrow_left),
+                            contentDescription = "Volver"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Información de cuenta
+                item {
+                    TarjetaInformacionCuenta(
+                        email = usuarioEmail ?: "usuario@email.com",
+                        esPremium = isPremium,
+                        version = "V1.0",
+                        language = currentLanguage
+                    )
+                }
+
+                // Idioma (solo Premium) - Dropdown
+                item {
+                    var expandedIdioma by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isPremium)
+                                MaterialTheme.colorScheme.surface
+                            else
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                        ),
+                        elevation = CardDefaults.cardElevation(if (isPremium) 4.dp else 2.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = isPremium) {
+                                        if (isPremium) expandedIdioma = !expandedIdioma
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_language),
+                                    contentDescription = "Idioma",
+                                    tint = if (isPremium)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = StringResourceManager.getString("idioma", currentLanguage),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (isPremium)
+                                            MaterialTheme.colorScheme.onSurface
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                    Text(
+                                        text = if (currentLanguage == "es") "Español" else "English",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isPremium)
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                    )
+                                    if (!isPremium) {
+                                        Text(
+                                            text = StringResourceManager.getString("funcion_premium", currentLanguage),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Red.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                                if (isPremium) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (expandedIdioma) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+                                        ),
+                                        contentDescription = "Expandir",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            if (expandedIdioma && isPremium) {
+                                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                    listOf("es" to "Español", "en" to "English").forEach { (codigo, nombre) ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    ConfigurationManager.setIdioma(codigo)
+                                                    expandedIdioma = false
+                                                }
+                                                .padding(vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = currentLanguage == codigo,
+                                                onClick = {
+                                                    ConfigurationManager.setIdioma(codigo)
+                                                    expandedIdioma = false
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(nombre)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Fuente (solo Premium) - Dropdown
+                item {
+                    var expandedFuente by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isPremium)
+                                MaterialTheme.colorScheme.surface
+                            else
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                        ),
+                        elevation = CardDefaults.cardElevation(if (isPremium) 4.dp else 2.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(enabled = isPremium) {
+                                        if (isPremium) expandedFuente = !expandedFuente
+                                    }
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_font),
+                                    contentDescription = "Fuente",
+                                    tint = if (isPremium)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = StringResourceManager.getString("fuente", currentLanguage),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = if (isPremium)
+                                            MaterialTheme.colorScheme.onSurface
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                    Text(
+                                        text = currentFont,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (isPremium)
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                        else
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                    )
+                                    if (!isPremium) {
+                                        Text(
+                                            text = StringResourceManager.getString("funcion_premium", currentLanguage),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Red.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                                if (isPremium) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (expandedFuente) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
+                                        ),
+                                        contentDescription = "Expandir",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                            if (expandedFuente && isPremium) {
+                                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                                    listOf("Montserrat", "Poppins", "Roboto").forEach { fuente ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    ConfigurationManager.setFuente(fuente)
+                                                    expandedFuente = false
+                                                }
+                                                .padding(vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            RadioButton(
+                                                selected = currentFont == fuente,
+                                                onClick = {
+                                                    ConfigurationManager.setFuente(fuente)
+                                                    expandedFuente = false
+                                                }
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(fuente)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Tema Oscuro (solo Premium) - Switch
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isPremium)
+                                MaterialTheme.colorScheme.surface
+                            else
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                        ),
+                        elevation = CardDefaults.cardElevation(if (isPremium) 4.dp else 2.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_palette),
+                                contentDescription = "Tema",
+                                tint = if (isPremium)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = StringResourceManager.getString("tema", currentLanguage),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isPremium)
+                                        MaterialTheme.colorScheme.onSurface
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                Text(
+                                    text = if (isDarkTheme) "Oscuro" else "Claro",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (isPremium)
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    else
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                                )
+                            }
+                            Switch(
+                                checked = isDarkTheme,
+                                onCheckedChange = { nuevoValor ->
+                                    if (isPremium) {
+                                        ConfigurationManager.setTemaOscuro(nuevoValor)
+                                        scope.launch {
+                                            repo.actualizarTema(nuevoValor)
+                                        }
+                                    }
+                                },
+                                enabled = isPremium
+                            )
+                        }
+                    }
+                }
+
+                // Sección desarrollo
+                item {
+                    OpcionConfiguracion(
+                        iconRes = R.drawable.ic_settings,
+                        titulo = "Desarrollo",
+                        subtitulo = if (isPremium) "🚀 Premium ACTIVO" else "✋ Modo FREE",
+                        habilitado = true,
+                        esPremium = false,
+                        onClick = {
+                            ConfigurationManager.setIsPremium(!isPremium)
+                        },
+                        language = currentLanguage
+                    )
+                }
+
+                // Promoción Premium para usuarios FREE
+                if (!isPremium) {
+                    item {
+                        TarjetaPromocionPremium(language = currentLanguage)
+                    }
+                }
+            }
+
+            // Botón Guardar
+            Button(
+                onClick = {
+                    scope.launch {
+                        repo.actualizarIdioma(currentLanguage)
+                        repo.actualizarFuente(currentFont)
+                        // temaOscuro ya se guardó al cambiar el Switch
+                        usuarioEmail?.let { repo.actualizarUsuarioEmail(it) }
+                        repo.sincronizar()
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(
+                    text = StringResourceManager.getString("guardar", currentLanguage),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // Footer
+            FooterMarca()
+        }
+    }
+}
+
+@Composable
+private fun TarjetaInformacionCuenta(
+    email: String,
+    esPremium: Boolean,
+    version: String,
+    language: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = StringResourceManager.getString("informacion_cuenta", language),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (esPremium) Color(0xFFFFD700) else Color(0xFF90EE90)
+                    ),
+                    modifier = Modifier.padding(4.dp)
+                ) {
+                    Text(
+                        text = if (esPremium) "PREMIUM" else "FREE",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = email,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "App $version",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun OpcionConfiguracion(
+    iconRes: Int,
+    titulo: String,
+    subtitulo: String?,
+    habilitado: Boolean,
+    esPremium: Boolean,
+    onClick: () -> Unit,
+    language: String
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = habilitado) { if (habilitado) onClick() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (habilitado)
+                MaterialTheme.colorScheme.surface
+            else
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(if (habilitado) 4.dp else 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = iconRes),
+                contentDescription = titulo,
+                tint = if (habilitado) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = titulo,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (habilitado) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                subtitulo?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (habilitado) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    )
+                }
+                if (!habilitado && esPremium) {
+                    Text(
+                        text = StringResourceManager.getString("funcion_premium", language),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Red.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            if (habilitado) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_arrow_right),
+                    contentDescription = "Ir",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TarjetaPromocionPremium(language: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFD700).copy(alpha = 0.3f)),
+        elevation = CardDefaults.cardElevation(6.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_info),
+                contentDescription = "Premium",
+                tint = Color(0xFFFFD700),
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = StringResourceManager.getString("promocion_premium", language),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = StringResourceManager.getString("desbloquea_funciones", language),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            )
+        }
+    }
+}
+
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaLogin.kt
+package es.nuskysoftware.marketsales.ui.pantallas
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.data.repository.AuthState
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaLogin(
+    authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory()),
+    onNavigateToMain: () -> Unit = {}
+) {
+    val authState by authViewModel.authState.collectAsState()
+    val focusManager = LocalFocusManager.current
+
+    // Para forzar recomposición al cambiar idioma
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+
+    // Estados locales
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    var isLoginMode by remember { mutableStateOf(true) } // true = Login, false = Registro
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    // Validaciones
+    val isEmailValid = email.contains("@") && email.contains(".")
+    val isPasswordValid = password.length >= 6
+    val isFormValid = isEmailValid && isPasswordValid
+
+    // Navegar tras autenticación
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Authenticated -> onNavigateToMain()
+            is AuthState.Error -> {
+                errorMessage = (authState as AuthState.Error).message
+                showError = true
+            }
+            else -> { }
+        }
+    }
+
+    fun handleAuthAction() {
+        if (!isFormValid) return
+        showError = false
+        if (isLoginMode) authViewModel.loginWithEmail(email, password)
+        else           authViewModel.registerWithEmail(email, password)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        MaterialTheme.colorScheme.surface
+                    )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Logo
+            Card(
+                modifier = Modifier
+                    .size(100.dp)
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(50.dp),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_store),
+                        contentDescription = StringResourceManager.getString("app_name", currentLanguage),
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
+            }
+
+            // Título App
+            Text(
+                text = StringResourceManager.getString("app_name", currentLanguage),
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                ),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // Subtítulo Login/Registro
+            Text(
+                text = if (isLoginMode)
+                    StringResourceManager.getString("login_subtitle", currentLanguage)
+                else
+                    StringResourceManager.getString("register_subtitle", currentLanguage),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            // Formulario
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                elevation = CardDefaults.cardElevation(4.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Email
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            showError = false
+                        },
+                        label = { Text(StringResourceManager.getString("email", currentLanguage)) },
+                        placeholder = { Text(StringResourceManager.getString("email_placeholder", currentLanguage)) },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+                        isError = email.isNotEmpty() && !isEmailValid,
+                        supportingText = {
+                            if (email.isNotEmpty() && !isEmailValid) {
+                                Text(
+                                    text = StringResourceManager.getString("email_invalid", currentLanguage),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        singleLine = true
+                    )
+
+                    // Contraseña
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            showError = false
+                        },
+                        label = { Text(StringResourceManager.getString("password", currentLanguage)) },
+                        placeholder = { Text(StringResourceManager.getString("password_placeholder", currentLanguage)) },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        trailingIcon = {
+                            IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                                Icon(
+                                    imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = if (isPasswordVisible)
+                                        "Ocultar contraseña" else "Mostrar contraseña"
+                                )
+                            }
+                        },
+                        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            if (isFormValid) handleAuthAction()
+                        }),
+                        isError = password.isNotEmpty() && !isPasswordValid,
+                        supportingText = {
+                            if (password.isNotEmpty() && !isPasswordValid) {
+                                Text(
+                                    text = StringResourceManager.getString("password_invalid", currentLanguage),
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        },
+                        singleLine = true
+                    )
+
+                    // Error genérico
+                    if (showError && errorMessage.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                        ) {
+                            Text(
+                                text = errorMessage,
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Botón principal
+            Button(
+                onClick = { handleAuthAction() },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = isFormValid && authState !is AuthState.Loading,
+                shape = RoundedCornerShape(28.dp)
+            ) {
+                if (authState is AuthState.Loading) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        Text(StringResourceManager.getString("loading", currentLanguage), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                } else {
+                    Text(
+                        text = if (isLoginMode)
+                            StringResourceManager.getString("login_button", currentLanguage)
+                        else
+                            StringResourceManager.getString("register_button", currentLanguage),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            // Divisor
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp), verticalAlignment = Alignment.CenterVertically) {
+                HorizontalDivider(modifier = Modifier.weight(1f))
+                Text(
+                    StringResourceManager.getString("or", currentLanguage),
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f))
+            }
+
+            // Cambiar modo
+            TextButton(onClick = {
+                isLoginMode = !isLoginMode
+                showError = false
+                errorMessage = ""
+            }, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = if (isLoginMode)
+                        StringResourceManager.getString("go_to_register", currentLanguage)
+                    else
+                        StringResourceManager.getString("go_to_login", currentLanguage),
+                    style = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Beneficios registro
+            if (!isLoginMode) {
+                Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            StringResourceManager.getString("register_benefits_title", currentLanguage),
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        listOf(
+                            "benefit_1",
+                            "benefit_2",
+                            "benefit_3",
+                            "benefit_4"
+                        ).forEach { key ->
+                            Text(
+                                StringResourceManager.getString(key, currentLanguage),
+                                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)),
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaMercadillos.kt
+package es.nuskysoftware.marketsales.ui.pantallas
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
+import es.nuskysoftware.marketsales.ui.components.MenuHamburguesa
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.FooterMarca
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaMercadillos(
+    navController: NavController,
+    configuracionViewModel: ConfiguracionViewModel
+) {
+    val configuracion by configuracionViewModel.configuracion.collectAsState()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // Estados de configuración
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val isDarkTheme by ConfigurationManager.temaOscuro.collectAsState()
+    val currentFont by ConfigurationManager.fuente.collectAsState()
+    val versionApp by ConfigurationManager.versionApp.collectAsState()
+    val isPremium = versionApp == 1
+    val versionText = if (isPremium) "Premium V1.0" else "Free V1.0"
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            MenuHamburguesa(
+                navController = navController,
+                drawerState = drawerState
+                // ✅ REMOVIDO AuthViewModel temporalmente para evitar ANR
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            StringResourceManager.getString("mercadillos", currentLanguage),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_menu),
+                                contentDescription = StringResourceManager.getString("menu", currentLanguage),
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { /* TODO: Añadir mercadillo */ },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_add),
+                        contentDescription = StringResourceManager.getString("add_market", currentLanguage),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            },
+            bottomBar = { FooterMarca() }
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Tarjeta bienvenida
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "¡Bienvenido a Market Sales!",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Tu aplicación para control de caja en mercadillos",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Card(colors = CardDefaults.cardColors(
+                                containerColor = if (isPremium)
+                                    MaterialTheme.colorScheme.primary
+                                else
+                                    MaterialTheme.colorScheme.secondaryContainer
+                            )) {
+                                Text(
+                                    text = "Versión: $versionText",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isPremium)
+                                        MaterialTheme.colorScheme.onPrimary
+                                    else
+                                        MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Sección en desarrollo
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                            Text(
+                                text = "🚧 En Desarrollo",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Esta pantalla se completará con:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "• Lista de mercadillos\n• Gestión de ventas\n• Control de caja\n• Reportes y estadísticas",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+
+                // Footer de configuración
+                item {
+                    FooterMarca()
+                }
+            }
+        }
+    }
+}
+
+
+package es.nuskysoftware.marketsales.ui.pantallas
+
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import es.nuskysoftware.marketsales.R
+
+@Composable
+fun PantallaSplash() {
+    // Animación de escala
+    val infiniteTransition = rememberInfiniteTransition(label = "splash_animation")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale_animation"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Logo animado
+            Card(
+                modifier = Modifier
+                    .size(120.dp)
+                    .scale(scale),
+                shape = RoundedCornerShape(60.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_store),
+                        contentDescription = "Market Sales Logo",
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Título
+            Text(
+                text = "Market Sales",
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Subtítulo
+            Text(
+                text = "Gestión de Mercadillos",
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Indicador de carga
+            CircularProgressIndicator(
+                modifier = Modifier.size(32.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                strokeWidth = 3.dp
+            )
+        }
+    }
+}
+
+package es.nuskysoftware.marketsales.ui.theme
+
+import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+
+// ================= COLORES PRINCIPALES - VERDE PASTEL =================
+
+// ------------------- Tema Claro - Verde Pastel MÁS SUAVE -------------------
+val PrimaryLight = Color(0xFF81C784)        // Verde pastel más suave
+val OnPrimaryLight = Color(0xFFFFFFFF)      // Blanco sobre verde
+val SecondaryLight = Color(0xFFA5D6A7)      // Verde pastel muy claro
+val OnSecondaryLight = Color(0xFF2E7D32)    // Verde oscuro sobre verde pastel
+val BackgroundLight = Color(0xFFF1F8E9)     // Verde muy claro de fondo
+val OnBackgroundLight = Color(0xFF1B5E20)   // Verde muy oscuro para texto
+
+// ------------------- Tema Oscuro - Verde Pastel MÁS SUAVE -------------------
+val PrimaryDark = Color(0xFF66BB6A)         // Verde pastel medio para oscuro
+val OnPrimaryDark = Color(0xFF1B5E20)       // Verde muy oscuro sobre verde pastel
+val SecondaryDark = Color(0xFF81C784)       // Verde pastel más claro
+val OnSecondaryDark = Color(0xFF2E7D32)     // Verde oscuro sobre verde pastel
+val BackgroundDark = Color(0xFF1B5E20)      // Verde muy oscuro de fondo
+val OnBackgroundDark = Color(0xFFC8E6C9)    // Verde claro para texto
+
+// ================= COLORES EXTENDIDOS PERSONALIZADOS =================
+
+// ------------------- Extendidos Claro -------------------
+val SuccessLight = Color(0xFF4CAF50)        // Verde éxito
+val OnSuccessLight = Color(0xFFFFFFFF)      // Blanco sobre verde
+val WarningLight = Color(0xFFFF9800)        // Naranja advertencia
+val OnWarningLight = Color(0xFFFFFFFF)      // Blanco sobre naranja
+val ErrorLight = Color(0xFFF44336)          // Rojo error
+val OnErrorLight = Color(0xFFFFFFFF)        // Blanco sobre rojo
+val InfoLight = Color(0xFF4CAF50)           // Verde información (en vez de azul)
+val OnInfoLight = Color(0xFFFFFFFF)         // Blanco sobre verde info
+
+val SurfaceLight = Color(0xFFFFFFFF)        // Superficie blanca
+val OnSurfaceLight = Color(0xFF2E7D32)      // Verde oscuro sobre superficie
+val SurfaceVariantLight = Color(0xFFC8E6C9) // Superficie variante verde claro
+val OnSurfaceVariantLight = Color(0xFF1B5E20) // Verde muy oscuro sobre superficie variante
+
+// ------------------- Extendidos Oscuro -------------------
+val SuccessDark = Color(0xFF388E3C)         // Verde éxito oscuro
+val OnSuccessDark = Color(0xFFFFFFFF)       // Blanco sobre verde oscuro
+val WarningDark = Color(0xFFF57C00)         // Naranja advertencia oscuro
+val OnWarningDark = Color(0xFFFFFFFF)       // Blanco sobre naranja oscuro
+val ErrorDark = Color(0xFFD32F2F)           // Rojo error oscuro
+val OnErrorDark = Color(0xFFFFFFFF)         // Blanco sobre rojo oscuro
+val InfoDark = Color(0xFF388E3C)            // Verde información oscuro
+val OnInfoDark = Color(0xFFFFFFFF)          // Blanco sobre verde info oscuro
+
+val SurfaceDark = Color(0xFF2E7D32)         // Superficie verde oscuro
+val OnSurfaceDark = Color(0xFFA5D6A7)       // Verde claro sobre superficie oscura
+val SurfaceVariantDark = Color(0xFF1B5E20)  // Superficie variante verde muy oscuro
+val OnSurfaceVariantDark = Color(0xFF81C784) // Verde pastel sobre superficie variante
+
+// ================= CLASE PARA COLORES EXTENDIDOS =================
+
+data class ExtendedColors(
+    val success: Color,
+    val onSuccess: Color,
+    val warning: Color,
+    val onWarning: Color,
+    val error: Color,
+    val onError: Color,
+    val info: Color,
+    val onInfo: Color,
+    val surface: Color,
+    val onSurface: Color,
+    val surfaceVariant: Color,
+    val onSurfaceVariant: Color
+)
+
+// ------------------- Instancias de colores extendidos -------------------
+val LightExtendedColors = ExtendedColors(
+    success = SuccessLight,
+    onSuccess = OnSuccessLight,
+    warning = WarningLight,
+    onWarning = OnWarningLight,
+    error = ErrorLight,
+    onError = OnErrorLight,
+    info = InfoLight,
+    onInfo = OnInfoLight,
+    surface = SurfaceLight,
+    onSurface = OnSurfaceLight,
+    surfaceVariant = SurfaceVariantLight,
+    onSurfaceVariant = OnSurfaceVariantLight
+)
+
+val DarkExtendedColors = ExtendedColors(
+    success = SuccessDark,
+    onSuccess = OnSuccessDark,
+    warning = WarningDark,
+    onWarning = OnWarningDark,
+    error = ErrorDark,
+    onError = OnErrorDark,
+    info = InfoDark,
+    onInfo = OnInfoDark,
+    surface = SurfaceDark,
+    onSurface = OnSurfaceDark,
+    surfaceVariant = SurfaceVariantDark,
+    onSurfaceVariant = OnSurfaceVariantDark
+)
+
+// ================= COMPOSITION LOCAL PARA ACCESO GLOBAL =================
+
+val LocalExtendedColors = staticCompositionLocalOf {
+    LightExtendedColors
+}
+
+// ================= EXTENSIÓN PARA ACCESO FÁCIL =================
+
+val ColorScheme.extended: ExtendedColors
+    @Composable
+    get() = LocalExtendedColors.current
+
+// ================= COLORES ADICIONALES VERDE PASTEL =================
+
+// Colores específicos de la aplicación
+val PrimaryGreen = Color(0xFF4CAF50)
+val SecondaryGreenLight = Color(0xFF81C784)
+val AccentGreenPastel = Color(0xFFA5D6A7)
+val WarningOrange = Color(0xFFFF9800)
+
+// Verdes para fondos y bordes
+val Green50 = Color(0xFFF1F8E9)
+val Green100 = Color(0xFFC8E6C9)
+val Green200 = Color(0xFFA5D6A7)
+val Green300 = Color(0xFF81C784)
+val Green400 = Color(0xFF66BB6A)
+val Green500 = Color(0xFF4CAF50)
+val Green600 = Color(0xFF43A047)
+val Green700 = Color(0xFF388E3C)
+val Green800 = Color(0xFF2E7D32)
+val Green900 = Color(0xFF1B5E20)
+
+// Colores verde pastel suave para Market Sales
+val VerdePrimario = Color(0xFF90EE90)      // Verde claro pastel
+val VerdeSecundario = Color(0xFF98FB98)     // Verde pálido
+val VerdeTerciario = Color(0xFFAFEEAF)      // Verde muy claro
+
+// Colores de fondo y superficie
+val FondoClaro = Color(0xFFF5F5F5)          // Gris muy claro
+val BlancoTexto = Color(0xFFFFFFFF)         // Blanco puro
+val NegroTexto = Color(0xFF000000)          // Negro puro
+val GrisOscuro = Color(0xFF424242)          // Gris oscuro para modo oscuro
+
+// Colores adicionales
+val GrisClaro = Color(0xFFE0E0E0)           // Gris claro para bordes
+val AzulAccento = Color(0xFF2196F3)         // Azul para enlaces
+val RojoError = Color(0xFFF44336)           // Rojo para errores
+val VerdeExito = Color(0xFF4CAF50)          // Verde para éxito
+
+// app/src/main/java/es/nuskysoftware/marketsales/ui/theme/LocalConfiguration.kt
+package es.nuskysoftware.marketsales.ui.theme
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+
+/**
+ * CompositionLocal que proporciona acceso al ConfigurationManager
+ * en cualquier parte del árbol de composición
+ */
+val LocalConfigurationManager = compositionLocalOf<ConfigurationManager> {
+    error("ConfigurationManager no proporcionado")
+}
+
+/**
+ * Función para acceder al ConfigurationManager actual
+ */
+@Composable
+fun getConfigurationManager(): ConfigurationManager {
+    return LocalConfigurationManager.current
+}
+
+package es.nuskysoftware.marketsales.ui.theme
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Shapes
+import androidx.compose.ui.unit.dp
+
+/**
+ * Shape.kt - Market Sales
+ * Definición de formas para componentes Material3
+ */
+
+val Shapes = Shapes(
+    // Formas pequeñas - para botones, chips, etc.
+    small = RoundedCornerShape(4.dp),
+
+    // Formas medianas - para cards, dialogs, etc.
+    medium = RoundedCornerShape(8.dp),
+
+    // Formas grandes - para bottom sheets, navigation drawers, etc.
+    large = RoundedCornerShape(16.dp)
+)
+
+// Formas personalizadas adicionales
+object CustomShapes {
+    val extraSmall = RoundedCornerShape(2.dp)
+    val extraLarge = RoundedCornerShape(24.dp)
+    val circular = RoundedCornerShape(50)
+
+    // Formas específicas para la app
+    val cardShape = RoundedCornerShape(12.dp)
+    val buttonShape = RoundedCornerShape(8.dp)
+    val fabShape = RoundedCornerShape(16.dp)
+    val dialogShape = RoundedCornerShape(20.dp)
+}
+
+//// app/src/main/java/es/nuskysoftware/marketsales/ui/theme/Theme.kt
+//package es.nuskysoftware.marketsales.ui.theme
+//
+//import androidx.compose.foundation.isSystemInDarkTheme
+//import androidx.compose.material3.MaterialTheme
+//import androidx.compose.material3.darkColorScheme
+//import androidx.compose.material3.lightColorScheme
+//import androidx.compose.runtime.Composable
+//import androidx.compose.runtime.CompositionLocalProvider
+//import androidx.compose.runtime.collectAsState
+//import androidx.compose.runtime.getValue
+//
+//// Esquema de colores claro con verde pastel suave
+//private val LightColorScheme = lightColorScheme(
+//    primary = VerdePrimario,
+//    onPrimary = BlancoTexto,
+//    secondary = VerdeSecundario,
+//    onSecundary = BlancoTexto,
+//    tertiary = VerdeTerciario,
+//    background = FondoClaro,
+//    surface = BlancoTexto,
+//    onBackground = NegroTexto,
+//    onSurface = NegroTexto
+//)
+//
+//// Esquema de colores oscuro con verde pastel suave adaptado
+//private val DarkColorScheme = darkColorScheme(
+//    primary = VerdePrimario,
+//    onPrimary = BlancoTexto,
+//    secondary = VerdeSecundario,
+//    onSecondary = BlancoTexto,
+//    tertiary = VerdeTerciario,
+//    background = NegroTexto,
+//    surface = GrisOscuro,
+//    onBackground = BlancoTexto,
+//    onSurface = BlancoTexto
+//)
+//
+//@Composable
+//fun MarketSalesTheme(
+//    configurationManager: es.nuskysoftware.marketsales.utils.ConfigurationManager,
+//    content: @Composable () -> Unit
+//) {
+//    // Observar cambios usando los StateFlow que SÍ existen
+//    val isDarkTheme by configurationManager.temaOscuro.collectAsState()
+//    val currentFont by configurationManager.fuente.collectAsState()
+//
+//    // Seleccionar esquema de colores
+//    val colorScheme = if (isDarkTheme) {
+//        DarkColorScheme
+//    } else {
+//        LightColorScheme
+//    }
+//
+//    // Obtener tipografía basada en la fuente configurada
+//    val typography = getTypographyForFont(currentFont)
+//
+//    // Proporcionar el ConfigurationManager a todo el árbol de composición
+//    CompositionLocalProvider(
+//        LocalConfigurationManager provides configurationManager
+//    ) {
+//        MaterialTheme(
+//            colorScheme = colorScheme,
+//            typography = typography,
+//            shapes = Shapes,
+//            content = content
+//        )
+//    }
+//}
+//
+///**
+// * Función para obtener la tipografía según la fuente seleccionada
+// */
+//@Composable
+//private fun getTypographyForFont(fontName: String) = when (fontName) {
+//    "Montserrat" -> MontserratTypography
+//    "Poppins" -> PoppinsTypography
+//    "Roboto" -> RobotoTypography
+//    else -> MontserratTypography // Por defecto
+//}
+// app/src/main/java/es/nuskysoftware/marketsales/ui/theme/Theme.kt
+package es.nuskysoftware.marketsales.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+
+// Esquema de colores claro con verde pastel suave
+private val LightColorScheme = lightColorScheme(
+    primary = VerdePrimario,
+    onPrimary = BlancoTexto,
+    secondary = VerdeSecundario,
+    onSecondary = BlancoTexto,
+    tertiary = VerdeTerciario,
+    background = FondoClaro,
+    surface = BlancoTexto,
+    onBackground = NegroTexto,
+    onSurface = NegroTexto
+)
+
+// Esquema de colores oscuro con verde pastel suave adaptado
+private val DarkColorScheme = darkColorScheme(
+    primary = VerdePrimario,
+    onPrimary = BlancoTexto,
+    secondary = VerdeSecundario,
+    onSecondary = BlancoTexto,
+    tertiary = VerdeTerciario,
+    background = NegroTexto,
+    surface = GrisOscuro,
+    onBackground = BlancoTexto,
+    onSurface = BlancoTexto
+)
+
+@Composable
+fun MarketSalesTheme(
+    configurationManager: es.nuskysoftware.marketsales.utils.ConfigurationManager,
+    content: @Composable () -> Unit
+) {
+    // Observar cambios usando los StateFlow que SÍ existen
+    val isDarkTheme by configurationManager.temaOscuro.collectAsState()
+    val currentFont by configurationManager.fuente.collectAsState()
+
+    // Seleccionar esquema de colores
+    val colorScheme = if (isDarkTheme) {
+        DarkColorScheme
+    } else {
+        LightColorScheme
+    }
+
+    // Obtener tipografía basada en la fuente configurada
+    val typography = getTypographyForFont(currentFont)
+
+    // Proporcionar el ConfigurationManager a todo el árbol de composición
+    CompositionLocalProvider(
+        LocalConfigurationManager provides configurationManager
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
+}
+
+/**
+ * Función para obtener la tipografía según la fuente seleccionada
+ */
+@Composable
+private fun getTypographyForFont(fontName: String) = when (fontName) {
+    "Montserrat" -> MontserratTypography
+    "Poppins" -> PoppinsTypography
+    "Roboto" -> RobotoTypography
+    else -> MontserratTypography // Por defecto
+}
+
+package es.nuskysoftware.marketsales.ui.theme
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import es.nuskysoftware.marketsales.R
+
+
+/**
+ * Type.kt - Market Sales
+ * ✅ Múltiples familias tipográficas dinámicas
+ */
+
+// ------------------- Definimos las familias tipográficas -------------------
+val Montserrat = FontFamily(
+    Font(R.font.montserrat_regular, FontWeight.Normal),
+    Font(R.font.montserrat_medium, FontWeight.Medium),
+    Font(R.font.montserrat_bold, FontWeight.Bold)
+)
+
+val Poppins = FontFamily(
+    Font(R.font.poppins_regular, FontWeight.Normal),
+    Font(R.font.poppins_medium, FontWeight.Medium),
+    Font(R.font.poppins_bold, FontWeight.Bold)
+)
+
+val Roboto = FontFamily.Default // Roboto viene por defecto en Android
+
+// ------------------- Función para crear Typography con fuente específica -------------------
+private fun createTypography(fontFamily: FontFamily): Typography {
+    return Typography(
+        // Título grande (pantallas principales)
+        titleLarge = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 22.sp
+        ),
+        // Título medio
+        titleMedium = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 18.sp
+        ),
+        // Texto normal
+        bodyLarge = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 16.sp
+        ),
+        // Texto pequeño
+        bodyMedium = TextStyle(
+            fontFamily = fontFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 14.sp
+        )
+    )
+}
+
+// ------------------- Tipografías precreadas -------------------
+val MontserratTypography = createTypography(Montserrat)
+val PoppinsTypography = createTypography(Poppins)
+val RobotoTypography = createTypography(Roboto)
+
+package es.nuskysoftware.marketsales.ui.viewmodel
+
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+import es.nuskysoftware.marketsales.data.repository.AuthRepository
+import es.nuskysoftware.marketsales.data.repository.AuthResult
+import es.nuskysoftware.marketsales.data.repository.AuthState
+import com.google.firebase.auth.FirebaseUser
+
+class AuthViewModel(
+    private val authRepository: AuthRepository
+) : ViewModel() {
+
+    companion object {
+        private const val TAG = "AuthViewModel"
+    }
+
+    // Estados expuestos
+    val authState: StateFlow<AuthState> = authRepository.authState
+    val currentUser: StateFlow<FirebaseUser?> = authRepository.currentUser
+
+    init {
+        Log.d(TAG, "AuthViewModel inicializado")
+
+        // Testing inicial (mantener para verificar funcionamiento)
+        testAuthConnection()
+    }
+
+    // ✅ FASE 1 - Funciones de testing (mantener)
+    private fun testAuthConnection() {
+        viewModelScope.launch {
+            try {
+                val connectionTest = authRepository.testConnection()
+                val isAuthenticated = authRepository.isUserAuthenticated()
+                val user = currentUser.value
+
+                Log.d(TAG, "✅ DEBUG AuthViewModel - Test resultados:")
+                Log.d(TAG, "   - Conexión Firebase: $connectionTest")
+                Log.d(TAG, "   - Usuario autenticado: $isAuthenticated")
+                Log.d(TAG, "   - Usuario actual: ${user?.email ?: "null"}")
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Error en test de conexión", e)
+            }
+        }
+    }
+
+    // 🔐 FASE 2 - FUNCIONES DE AUTENTICACIÓN CON SAFE CALLS
+
+    /**
+     * Registrar nuevo usuario con email y contraseña
+     */
+    fun registerWithEmail(email: String, password: String) {
+        viewModelScope.launch {
+            Log.d(TAG, "ViewModel: Iniciando registro para $email")
+
+            try {
+                when (val result = authRepository.registerWithEmail(email, password)) {
+                    is AuthResult.Success -> {
+                        Log.d(TAG, "ViewModel: Registro exitoso - ${result.user?.email ?: "sin email"}")
+                        // El estado se actualiza automáticamente vía StateFlow
+                    }
+                    is AuthResult.Error -> {
+                        Log.e(TAG, "ViewModel: Error en registro - ${result.message}")
+                        // El estado de error se maneja automáticamente
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "ViewModel: Excepción no controlada en registro", e)
+            }
+        }
+    }
+
+    /**
+     * Iniciar sesión con email y contraseña
+     */
+    fun loginWithEmail(email: String, password: String) {
+        viewModelScope.launch {
+            Log.d(TAG, "ViewModel: Iniciando login para $email")
+
+            try {
+                when (val result = authRepository.loginWithEmail(email, password)) {
+                    is AuthResult.Success -> {
+                        Log.d(TAG, "ViewModel: Login exitoso - ${result.user?.email ?: "sin email"}")
+                        // El estado se actualiza automáticamente vía StateFlow
+                    }
+                    is AuthResult.Error -> {
+                        Log.e(TAG, "ViewModel: Error en login - ${result.message}")
+                        // El estado de error se maneja automáticamente
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "ViewModel: Excepción no controlada en login", e)
+            }
+        }
+    }
+
+    /**
+     * Cerrar sesión
+     */
+    fun logout() {
+        viewModelScope.launch {
+            Log.d(TAG, "ViewModel: Iniciando logout")
+
+            try {
+                when (val result = authRepository.logout()) {
+                    is AuthResult.Success -> {
+                        Log.d(TAG, "ViewModel: Logout exitoso")
+                        // El estado se actualiza automáticamente vía StateFlow
+                    }
+                    is AuthResult.Error -> {
+                        Log.e(TAG, "ViewModel: Error en logout - ${result.message}")
+                        // El estado de error se maneja automáticamente
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "ViewModel: Excepción no controlada en logout", e)
+            }
+        }
+    }
+
+    /**
+     * Verificar si el usuario está autenticado
+     */
+    fun isUserAuthenticated(): Boolean {
+        return authRepository.isUserAuthenticated()
+    }
+
+    /**
+     * Limpiar errores de autenticación
+     */
+    fun clearAuthError() {
+        Log.d(TAG, "ViewModel: Limpiando errores de autenticación")
+    }
+}
+
+package es.nuskysoftware.marketsales.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import es.nuskysoftware.marketsales.data.repository.AuthRepository
+
+class AuthViewModelFactory : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AuthViewModel(AuthRepository()) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/ConfiguracionViewModel.kt
+package es.nuskysoftware.marketsales.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.marketsales.data.repository.ConfiguracionRepository
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class ConfiguracionViewModel(
+    private val repository: ConfiguracionRepository
+) : ViewModel() {
+
+    val configuracion: StateFlow<ConfiguracionEntity?> = repository.configuracion
+
+    init {
+        // Crear configuración por defecto si no existe
+        viewModelScope.launch {
+            repository.crearConfiguracionPorDefecto()
+        }
+    }
+
+    /**
+     * Actualiza la contraseña del usuario
+     */
+    fun actualizarPassword(nuevaPassword: String) {
+        viewModelScope.launch {
+            repository.actualizarPassword(nuevaPassword)
+        }
+    }
+
+    /**
+     * Actualiza el tema (claro/oscuro)
+     */
+    fun actualizarTema(esTemaOscuro: Boolean) {
+        viewModelScope.launch {
+            repository.actualizarTema(esTemaOscuro)
+        }
+    }
+
+    /**
+     * Actualiza la fuente de la aplicación
+     */
+    fun actualizarFuente(fuente: String) {
+        viewModelScope.launch {
+            repository.actualizarFuente(fuente)
+        }
+    }
+
+    /**
+     * Actualiza el idioma de la aplicación
+     */
+    fun actualizarIdioma(idioma: String) {
+        viewModelScope.launch {
+            repository.actualizarIdioma(idioma)
+        }
+    }
+
+    /**
+     * Actualiza la moneda de la aplicación
+     */
+    fun actualizarMoneda(moneda: String) {
+        viewModelScope.launch {
+            repository.actualizarMoneda(moneda)
+        }
+    }
+
+    /**
+     * Actualiza la versión de la app (0=FREE, 1=PREMIUM)
+     */
+    fun actualizarVersion(version: Int) {
+        viewModelScope.launch {
+            repository.actualizarVersionApp(version)
+        }
+    }
+
+    /**
+     * Actualiza el email del usuario
+     */
+    fun actualizarEmail(email: String) {
+        viewModelScope.launch {
+            repository.actualizarUsuarioEmail(email)
+        }
+    }
+
+    /**
+     * Fuerza la sincronización con Firebase
+     */
+    fun sincronizar() {
+        viewModelScope.launch {
+            repository.sincronizar()
+        }
+    }
+}
+
+package es.nuskysoftware.marketsales.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import es.nuskysoftware.marketsales.data.repository.ConfiguracionRepository
+
+class ConfiguracionViewModelFactory(
+    private val repository: ConfiguracionRepository
+) : ViewModelProvider.Factory {
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ConfiguracionViewModel::class.java)) {
+            return ConfiguracionViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+package es.nuskysoftware.marketsales.utils
+
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+/**
+ * Singleton global para gestionar configuración dinámica sin @Composable
+ */
+object ConfigurationManager {
+
+    // Estados internos
+    private val _idioma = MutableStateFlow("es")
+    private val _fuente = MutableStateFlow("Montserrat")
+    private val _temaOscuro = MutableStateFlow(false)
+    private val _versionApp = MutableStateFlow(0) // 0=FREE, 1=PREMIUM
+    private val _usuarioEmail = MutableStateFlow<String?>(null)
+    private val _usuarioId = MutableStateFlow<String?>(null)
+
+    // Estados públicos de solo lectura
+    val idioma: StateFlow<String> = _idioma.asStateFlow()
+    val fuente: StateFlow<String> = _fuente.asStateFlow()
+    val temaOscuro: StateFlow<Boolean> = _temaOscuro.asStateFlow()
+    val versionApp: StateFlow<Int> = _versionApp.asStateFlow()
+    val usuarioEmail: StateFlow<String?> = _usuarioEmail.asStateFlow()
+    val usuarioId: StateFlow<String?> = _usuarioId.asStateFlow()
+
+    // ✅ MÉTODOS GET INDIVIDUALES
+    fun getIdioma(): String = _idioma.value
+    fun getFuente(): String = _fuente.value
+    fun getModoOscuro(): Boolean = _temaOscuro.value
+    fun getTemaOscuro(): Boolean = _temaOscuro.value
+    fun getIsPremium(): Boolean = _versionApp.value == 1
+    fun getVersionApp(): Int = _versionApp.value
+    fun getUsuarioEmail(): String? = _usuarioEmail.value
+    fun getUsuarioId(): String? = _usuarioId.value
+
+    // ✅ MÉTODO UPDATE CONFIGURATION (compatibilidad con código existente)
+    fun updateConfiguration(
+        idioma: String,
+        fuente: String,
+        modoOscuro: Boolean,
+        isPremium: Boolean
+    ) {
+        _idioma.value = idioma
+        _fuente.value = fuente
+        _temaOscuro.value = modoOscuro
+        _versionApp.value = if (isPremium) 1 else 0
+    }
+
+    // ✅ MÉTODO UPDATE CONFIGURATION COMPLETO (con tu estructura)
+    fun updateConfigurationComplete(
+        idioma: String = _idioma.value,
+        fuente: String = _fuente.value,
+        temaOscuro: Boolean = _temaOscuro.value,
+        versionApp: Int = _versionApp.value,
+        usuarioEmail: String? = _usuarioEmail.value,
+        usuarioId: String? = _usuarioId.value
+    ) {
+        _idioma.value = idioma
+        _fuente.value = fuente
+        _temaOscuro.value = temaOscuro
+        _versionApp.value = versionApp
+        _usuarioEmail.value = usuarioEmail
+        _usuarioId.value = usuarioId
+    }
+
+    // ✅ MÉTODO RESET TO DEFAULTS
+    fun resetToDefaults() {
+        _idioma.value = "es"
+        _fuente.value = "Montserrat"
+        _temaOscuro.value = false
+        _versionApp.value = 0
+        _usuarioEmail.value = null
+        _usuarioId.value = null
+    }
+
+    // Métodos individuales de actualización
+    fun setIdioma(idioma: String) {
+        _idioma.value = idioma
+    }
+
+    fun setFuente(fuente: String) {
+        _fuente.value = fuente
+    }
+
+    fun setTemaOscuro(temaOscuro: Boolean) {
+        _temaOscuro.value = temaOscuro
+    }
+
+    fun setModoOscuro(modoOscuro: Boolean) {
+        _temaOscuro.value = modoOscuro
+    }
+
+    fun setIsPremium(isPremium: Boolean) {
+        _versionApp.value = if (isPremium) 1 else 0
+    }
+
+    fun setVersionApp(versionApp: Int) {
+        _versionApp.value = versionApp
+    }
+
+    fun setUsuarioEmail(email: String?) {
+        _usuarioEmail.value = email
+    }
+
+    fun setUsuarioId(userId: String?) {
+        _usuarioId.value = userId
+    }
+
+    // Obtener toda la configuración como mapa
+    fun getCurrentConfiguration(): Map<String, Any?> {
+        return mapOf(
+            "idioma" to _idioma.value,
+            "fuente" to _fuente.value,
+            "temaOscuro" to _temaOscuro.value,
+            "modoOscuro" to _temaOscuro.value, // alias para compatibilidad
+            "versionApp" to _versionApp.value,
+            "isPremium" to (_versionApp.value == 1),
+            "usuarioEmail" to _usuarioEmail.value,
+            "usuarioId" to _usuarioId.value
+        )
+    }
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/utils/ConnectivityObserver.kt
+package es.nuskysoftware.marketsales.utils
+
+import android.content.Context
+import android.net.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * Observa el estado de la red (online/offline) usando ConnectivityManager
+ * y expone un StateFlow<Boolean>.
+ */
+class ConnectivityObserver(context: Context) {
+
+    private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    private val _isConnected = MutableStateFlow(isCurrentlyConnected())
+    val isConnected: StateFlow<Boolean> = _isConnected
+
+    init {
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                _isConnected.value = true
+            }
+            override fun onLost(network: Network) {
+                _isConnected.value = isCurrentlyConnected()
+            }
+        })
+    }
+
+    private fun isCurrentlyConnected(): Boolean {
+        val n = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(n) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+}
+
+
+// app/src/main/java/es/nuskysoftware/marketsales/utils/FooterMarca.kt
+package es.nuskysoftware.marketsales.utils
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun FooterMarca() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .windowInsetsPadding(WindowInsets.navigationBars) // ✅ Respeta barras de navegación
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "© La Nusky Software",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Normal,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/utils/StringResourceManager.kt
+package es.nuskysoftware.marketsales.utils
+
+import java.util.Locale
+
+/**
+ * Gestor de recursos de string que permite cambio dinámico de idioma
+ */
+object StringResourceManager {
+
+    /**
+     * Obtiene un string localizado según el idioma configurado
+     */
+    fun getString(key: String, language: String = "es"): String {
+        return when (language) {
+            "en" -> getEnglishString(key)
+            "es" -> getSpanishString(key)
+            else -> getSpanishString(key)
+        }
+    }
+
+    /**
+     * Strings en español
+     */
+    private fun getSpanishString(key: String): String = when (key) {
+        // Pantalla principal
+        "app_name" -> "Market Sales"
+        "mercadillos" -> "Mercadillos"
+        "configuracion" -> "Configuración"
+        "articulos" -> "Artículos"
+        "categorias" -> "Categorías"
+        "inventario" -> "Inventario"
+        "listados" -> "Listados"
+        "iniciar_sesion" -> "Iniciar Serión"
+        "cerrar_sesion" -> "Cerrar Sesión"
+        "salir" -> "Salir"
+
+        // Configuración
+        "informacion_cuenta" -> "Información de Cuenta"
+        "cambiar_contrasena" -> "Cambiar Contraseña"
+        "tema" -> "Tema"
+        "fuente" -> "Fuente"
+        "idioma" -> "Idioma"
+        "moneda" -> "Moneda"
+        "version_premium" -> "PREMIUM"
+        "version_free" -> "FREE"
+        "promocion_premium" -> "¡Actualiza a Premium!"
+        "desbloquea_funciones" -> "Desbloquea todas las funciones"
+
+        // Tema
+        "tema_claro" -> "Claro"
+        "tema_oscuro" -> "Oscuro"
+
+        // Idiomas
+        "espanol" -> "Español"
+        "ingles" -> "English"
+
+        // Fuentes
+        "montserrat" -> "Montserrat"
+        "poppins" -> "Poppins"
+        "roboto" -> "Roboto"
+
+        // Monedas
+        "euro" -> "€ Euro"
+        "dolar" -> "$ Dólar"
+        "libra" -> "£ Libra"
+        "yen" -> "¥ Yen"
+
+        // Diálogos
+        "cambiar" -> "Cambiar"
+        "cancelar" -> "Cancelar"
+        "guardar" -> "Guardar"
+        "aceptar" -> "Aceptar"
+        "nueva_contrasena" -> "Nueva contraseña"
+        "confirmar_contrasena" -> "Confirmar contraseña"
+        "contrasenas_no_coinciden" -> "Las contraseñas no coinciden"
+        "contrasena_muy_corta" -> "La contraseña debe tener al menos 6 caracteres"
+
+        // Mensajes
+        "funcion_premium" -> "Esta función está disponible solo en la versión Premium"
+        "contrasena_actualizada" -> "Contraseña actualizada correctamente"
+        "error_actualizacion" -> "Error al actualizar la configuración"
+
+        // ✅ AGREGADO: STRINGS DE AUTENTICACIÓN FASE 2
+        "login_subtitle" -> "Inicia sesión en tu cuenta"
+        "register_subtitle" -> "Crea tu nueva cuenta"
+        "email" -> "Email"
+        "email_placeholder" -> "tu@email.com"
+        "email_invalid" -> "Email inválido"
+        "password" -> "Contraseña"
+        "password_placeholder" -> "Mínimo 6 caracteres"
+        "password_invalid" -> "Mínimo 6 caracteres requeridos"
+        "login_button" -> "Iniciar Sesión"
+        "register_button" -> "Crear Cuenta"
+        "loading" -> "Cargando..."
+        "or" -> "o"
+        "go_to_register" -> "¿No tienes cuenta? Crear cuenta"
+        "go_to_login" -> "¿Ya tienes cuenta? Iniciar sesión"
+        "register_benefits_title" -> "🚀 Beneficios de crear cuenta:"
+        "benefit_1" -> "• Sincronización automática en todos tus dispositivos"
+        "benefit_2" -> "• Configuración personalizada guardada"
+        "benefit_3" -> "• Acceso a funciones Premium"
+        "benefit_4" -> "• Respaldo seguro de tus datos"
+        "welcome" -> "Bienvenido"
+        "premium_user" -> "Usuario Premium"
+        "free_user" -> "Usuario Gratuito"
+        "not_authenticated" -> "No autenticado"
+        "home" -> "Inicio"
+        "markets" -> "Mercadillos"
+        "add_market" -> "Añadir Mercadillo"
+        "premium_features" -> "Funciones Premium"
+        "upgrade_premium" -> "Actualizar a Premium"
+        "about" -> "Acerca de"
+        "logout" -> "Cerrar Sesión"
+        "exit_app" -> "Salir de la App"
+        "logout_title" -> "Cerrar Sesión"
+        "logout_message" -> "¿Estás seguro de que deseas cerrar sesión?"
+        "logout_confirm" -> "Cerrar Sesión"
+        "exit_title" -> "Salir de la App"
+        "exit_message" -> "¿Estás seguro de que deseas salir de Market Sales?"
+        "exit_confirm" -> "Salir"
+        "available_markets" -> "Mercadillos Disponibles"
+        "premium_required" -> "Requiere Premium para acceso completo"
+        "see_details" -> "Ver detalles"
+        "edit" -> "Editar"
+        "menu" -> "Menú"
+        "premium" -> "Premium"
+        "free" -> "Gratuito"
+
+        else -> key
+    }
+
+    /**
+     * Strings en inglés
+     */
+    private fun getEnglishString(key: String): String = when (key) {
+        // Main screen
+        "app_name" -> "Market Sales"
+        "mercadillos" -> "Markets"
+        "configuracion" -> "Settings"
+        "articulos" -> "Articles"
+        "categorias" -> "Categories"
+        "inventario" -> "Inventory"
+        "listados" -> "Reports"
+        "iniciar_sesion" -> "Login"
+        "cerrar_sesion" -> "Logout"
+        "salir" -> "Exit"
+
+        // Settings
+        "informacion_cuenta" -> "Account Information"
+        "cambiar_contrasena" -> "Change Password"
+        "tema" -> "Theme"
+        "fuente" -> "Font"
+        "idioma" -> "Language"
+        "moneda" -> "Currency"
+        "version_premium" -> "PREMIUM"
+        "version_free" -> "FREE"
+        "promocion_premium" -> "Upgrade to Premium!"
+        "desbloquea_funciones" -> "Unlock all features"
+
+        // Theme
+        "tema_claro" -> "Light"
+        "tema_oscuro" -> "Dark"
+
+        // Languages
+        "espanol" -> "Español"
+        "ingles" -> "English"
+
+        // Fonts
+        "montserrat" -> "Montserrat"
+        "poppins" -> "Poppins"
+        "roboto" -> "Roboto"
+
+        // Currencies
+        "euro" -> "€ Euro"
+        "dolar" -> "$ Dollar"
+        "libra" -> "£ Pound"
+        "yen" -> "¥ Yen"
+
+        // Dialogs
+        "cambiar" -> "Change"
+        "cancelar" -> "Cancel"
+        "guardar" -> "Save"
+        "aceptar" -> "Accept"
+        "nueva_contrasena" -> "New password"
+        "confirmar_contrasena" -> "Confirm password"
+        "contrasenas_no_coinciden" -> "Passwords don't match"
+        "contrasena_muy_corta" -> "Password must be at least 6 characters"
+
+        // Messages
+        "funcion_premium" -> "This feature is available only in Premium version"
+        "contrasena_actualizada" -> "Password updated successfully"
+        "error_actualizacion" -> "Error updating configuration"
+
+        // ✅ AGREGADO: AUTHENTICATION STRINGS PHASE 2
+        "login_subtitle" -> "Sign in to your account"
+        "register_subtitle" -> "Create your new account"
+        "email" -> "Email"
+        "email_placeholder" -> "your@email.com"
+        "email_invalid" -> "Invalid email"
+        "password" -> "Password"
+        "password_placeholder" -> "Minimum 6 characters"
+        "password_invalid" -> "Minimum 6 characters required"
+        "login_button" -> "Sign In"
+        "register_button" -> "Create Account"
+        "loading" -> "Loading..."
+        "or" -> "or"
+        "go_to_register" -> "Don't have an account? Create account"
+        "go_to_login" -> "Already have an account? Sign in"
+        "register_benefits_title" -> "🚀 Account benefits:"
+        "benefit_1" -> "• Automatic sync across all your devices"
+        "benefit_2" -> "• Personalized configuration saved"
+        "benefit_3" -> "• Access to Premium features"
+        "benefit_4" -> "• Secure data backup"
+        "welcome" -> "Welcome"
+        "premium_user" -> "Premium User"
+        "free_user" -> "Free User"
+        "not_authenticated" -> "Not authenticated"
+        "home" -> "Home"
+        "markets" -> "Markets"
+        "add_market" -> "Add Market"
+        "premium_features" -> "Premium Features"
+        "upgrade_premium" -> "Upgrade to Premium"
+        "about" -> "About"
+        "logout" -> "Sign Out"
+        "exit_app" -> "Exit App"
+        "logout_title" -> "Sign Out"
+        "logout_message" -> "Are you sure you want to sign out?"
+        "logout_confirm" -> "Sign Out"
+        "exit_title" -> "Exit App"
+        "exit_message" -> "Are you sure you want to exit Market Sales?"
+        "exit_confirm" -> "Exit"
+        "available_markets" -> "Available Markets"
+        "premium_required" -> "Requires Premium for full access"
+        "see_details" -> "See details"
+        "edit" -> "Edit"
+        "menu" -> "Menu"
+        "premium" -> "Premium"
+        "free" -> "Free"
+
+        else -> key
+    }
+}
+
+// app/src/main/java/es/nuskysoftware/marketsales/MainActivity.kt
+package es.nuskysoftware.marketsales
+
+import android.os.Bundle
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import es.nuskysoftware.marketsales.data.local.entity.isPremium
+import es.nuskysoftware.marketsales.data.local.entity.modoOscuro
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaConfiguracion
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaLogin
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaMercadillos
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaSplash
+import es.nuskysoftware.marketsales.ui.theme.MarketSalesTheme
+import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.data.repository.ConfiguracionRepository
+
+class MainActivity : ComponentActivity() {
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        Log.d(TAG, "🚀 MainActivity iniciada")
+
+        setContent {
+            // --- tu ViewModel y repo exactos ---
+            val configuracionRepository = ConfiguracionRepository(this@MainActivity)
+            val configuracionViewModel: ConfiguracionViewModel = viewModel(
+                factory = ConfiguracionViewModelFactory(configuracionRepository)
+            )
+
+            // 1) Leemos de Room la entidad de configuración
+            val configuracion by configuracionViewModel.configuracion.collectAsState()
+
+            // 2) Cuando cambie, volcamos todo en ConfigurationManager
+            LaunchedEffect(configuracion) {
+                configuracion?.let { config ->
+                    ConfigurationManager.updateConfiguration(
+                        idioma     = config.idioma,
+                        fuente     = config.fuente,
+                        modoOscuro = config.modoOscuro,
+                        isPremium  = config.isPremium
+                    )
+                }
+            }
+
+            // 3) Aquí capturamos el flag de tema oscuro para la recomposición de la UI
+            val isDarkTheme by ConfigurationManager.temaOscuro.collectAsState()
+
+            // 4) Pasamos ese flag a nuestro tema sin cambiar una sola pantalla
+            MarketSalesTheme(configurationManager = ConfigurationManager) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    NavigationSystem(configuracionViewModel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NavigationSystem(
+    configuracionViewModel: ConfiguracionViewModel
+) {
+    val navController = rememberNavController()
+    var showSplash by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(2000)
+        showSplash = false
+    }
+
+    if (showSplash) {
+        PantallaSplash()
+    } else {
+        NavHost(navController = navController, startDestination = "mercadillos") {
+            composable("mercadillos") {
+                PantallaMercadillos(navController, configuracionViewModel)
+            }
+            composable("configuracion") {
+                PantallaConfiguracion(navController)
+            }
+            composable("login") {
+                PantallaLogin(
+                    onNavigateToMain = {
+                        navController.navigate("mercadillos") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+
+
+ic_account.xml
+ic_add.xml
+ic_arrow_down.xml
+ic_arrow_left.xml
+ic_arrow_right.xml
+ic_arrow_up.xml
+ic_category.xml
+ic_exit.xml
+ic_font.xml
+ic_info.xml
+ic_inventory.xml
+ic_language.xml
+ic_launcher_background.xml
+ic_launcher_foreground.xml
+ic_list.xml
+ic_login.xml
+ic_logout.xml
+ic_menu.xml
+ic_money.xml
+ic_palette.xml
+ic_password.xml
+ic_settings.xml
+ic_store.xml
+
+montserrat_bold.ttf
+montserrat_medium.ttf
+montserrat_regular.ttf
+poppins_bold.ttf
+poppins_medium.ttf
+poppins_regular.ttf
+roboto_bold.ttf
+roboto_medium.ttf
+roboto_regular.ttf
+
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+plugins {
+    id("com.android.application") version "8.11.1" apply false
+    id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false
+    id("com.google.devtools.ksp") version "2.0.21-1.0.27"
+    id("com.google.gms.google-services") version "4.4.3" apply false
+
+
+}
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
+    id ("kotlin-kapt")
+}
+
+android {
+    namespace = "es.nuskysoftware.marketsales"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "es.nuskysoftware.marketsales"
+        minSdk = 24
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
+    buildFeatures {
+        compose = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.room.runtime)
+
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.tooling)
+    debugImplementation(libs.androidx.ui.test.manifest)
+    ksp(libs.androidx.room.compiler)
+
+    implementation("com.github.skydoves:colorpicker-compose:1.1.2")
+
+    // ✅ Firebase BOM (maneja versiones automáticamente)
+    implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
+    implementation("com.google.firebase:firebase-firestore")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // ✅ FIREBASE AUTH PARA FASE 2
+    implementation("com.google.firebase:firebase-auth:22.3.0")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    implementation("com.google.firebase:firebase-firestore:24.9.1")
+
+    // ✅ AGREGADO SOLO LO NECESARIO PARA FASE 2:
+    implementation("androidx.room:room-ktx:2.6.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+}
+
+
+[versions]
+agp = "8.11.1"
+colorpickerCompose = "1.1.2"
+hiltAndroid = "2.57"
+kotlin = "2.0.21"
+coreKtx = "1.16.0"
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+lifecycleRuntimeKtx = "2.9.2"
+activityCompose = "1.10.1"
+composeBom = "2025.07.00"
+navigationCompose = "2.9.2"
+navigationComposeJvmstubs = "2.9.2"
+ksp="2.0.21-1.0.27"
+roomCompiler = "2.7.2"
+roomRuntime = "2.7.2"
+firebaseFirestoreKtx = "26.0.0"
+[libraries]
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
+colorpicker-compose = { module = "com.github.skydoves:colorpicker-compose", version.ref = "colorpickerCompose" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-navigation-compose-jvmstubs = { group = "androidx.navigation", name = "navigation-compose-jvmstubs", version.ref = "navigationComposeJvmstubs" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "roomCompiler" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+com-google-devtools-ksp = { id = "com.google.devtools.ksp", version = "2.2.0-2.0.2" }
+kotlin-ksp = {id = "com.google.devtools.ksp", version.ref ="ksp"}

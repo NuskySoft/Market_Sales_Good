@@ -1,0 +1,369 @@
+# 📄 **DOCUMENTO MAESTRO V6 FINAL - MARKET SALES**
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Estado Actual:** ✅ SISTEMA DINÁMICO COMPLETO + FIREBASE AUTH + NAVEGACIÓN COMPLETA + CONFIGURACIÓN OPTIMIZADA
+
+---
+
+## ✅ **V6 COMPLETADO - IMPLEMENTACIONES FINALIZADAS**
+
+### **🎨 SISTEMA DINÁMICO 100% FUNCIONAL:**
+- ✅ **Idiomas dinámicos** (Español/English) aplicándose en tiempo real
+- ✅ **Fuentes dinámicas** (Montserrat/Poppins/Roboto) cambiando instantáneamente
+- ✅ **Modo oscuro/claro** funcionando perfectamente
+- ✅ **Restricciones Premium/FREE** operativas con emoji cohete 🚀
+- ✅ **Botón desarrollo** para cambiar FREE ↔ PREMIUM
+
+### **🔐 FIREBASE AUTH COMPLETO IMPLEMENTADO:**
+- ✅ **AuthRepository** con Email/Password funcional
+- ✅ **AuthViewModel + Factory** con registro/login/logout
+- ✅ **Estados de autenticación** (Loading/Authenticated/Unauthenticated/Error)
+- ✅ **PantallaLogin.kt** completa con UI responsiva
+- ✅ **Testing verificado** - registro/login/logout funcionando
+- ✅ **Integración con ConfigurationManager** exitosa
+
+### **🔧 ARQUITECTURA HÍBRIDA OFFLINE-FIRST MEJORADA:**
+- ✅ **ConfigurationManager** singleton global con StateFlows
+- ✅ **StringResourceManager** localización completa ES/EN
+- ✅ **LocalConfigurationManager** acceso vía CompositionLocal
+- ✅ **Firebase sincronización** bidireccional automática
+- ✅ **Room + Firebase** trabajando en perfecta armonía
+
+### **📱 NAVEGACIÓN Y UI COMPLETADAS V6:**
+- ✅ **MenuHamburguesa** rediseñado y funcional 100%
+- ✅ **PantallaConfiguracion** con dropdowns e interfaz Premium
+- ✅ **PantallaMercadillos** con diseño original preservado
+- ✅ **Navegación** mercadillos ↔ configuración sin problemas
+- ✅ **Salir app** con finishAffinity() operativo
+- ✅ **FooterMarca** sin solapamientos
+- ✅ **Theme dinámico** respondiendo instantáneamente
+
+---
+
+## 🔐 **FIREBASE AUTH V6 - COMPLETAMENTE FUNCIONAL**
+
+### **TODAS LAS FASES IMPLEMENTADAS:**
+
+#### **✅ FASE 1 - Conexión verificada:**
+- Dependencias Firebase configuradas
+- Firebase Console operativo
+- AuthRepository conectado y testing exitoso
+
+#### **✅ FASE 2 - Email/Password completo:**
+- `registerWithEmail()` funcional
+- `loginWithEmail()` funcional  
+- `logout()` funcional
+- Estados de error manejados
+- Integración con Firestore automática
+
+#### **📋 FASE 3 - Google Auth (PENDIENTE PRÓXIMA):**
+- Configuración Google Sign-In
+- Botón Google en PantallaLogin
+- Testing Google Auth
+
+### **Estados y Resultados implementados:**
+```kotlin
+sealed class AuthState {
+    object Loading : AuthState()
+    object Unauthenticated : AuthState()
+    data class Authenticated(val user: FirebaseUser) : AuthState()
+    data class Error(val message: String) : AuthState()
+}
+
+sealed class AuthResult {
+    data class Success(val user: FirebaseUser?) : AuthResult()
+    data class Error(val message: String) : AuthResult()
+}
+```
+
+---
+
+## 📁 **ESTRUCTURA ACTUAL V6 COMPLETADA**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── MainActivity.kt ✅ (navegación simplificada sin auth obligatorio)
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   └── ConfiguracionDao.kt ✅ (métodos específicos)
+│   │   ├── entity/
+│   │   │   └── ConfiguracionEntity.kt ✅ (extension properties)
+│   │   └── database/
+│   │       └── AppDatabase.kt ✅ (v2 + sincronización Firebase)
+│   └── repository/
+│       ├── ConfiguracionRepository.kt ✅ (híbrido offline-first)
+│       └── AuthRepository.kt ✅ (Email/Password + Firestore completo)
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt ✅ (verde pastel completo + extendidos)
+│   │   ├── Shape.kt ✅ (formas personalizadas)
+│   │   ├── Type.kt ✅ (3 fuentes dinámicas completas)
+│   │   ├── Theme.kt ✅ (dinámico con StateFlows)
+│   │   └── LocalConfiguration.kt ✅ (CompositionLocal)
+│   ├── components/
+│   │   ├── MenuHamburguesa.kt ✅ (diseño original + funcional)
+│   │   └── MenuLateral.kt ✅ (componente alternativo)
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt ✅ (animada y elegante)
+│   │   ├── PantallaMercadillos.kt ✅ (diseño original preservado)
+│   │   ├── PantallaConfiguracion.kt ✅ (dropdowns + switches Premium)
+│   │   └── PantallaLogin.kt ✅ (registro/login completo)
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt ✅ (sincronización Room+Firebase)
+│       ├── ConfiguracionViewModelFactory.kt ✅
+│       ├── AuthViewModel.kt ✅ (Email/Password funcional)
+│       └── AuthViewModelFactory.kt ✅
+├── utils/
+│   ├── FooterMarca.kt ✅ (sin solapamiento)
+│   ├── ConfigurationManager.kt ✅ (StateFlows + métodos set)
+│   └── StringResourceManager.kt ✅ (ES/EN completo)
+└── res/
+    ├── drawable/ ✅ (21 iconos personalizados)
+    └── font/ ✅ (Montserrat + Poppins + Roboto)
+```
+
+---
+
+## 💾 **CONFIGURACIÓN FIREBASE V6**
+
+### **Firebase Project completamente configurado:**
+- **Project ID:** market-sales-2168b
+- **SHA-1:** DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A
+- **Authentication:** Email/Password funcional + Google habilitado
+- **Firestore:** Colecciones "usuarios" y "configuraciones" operativas
+- **Sincronización:** Bidireccional Room ↔ Firestore funcionando
+
+### **Dependencias finales:**
+```gradle
+implementation("com.google.firebase:firebase-auth:22.3.0")
+implementation("com.google.android.gms:play-services-auth:20.7.0")
+implementation("com.google.firebase:firebase-firestore:24.9.1")
+implementation("androidx.room:room-ktx:2.6.0")
+implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+implementation("androidx.compose.material:material-icons-extended:1.5.4")
+```
+
+---
+
+## 🎨 **PANTALLAS V6 - DISEÑOS COMPLETADOS**
+
+### **✅ PantallaMercadillos:**
+- Diseño original preservado exactamente
+- Header con menú hamburguesa funcional
+- Cards de bienvenida y configuración
+- FloatingActionButton para añadir mercadillos
+- Footer de marca sin solapamiento
+- Navegación completa al menú
+
+### **✅ PantallaConfiguracion:**
+- Tarjeta información de cuenta con badges Premium/FREE
+- Dropdown idioma (Premium) con RadioButtons ES/EN
+- Dropdown fuente (Premium) con RadioButtons Montserrat/Poppins/Roboto
+- Switch tema oscuro (Premium) con estados
+- Botón desarrollo para alternar FREE ↔ PREMIUM
+- Promoción Premium para usuarios FREE
+- Navegación de vuelta funcionando
+
+### **✅ MenuHamburguesa:**
+- Header con Market Sales + versión Premium/FREE
+- Opciones completas: Mercadillos, Artículos, Categorías, etc.
+- Navegación a Configuración funcionando
+- Salir aplicación con finishAffinity()
+- Separadores visuales apropiados
+- Integración completa con StateFlows
+
+### **✅ PantallaLogin:**
+- Registro y login con email/password
+- Validaciones en tiempo real
+- Estados de carga con indicadores
+- Manejo de errores localizado
+- Beneficios de registro mostrados
+- Navegación condicional post-autenticación
+
+---
+
+## 🔧 **CONFIGURACIÓN DINÁMICA V6**
+
+### **ConfigurationManager mejorado:**
+```kotlin
+object ConfigurationManager {
+    // Estados con StateFlows
+    val idioma: StateFlow<String>
+    val fuente: StateFlow<String>  
+    val temaOscuro: StateFlow<Boolean>
+    val versionApp: StateFlow<Int>
+    val usuarioEmail: StateFlow<String?>
+    val usuarioId: StateFlow<String?>
+    
+    // Métodos set individuales
+    fun setIdioma(idioma: String)
+    fun setFuente(fuente: String)
+    fun setTemaOscuro(temaOscuro: Boolean)
+    fun setIsPremium(isPremium: Boolean)
+    
+    // Métodos de compatibilidad
+    fun updateConfiguration(...)
+    fun resetToDefaults()
+}
+```
+
+### **StringResourceManager completo:**
+- ✅ Localización ES/EN para toda la app
+- ✅ Strings de autenticación incluidos
+- ✅ Mensajes de error localizados
+- ✅ Textos de interfaz Premium/FREE
+
+---
+
+## 🚀 **PRÓXIMOS PASOS V7 - AUTENTICACIÓN OPCIONAL**
+
+### **SIGUIENTE IMPLEMENTACIÓN:**
+
+#### **FASE 1: MenuHamburguesa + Login/Logout Opcional**
+1. **Integrar MenuHamburguesa** con estados de autenticación
+2. **Mostrar Login/Logout** según estado usuario
+3. **Mantener app funcional** sin registro obligatorio
+4. **Navegación condicional** (autenticado muestra más opciones)
+
+#### **FASE 2: Estados de Usuario Opcionales**
+1. **Usuario anónimo** puede usar funciones básicas
+2. **Usuario autenticado** accede a funciones adicionales
+3. **Sincronización opcional** de configuración
+4. **Persistencia local** siempre garantizada
+
+#### **FASE 3: Google Auth (Opcional)**
+1. **Configurar Google Sign-In** como opción adicional
+2. **Botón Google** en PantallaLogin
+3. **Mantener email/password** como alternativa
+
+---
+
+## 📋 **IMPLEMENTACIONES PENDIENTES V7**
+
+### **En MenuHamburguesa.kt:**
+```kotlin
+// 📋 AGREGAR: Estados de autenticación opcionales
+@Composable
+fun MenuHamburguesa(
+    navController: NavController,
+    drawerState: DrawerState,
+    authViewModel: AuthViewModel? = null // OPCIONAL
+) {
+    val currentUser by authViewModel?.currentUser?.collectAsState() ?: remember { mutableStateOf(null) }
+    
+    // Mostrar opciones según estado de autenticación
+    if (currentUser != null) {
+        // Usuario autenticado - mostrar logout
+        MenuOption("Cerrar Sesión") { authViewModel?.logout() }
+    } else {
+        // Usuario no autenticado - mostrar login
+        MenuOption("Iniciar Sesión") { navController.navigate("login") }
+    }
+}
+```
+
+### **En MainActivity.kt:**
+```kotlin
+// 📋 MODIFICAR: Navegación opcional de autenticación
+NavHost(startDestination = "mercadillos") { // Siempre empezar en mercadillos
+    composable("mercadillos") { 
+        PantallaMercadillos(...) // Funcional sin login
+    }
+    composable("login") { 
+        PantallaLogin(...) // Login opcional
+    }
+    composable("configuracion") { 
+        PantallaConfiguracion(...) // Funcional sin login
+    }
+}
+```
+
+---
+
+## 📖 **ANEXO V6 - REGLAS DE DESARROLLO**
+
+### **🔒 REGLAS ESTRICTAS DE MODIFICACIÓN:**
+
+#### **1. CUMPLIMIENTO UNIVERSAL DE TEMA:**
+- ✅ **TODAS las pantallas** deben respetar tema oscuro/claro
+- ✅ **TODAS las pantallas** deben aplicar idioma dinámico ES/EN
+- ✅ **TODAS las pantallas** deben usar fuente configurada
+- ✅ **StateFlows obligatorios** para cambios en tiempo real
+
+#### **2. PRESERVACIÓN DE DISEÑO:**
+- 🚫 **NUNCA modificar diseño** de pantalla al cambiar código
+- 🚫 **NUNCA alterar layout** sin autorización explícita
+- 🚫 **NUNCA cambiar colores** de interfaz establecidos
+- ✅ **SOLO modificar lógica** manteniendo diseño exacto
+
+#### **3. PROTOCOLO DE MODIFICACIÓN:**
+- 🚫 **NUNCA modificar archivo** sin solicitar versión actual
+- ✅ **SIEMPRE pedir código fuente** antes de cambios
+- ✅ **SOLICITAR confirmación** de modificaciones propuestas
+- ✅ **DOCUMENTAR cambios** realizados específicamente
+
+#### **4. CÓDIGO FUENTE ACTUALIZADO:**
+- ✅ **Usar siempre** la versión más reciente proporcionada
+- ✅ **Verificar funcionamiento** antes de proponer cambios
+- ✅ **Respetar estructuras** de archivos existentes
+- ✅ **Mantener compatibilidad** con versiones anteriores
+
+### **🎯 PRINCIPIOS DE CONSISTENCIA:**
+
+#### **Design System:**
+- **Colores:** Verde pastel establecido + Material3
+- **Tipografía:** Montserrat/Poppins/Roboto dinámicas
+- **Formas:** RoundedCornerShape consistentes
+- **Espaciado:** 8dp/16dp/24dp/32dp estándar
+
+#### **UX Patterns:**
+- **Navegación:** Siempre con back navigation
+- **Estados:** Loading/Success/Error consistentes
+- **Feedback:** SnackBars y dialogs apropiados
+- **Accesibilidad:** ContentDescriptions obligatorios
+
+#### **Performance:**
+- **StateFlows:** Para estados reactivos
+- **Remember:** Para estados locales UI
+- **LaunchedEffect:** Para efectos secundarios
+- **Recomposition:** Minimizada con keys apropiadas
+
+---
+
+## 🎯 **ESTADO ACTUAL V6 - PREPARADO PARA V7**
+
+### **✅ COMPLETADO AL 100%:**
+- **Sistema dinámico** completo con StateFlows
+- **Firebase Auth** Email/Password funcional
+- **Navegación** completa entre pantallas
+- **Configuración** con dropdowns y switches Premium
+- **Diseños** originales preservados exactamente
+- **Arquitectura** offline-first + Firebase híbrida
+- **Localización** ES/EN completa
+- **Testing** verificado en todas las funciones
+
+### **🔐 AUTENTICACIÓN V6:**
+- ✅ **Registro/Login** Email/Password funcional
+- ✅ **Estados** manejados correctamente
+- ✅ **Integración** con ConfigurationManager
+- ✅ **Sincronización** Firestore automática
+- 📋 **Próximo:** Hacer opcional + MenuHamburguesa integrado
+
+### **📱 PANTALLAS V6:**
+- ✅ **Todas** cumplen tema oscuro/idioma/fuente
+- ✅ **Navegación** completamente funcional
+- ✅ **Diseños** originales preservados
+- ✅ **Funcionalidad** Premium/FREE operativa
+
+---
+
+**✅ V6 COMPLETADO - LISTO PARA INTEGRACIÓN AUTENTICACIÓN OPCIONAL EN V7**
+
+### **📋 PRÓXIMA TAREA V7:**
+**"Añadir MenuHamburguesa el login/logout pero no hacer obligatorio el registro para que funcione la app"**
+
+**ESTADO:** 🚀 **PREPARADO PARA IMPLEMENTACIÓN V7**

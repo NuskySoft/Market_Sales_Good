@@ -1,0 +1,328 @@
+# DOCUMENTO MAESTRO V2 - MARKET SALES
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Descripción:** Aplicación para control de caja específicamente diseñada para vendedores ambulantes en mercadillos
+### **Estado Actual:** En desarrollo - Navegación básica FUNCIONANDO
+
+---
+
+## ✅ **COMPLETADO EN V1 → V2**
+
+### **🎯 ARCHIVOS BASE CREADOS Y FUNCIONANDO:**
+- ✅ ConfiguracionEntity.kt (sin isConfigurated, controlStock, controlCoste)
+- ✅ ConfiguracionDao.kt (con métodos individuales de actualización)
+- ✅ AppDatabase.kt (base mínima, solo configuración)
+- ✅ ConfiguracionRepository.kt (sin Hilt, funcional)
+- ✅ ConfiguracionViewModel.kt (sin Hilt, funcional)
+- ✅ ConfiguracionViewModelFactory.kt (para inyección manual)
+- ✅ Color.kt (colores completos para tema claro/oscuro)
+- ✅ Shape.kt (formas Material3)
+- ✅ Theme.kt (soporte fuentes y tema dinámico)
+- ✅ Type.kt (tipografías múltiples)
+- ✅ PantallaSplash.kt (navegación automática a mercadillos)
+- ✅ PantallaMercadillos.kt (pantalla básica con bienvenida)
+- ✅ MainActivity.kt (sin Hilt, navegación funcionando)
+
+### **🔄 NAVEGACIÓN BÁSICA FUNCIONANDO:**
+- **Flujo:** Splash (1.5s) → Mercadillos automáticamente
+- **Configuración:** Se crea automáticamente si no existe
+- **Tema:** Dinámico basado en ConfiguracionEntity
+- **Estado:** Compilando y ejecutando sin errores
+
+### **🚫 DECISIÓN: SIN HILT POR AHORA**
+- Elegimos **inyección manual** para evitar problemas de dependencias
+- Código más simple y transparente
+- Fácil migración a Hilt después si se desea
+
+---
+
+## 🏗️ **PLAN DE DESARROLLO V2 → V3**
+
+### **PASO 1: RESOLVER FIREBASE (OPCIONAL)** ⚠️ TEMPORAL
+**Problema actual:** Error google-services.json faltante
+**Solución temporal:** Comentar líneas Firebase en build.gradle
+**Solución definitiva:** Agregar google-services.json cuando se necesite autenticación
+
+### **PASO 2: MENÚ HAMBURGUESA** 🎯 PRÓXIMO
+**Archivos a crear:**
+1. `MenuHamburguesa.kt` (componente reutilizable)
+2. `DrawerState.kt` (estado del menú)
+3. Actualizar `PantallaMercadillos.kt` (soporte drawer)
+4. Crear navegación entre pantallas
+
+**Opciones del menú:**
+- Mercadillos ✅ (ya existe)
+- Artículos (migrar de proyecto original)
+- Categorías (migrar de proyecto original)
+- Listados (placeholder)
+- Configuración (nueva)
+- Login/Logout (placeholder)
+- Salir (cerrar app)
+
+### **PASO 3: PANTALLAS BÁSICAS**
+1. **PantallaArticulos.kt** (migrar del original, ya perfecta)
+2. **PantallaCategorias.kt** (migrar y homogeneizar UI)
+3. **PantallaConfiguracion.kt** (nueva, para personalización)
+4. **PantallaListados.kt** (placeholder básico)
+
+### **PASO 4: SISTEMA DE PERSONALIZACIÓN COMPLETO**
+**4.1 Pantalla Configuración:**
+- Selector de idioma (Español/Inglés)
+- Selector de fuente (Montserrat/Poppins/Roboto)
+- Toggle tema claro/oscuro
+- Selector de moneda
+
+**4.2 Internacionalización:**
+- `res/values/strings.xml` (español)
+- `res/values-en/strings.xml` (inglés)
+- `LocaleManager.kt` para cambio dinámico
+- Migrar todos los textos hardcodeados
+
+### **PASO 5: MIGRAR FUNCIONALIDADES EXISTENTES**
+1. **Sistema de avisos** (campanita)
+2. **Gestión de artículos** (con lógica Premium)
+3. **Gestión de categorías** (homogeneizar UI)
+4. **HeaderBar** con campana funcionando
+
+### **PASO 6: AUTENTICACIÓN FIREBASE** (cuando se necesite)
+1. Descomenter Firebase en build.gradle
+2. Agregar google-services.json
+3. Implementar Firebase Auth
+4. Google OAuth
+5. Control acceso Premium
+
+---
+
+## 📁 **ESTRUCTURA ACTUAL MARKET SALES**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── MainActivity.kt ✅ (funcionando)
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   └── ConfiguracionDao.kt ✅
+│   │   ├── entity/
+│   │   │   └── ConfiguracionEntity.kt ✅
+│   │   └── database/
+│   │       └── AppDatabase.kt ✅
+│   └── repository/
+│       └── ConfiguracionRepository.kt ✅
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt ✅
+│   │   ├── Shape.kt ✅
+│   │   ├── Type.kt ✅
+│   │   └── Theme.kt ✅
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt ✅
+│   │   └── PantallaMercadillos.kt ✅
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt ✅
+│       └── ConfiguracionViewModelFactory.kt ✅
+└── [pendiente crear]/
+    ├── ui/components/
+    │   └── MenuHamburguesa.kt 📝
+    └── utils/
+        ├── LocaleManager.kt 📝
+        └── FontManager.kt 📝
+```
+
+---
+
+## 🎨 **SISTEMA DE PERSONALIZACIÓN IMPLEMENTADO**
+
+### **ConfiguracionEntity.kt - Campos clave:**
+```kotlin
+val versionApp: Int = 0,         // 0=FREE, 1=PREMIUM
+val idioma: String = "es",       // es/en
+val temaOscuro: Boolean = false, // tema dinámico
+val fuente: String = "Montserrat", // fuentes dinámicas
+val moneda: String = "€ Euro"
+```
+
+### **Fuentes disponibles en Type.kt:**
+- **Montserrat** (default) ✅
+- **Poppins** ✅
+- **Roboto** ✅
+
+### **Temas implementados:**
+- **Claro** (default) ✅
+- **Oscuro** ✅
+- **Aplicación automática** desde ConfiguracionEntity ✅
+
+---
+
+## 🔧 **CONFIGURACIÓN TÉCNICA ACTUAL**
+
+### **Build.gradle (app) - Estado actual:**
+```gradle
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    // id 'com.google.gms.google-services'  // COMENTADO POR AHORA
+}
+
+dependencies {
+    // Room
+    implementation "androidx.room:room-runtime:2.6.1"
+    implementation "androidx.room:room-ktx:2.6.1"
+    kapt "androidx.room:room-compiler:2.6.1"
+    
+    // Navigation Compose
+    implementation "androidx.navigation:navigation-compose:2.7.6"
+    
+    // ViewModel Compose
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0"
+    
+    // Firebase (COMENTADO)
+    // implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    // implementation 'com.google.firebase:firebase-auth-ktx'
+}
+```
+
+### **Navegación implementada:**
+```kotlin
+NavHost(startDestination = "splash") {
+    composable("splash") { PantallaSplash(...) }
+    composable("mercadillos") { PantallaMercadillos(...) }
+    // TODO: Agregar más rutas
+}
+```
+
+---
+
+## 🔍 **PROBLEMAS RESUELTOS EN V2**
+
+### **❌ Error: Hilt Android Gradle plugin**
+**Solución:** Eliminamos Hilt, usamos inyección manual
+
+### **❌ Error: Unresolved reference ConfiguracionViewModel**
+**Solución:** Creamos todos los archivos base en orden correcto
+
+### **❌ Error: google-services.json missing**
+**Solución temporal:** Comentar Firebase hasta que se necesite
+
+### **✅ Estado actual:** Compila y ejecuta perfectamente
+
+---
+
+## 📋 **PRÓXIMOS PASOS INMEDIATOS (V3)**
+
+### **AL CONTINUAR EN NUEVO CHAT:**
+
+**ORDEN SUGERIDO:**
+1. **Verificar que compile sin errores** (comentando Firebase)
+2. **Crear MenuHamburguesa.kt** (drawer navigation)
+3. **Actualizar PantallaMercadillos** con menú hamburguesa
+4. **Crear navegación entre pantallas** básicas
+5. **Migrar PantallaArticulos** del proyecto original
+6. **Crear PantallaConfiguracion** para personalización
+
+### **ARCHIVOS PRIORITARIOS PARA V3:**
+1. `MenuHamburguesa.kt`
+2. `PantallaConfiguracion.kt`
+3. `PantallaArticulos.kt` (migrar)
+4. `PantallaCategorias.kt` (migrar)
+5. Navegación completa entre pantallas
+
+---
+
+## 🎯 **MODELO A SEGUIR: PantallaArticulos ORIGINAL**
+
+**Del proyecto "Caja Mercadillos" - ES PERFECTA:**
+- ✅ Verificación Premium implementada
+- ✅ UI responsive con orientación
+- ✅ LazyColumn con Cards perfectas
+- ✅ HeaderBar con campana funcionando
+- ✅ DialogoNuevoArticulo con lógica Premium
+- ✅ FAB posicionado correctamente
+
+**Migrar tal cual y adaptar:**
+- Cambiar HeaderBar para menú hamburguesa
+- Mantener toda la lógica Premium
+- Adaptar colores al nuevo tema
+
+---
+
+## 💾 **BACKUP DE CÓDIGO IMPORTANTE**
+
+### **MainActivity.kt (funcionando):**
+```kotlin
+// Base de datos y repositorio (manual, sin Hilt)
+val database = AppDatabase.getDatabase(applicationContext)
+val repository = ConfiguracionRepository(database.configuracionDao())
+
+// ViewModel con factory
+val configuracionViewModel: ConfiguracionViewModel = viewModel(
+    factory = ConfiguracionViewModelFactory(repository)
+)
+```
+
+### **ConfiguracionEntity.kt (definitiva):**
+```kotlin
+@Entity(tableName = "configuracion")
+data class ConfiguracionEntity(
+    @PrimaryKey val id: Int = 1,
+    val versionApp: Int = 0,         // 0=FREE, 1=PREMIUM
+    val numeroVersion: String = "V1.0",
+    // ELIMINADO: isConfigurated, controlStock, controlCoste
+    val ultimoDispositivo: String? = null,
+    val usuarioEmail: String? = null,
+    val usuarioId: String? = null,
+    val idioma: String = "es",
+    val temaOscuro: Boolean = false,
+    val fuente: String = "Montserrat",
+    val moneda: String = "€ Euro",
+    val fechaUltimaSync: String? = null
+)
+```
+
+---
+
+## 🔑 **INFORMACIÓN CLAVE PARA CONTINUAR**
+
+### **Firebase SHA-1 (cuando se reactive):**
+```
+DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A:2D:8A
+```
+
+### **Package name:**
+```
+es.nuskysoftware.marketsales
+```
+
+### **Migración de funcionalidades:**
+- **DAOs, Entities, Repositories:** 100% reutilizables del original
+- **ViewModels:** Adaptar quitando @HiltViewModel
+- **UI Components:** Adaptar colores y navegación
+- **PantallaArticulos:** Migrar completa, es el modelo perfecto
+
+---
+
+## 📞 **ESTADO DEL PROYECTO V2**
+
+### **✅ COMPLETADO:**
+- Navegación básica funcionando
+- ConfiguracionEntity actualizada
+- Sistema de personalización base
+- Tema dinámico implementado
+- Arquitectura sin Hilt estable
+
+### **⏳ EN PROGRESO:**
+- Menú hamburguesa (próximo)
+- Pantallas adicionales (próximo)
+
+### **📋 PENDIENTE:**
+- Sistema de personalización completo
+- Migración funcionalidades existentes
+- Autenticación Firebase
+- Nuevas funcionalidades (ventas, gastos)
+
+---
+
+**ESTE DOCUMENTO V2 CONTIENE TODA LA INFORMACIÓN ACTUALIZADA PARA CONTINUAR EL DESARROLLO SIN PÉRDIDA DE CONTEXTO.**

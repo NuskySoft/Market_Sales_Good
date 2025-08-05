@@ -1,0 +1,1118 @@
+APLICACIÓN CAJA MERCADILLOS - DOCUMENTACIÓN COMPLETA Y DETALLADA
+1. INTRODUCCIÓN Y CONTEXTO DEL PROYECTO
+1.1 Origen del Proyecto
+La aplicación "Caja Mercadillos" nace de una necesidad real identificada por un desarrollador que tiene experiencia directa vendiendo en mercadillos ambulantes de productos artesanos. Durante nuestra conversación, el desarrollador explicó que esta experiencia práctica le ha permitido identificar las carencias específicas de las soluciones existentes en el mercado y las particularidades únicas de este tipo de negocio.
+El proyecto surge con la premisa de crear una herramienta específicamente diseñada para el control de caja de puestos ambulantes, reconociendo que las aplicaciones generalistas de punto de venta no se adaptan adecuadamente a las necesidades específicas de los mercadillos artesanos.
+1.2 Filosofía de Desarrollo
+Durante nuestra conversación se estableció claramente que el desarrollo se basa en la filosofía de "resolver problemas reales con soluciones prácticas". Cada funcionalidad ha sido pensada para abordar situaciones específicas que se presentan en la operación diaria de un puesto de mercadillo, evitando complejidades innecesarias y centrándose en la usabilidad práctica.
+El desarrollador enfatizó la importancia de tener una "visión global" del proyecto antes de implementar cualquier funcionalidad, para evitar el problema común de "arreglar una cosa y estropear otra" que había experimentado con otras inteligencias artificiales.
+1.3 Objetivos Principales
+Los objetivos del proyecto, tal como se definieron en nuestra conversación, son:
+•	Crear una aplicación de control de caja específicamente adaptada a puestos ambulantes
+•	Implementar un sistema que funcione de manera confiable tanto con conexión a internet como sin ella
+•	Proporcionar herramientas de gestión que se adapten al flujo real de trabajo de un mercadillo
+•	Ofrecer un modelo de negocio escalable que permita acceso gratuito con opción de actualización premium
+2. MODELO DE NEGOCIO Y ESTRATEGIA COMERCIAL
+2.1 Estructura de Versiones
+2.1.1 Versión FREE (Gratuita)
+Durante nuestra conversación se definió que la versión gratuita sería "monopuesto", lo que significa que solo permite un dispositivo activo simultáneamente. Esta estrategia fue explicada detalladamente:
+Características principales de la versión FREE:
+•	Sistema monopuesto con control estricto de dispositivos
+•	Funcionalidades básicas completas de control de caja
+•	Gestión de categorías y artículos sin restricciones
+•	Sistema de ventas estándar con todas las formas de pago
+•	Sincronización básica con la nube
+•	Acceso a todas las funcionalidades core sin limitaciones artificiales
+Mecánica del sistema monopuesto: El desarrollador explicó que quería implementar un sistema similar al funcionamiento de WhatsApp. Cuando un usuario inicia sesión en un dispositivo nuevo:
+1.	Los datos se descargan automáticamente al nuevo dispositivo
+2.	El dispositivo anterior queda automáticamente inoperativo
+3.	No hay uso simultáneo en múltiples dispositivos
+4.	El usuario puede cambiar de dispositivo cuando lo necesite (por ejemplo, si se le rompe el teléfono)
+Justificación comercial: Esta estrategia permite ofrecer una funcionalidad completa y útil en la versión gratuita mientras incentiva la actualización a premium para usuarios que necesiten trabajar con múltiples dispositivos. Es especialmente apropiada para vendedores ambulantes individuales que normalmente trabajan con un solo dispositivo.
+2.1.2 Versión PREMIUM (Pago único)
+La versión premium se diseñó con un modelo de pago único (no suscripción) para hacerla más atractiva a los vendedores ambulantes, quienes según la experiencia del desarrollador, suelen tener ingresos variables y prefieren evitar gastos recurrentes.
+Características adicionales de la versión PREMIUM:
+•	Sistema multipuesto sin restricciones de dispositivos
+•	Control avanzado de stock con configuración granular por artículo
+•	Control de precios de coste para cálculo de márgenes de beneficio
+•	Sistema de reportes y análisis avanzados
+•	Funcionalidades de backup y exportación de datos
+•	Gestión de usuarios con diferentes roles y permisos (para negocios más grandes)
+•	Funcionalidades adicionales como fotos de artículos y códigos de barras
+2.2 Sistema de Autenticación y Control de Dispositivos
+2.2.1 Autenticación con Google
+Durante nuestra conversación se estableció que el sistema utilizaría Google OAuth para la autenticación, integrado con Firebase Authentication. Esta decisión se basó en:
+•	Simplicidad para el usuario (no necesita crear otra cuenta)
+•	Robustez del sistema de Google
+•	Integración natural con Firebase
+•	Reducción de la fricción en el proceso de registro
+2.2.2 Control de Dispositivos Monopuesto
+El sistema de control monopuesto fue explicado en detalle durante nuestra conversación:
+Mecánica técnica:
+1.	Firebase Authentication maneja el login con Google
+2.	La tabla de configuración almacena el identificador del dispositivo activo
+3.	Cuando la aplicación detecta un login desde un dispositivo diferente al registrado:
+•	Compara el ID del dispositivo actual con el almacenado en la configuración
+•	Si son diferentes, descarga todos los datos al nuevo dispositivo
+•	Actualiza el identificador de dispositivo en la configuración
+•	El dispositivo anterior pierde acceso (queda inoperativo)
+Implementación del control: El desarrollador explicó que el dispositivo anterior se vuelve inoperativo porque al intentar sincronizar datos, detecta que ya no es el dispositivo autorizado. Esto efectivamente "desactiva" el dispositivo sin necesidad de notificaciones push complejas.
+3. ARQUITECTURA TÉCNICA Y GESTIÓN DE DATOS
+3.1 Sistema Offline-First
+3.1.1 Filosofía de la Arquitectura
+Una de las decisiones más importantes discutidas en nuestra conversación fue implementar una arquitectura "offline-first". El desarrollador explicó que esto era crucial para los mercadillos, donde la conexión a internet puede ser intermitente o inexistente.
+Principios fundamentales:
+•	La aplicación debe funcionar completamente sin conexión a internet
+•	Todas las operaciones deben ser instantáneas para el usuario
+•	Los datos nunca se pierden, independientemente de problemas de conectividad
+•	La sincronización debe ser transparente e invisible para el usuario
+3.1.2 Flujo de Datos Detallado
+El flujo de datos fue explicado meticulosamente durante nuestra conversación:
+Proceso de escritura:
+1.	Operación local primaria: Toda operación (crear categoría, registrar venta, etc.) se guarda inmediatamente en Room (base de datos local)
+2.	Respuesta inmediata: La UI se actualiza instantáneamente mostrando los cambios
+3.	Verificación de conectividad: El sistema verifica si hay conexión a internet
+4.	Sincronización condicional:
+•	Si hay conexión: Los datos se suben inmediatamente a Firebase
+•	Si no hay conexión: Los datos quedan marcados como "pendientes de sincronizar"
+Proceso de sincronización automática:
+1.	Detección de conectividad: La aplicación monitorea constantemente el estado de la conexión
+2.	Sincronización automática: Cuando se detecta que se ha recuperado la conexión, automáticamente sincroniza todos los datos pendientes
+3.	Transparencia total: El usuario nunca sabe ni necesita saber dónde están almacenados sus datos
+3.1.3 Ventajas de esta Arquitectura
+Durante nuestra conversación se identificaron múltiples ventajas:
+•	Fiabilidad absoluta: La aplicación siempre funciona, con o sin internet
+•	Performance óptimo: Las operaciones son instantáneas al usar la base de datos local
+•	Robustez ante fallos: No se pierden datos por problemas de conectividad
+•	Experiencia de usuario superior: No hay esperas ni interrupciones por problemas de red
+•	Adaptación al contexto: Perfecto para mercadillos donde la conectividad es variable
+3.2 Tecnologías y Patrones Arquitectónicos
+3.2.1 Stack Tecnológico
+Las tecnologías fueron seleccionadas cuidadosamente durante nuestra conversación:
+Tecnologías principales:
+•	Kotlin: Lenguaje de programación moderno y robusto para Android
+•	Jetpack Compose: Framework de UI declarativa y reactiva para interfaces modernas
+•	Room: ORM para gestión de base de datos local SQLite
+•	Firebase Firestore: Base de datos NoSQL en la nube para sincronización
+•	Firebase Authentication: Sistema de autenticación robusto
+•	Coroutines + Flow: Para programación asíncrona y manejo de datos reactivos
+Librerías adicionales:
+•	Skydoves ColorPicker: Para selector de colores profesional en categorías
+•	Material Design 3: Para componentes UI consistentes y modernos
+3.2.2 Patrones Arquitectónicos Implementados
+Durante nuestra conversación se establecieron los patrones a seguir:
+MVVM (Model-View-ViewModel):
+•	Model: Entidades de datos y repositorios
+•	View: Composables de UI reactivos
+•	ViewModel: Lógica de presentación y gestión de estado
+Repository Pattern:
+•	Abstrae las fuentes de datos (Room local + Firebase remoto)
+•	Implementa la lógica offline-first
+•	Proporciona interfaces limpias a los ViewModels
+•	Maneja automáticamente la sincronización
+Clean Architecture:
+•	Separación clara de responsabilidades en capas
+•	Dependencias que apuntan hacia adentro
+•	Reglas de negocio independientes de frameworks
+4. FUNCIONALIDADES DETALLADAS
+4.1 Gestión de Mercadillos
+4.1.1 Concepto y Importancia
+Durante nuestra conversación, el desarrollador explicó en detalle cómo funciona un mercadillo desde su experiencia real. Un mercadillo es un evento comercial específico que tiene características únicas:
+•	Fecha y horario específicos
+•	Ubicación determinada
+•	Organizador particular
+•	Condiciones logísticas específicas (precio del puesto, si incluye mesa, carpa, electricidad)
+El desarrollador enfatizó que la gestión de mercadillos es el núcleo de la aplicación, ya que todo el control de caja se organiza alrededor de estos eventos comerciales.
+4.1.2 Información de un Mercadillo
+Se definieron detalladamente los datos que debe almacenar cada mercadillo:
+Datos obligatorios:
+•	Fecha y hora: Cuándo se celebra el mercadillo
+•	Ubicación: Dirección exacta o descripción del lugar
+•	Organizador: Quién organiza el evento (importante para contacto y pagos)
+•	Hora de inicio: Momento oficial de apertura
+Datos opcionales:
+•	Nombre del mercadillo: Identificación personalizada ("Mercadillo de San Juan", "Feria Artesana de Primavera")
+•	Hora de finalización: Para control de duración del evento
+•	Información logística: Precio del puesto, si incluye electricidad, si requiere carpa o mesa
+•	Notas personales: Observaciones sobre acceso, parking, público objetivo, etc.
+4.1.3 Vista de Calendario
+El desarrollador explicó la necesidad de tener una vista de calendario que muestre todos los mercadillos programados. Se definió un sistema de códigos de colores para identificar rápidamente el estado de cada mercadillo:
+Códigos de colores propuestos:
+•	Azul: Mercadillo programado (futuro, aún no iniciado)
+•	Verde: Mercadillo en curso (actualmente activo)
+•	Verde oscuro: Mercadillo finalizado con beneficios
+•	Rojo: Mercadillo finalizado con pérdidas
+•	Gris: Mercadillo cancelado
+•	Amarillo: Mercadillo con arqueo pendiente de cerrar
+4.1.4 Estados de Mercadillo
+Durante nuestra conversación se identificaron los diferentes estados que puede tener un mercadillo:
+1.	Programado: Solo tiene la información básica registrada, sin saldo asignado
+2.	Con saldo asignado: Ya tiene definido el saldo inicial, listo para comenzar la actividad
+3.	En curso: Está actualmente activo, registrando ventas y gastos
+4.	Finalizado: Completado con arqueo de caja cerrado
+5.	Cancelado: No se realizó por cualquier motivo
+6.	Pendiente de arqueo: La actividad comercial terminó pero falta cerrar contablemente
+4.2 Gestión de Saldos Entre Mercadillos
+4.2.1 Filosofía del Sistema de Saldos
+El desarrollador explicó detalladamente cómo funciona el manejo de efectivo entre mercadillos en la realidad práctica. Normalmente, el dinero que queda en caja al final de un mercadillo se convierte en el saldo inicial del siguiente mercadillo. Sin embargo, entre mercadillos pueden ocurrir movimientos de dinero que afectan este traspaso.
+4.2.2 Flujo Normal de Saldos
+Se estableció el flujo típico:
+1.	Mercadillo A: Comienza con saldo inicial X euros
+2.	Durante el día: Se realizan ventas (ingresos) y gastos
+3.	Al cerrar: Se calcula el saldo final Y euros
+4.	Mercadillo B: Toma como saldo inicial los Y euros del mercadillo anterior
+4.2.3 Proceso de Cierre y Asignación de Saldo
+El desarrollador describió en detalle cómo debería funcionar el proceso de cierre:
+Cuando se completa un mercadillo:
+1.	Cálculo automático: La aplicación calcula el saldo final en efectivo basado en el arqueo
+2.	Pantalla de gestión: Se presenta una interfaz para gestionar el saldo
+3.	Identificación del siguiente mercadillo: Si hay un mercadillo próximo programado, se muestra automáticamente
+4.	Opciones de ajuste:
+•	Campo "Retirar dinero": Cantidad que el vendedor se lleva (beneficios, gastos personales)
+•	Campo "Añadir dinero": Dinero adicional que se mete en caja (cambio extra, billetes pequeños)
+5.	Cálculo final: Saldo inicial próximo mercadillo = Saldo final actual - Dinero retirado + Dinero añadido
+4.2.4 Casos Especiales en la Gestión de Saldos
+Cuando no hay mercadillo siguiente programado: El desarrollador explicó que a veces no se sabe cuándo será el próximo mercadillo. En estos casos:
+•	El mercadillo actual se puede cerrar completamente
+•	El saldo final queda marcado como "pendiente de asignar"
+•	Cuando se programe un futuro mercadillo, la aplicación preguntará si se quiere usar este saldo pendiente
+•	Se mantienen las mismas opciones de retirar/añadir dinero
+Reasignación de saldos: Se discutió la posibilidad de permitir reasignar saldos si se comete un error o cambian los planes.
+4.2.5 Gestión de Mercadillos Cancelados
+El desarrollador identificó dos escenarios diferentes para mercadillos cancelados:
+Cancelación simple:
+•	Mercadillo que solo tiene los datos básicos (fecha, lugar, organizador)
+•	No tiene saldo inicial asignado
+•	Acción: Simplemente marcar como "Cancelado"
+Cancelación con saldo asignado:
+•	Mercadillo que ya tenía saldo inicial asignado pero se cancela después
+•	Proceso de cierre especial:
+1.	La aplicación detecta que no hubo actividad comercial (sin ventas ni gastos)
+2.	Pregunta al usuario: "¿Este mercadillo ha sido cancelado?"
+3.	Si se confirma, marca el mercadillo como "Cancelado"
+4.	Establece automáticamente: saldo final = saldo inicial
+5.	Ofrece las mismas opciones de retirar/añadir dinero
+6.	Pregunta si se quiere asignar este saldo a otro mercadillo o dejarlo pendiente
+4.3 Sistema de Ventas
+4.3.1 Filosofía de Flexibilidad en Ventas
+Durante nuestra conversación, el desarrollador enfatizó que el sistema de ventas debe ser extremadamente flexible para adaptarse a la realidad de un mercadillo, donde se pueden vender tanto productos habituales como artículos únicos o personalizados.
+4.3.2 Tipos de Artículos en Ventas
+Se definieron tres modalidades para registrar ventas:
+Artículos predefinidos:
+•	Productos que están registrados en la base de datos de artículos
+•	Tienen precio establecido, categoría asignada, y potencialmente control de stock
+•	Se seleccionan de una lista o catálogo
+•	Ventaja: Agilizan enormemente el proceso de venta para productos habituales
+•	Ejemplo: "Camiseta básica - 15€"
+Artículos manuales:
+•	Productos que se introducen al momento de la venta
+•	Solo requieren descripción y precio
+•	Uso típico: Artículos únicos, personalizados, servicios, o productos excepcionales
+•	No afectan inventarios ni estadísticas de productos regulares
+•	Ejemplo: "Personalización bordado - 5€"
+Tickets híbridos:
+•	Combinación de artículos predefinidos y manuales en una sola venta
+•	Máxima flexibilidad para situaciones reales del mercadillo
+•	Ejemplo práctico: "Camiseta básica (predefinida) 15€ + Personalización bordado (manual) 5€ = Total 20€"
+4.3.3 Proceso de Venta Detallado
+Fase 1: Construcción del ticket
+1.	Selección de artículos predefinidos: El vendedor busca y selecciona productos del catálogo
+2.	Adición de artículos manuales: Introduce descripción y precio de productos no catalogados
+3.	Gestión de cantidades: Puede modificar las cantidades de cualquier artículo
+4.	Visualización en tiempo real: Ve el total actualizado constantemente
+5.	Modificaciones: Puede eliminar o modificar artículos antes de confirmar
+Fase 2: Confirmación del ticket
+1.	Resumen completo: Se muestra una lista detallada de todos los artículos
+2.	Total claramente visible: El importe total a cobrar se destaca
+3.	Última oportunidad: El vendedor puede modificar antes de proceder al pago
+4.	Confirmación: Al confirmar, se procede a la selección de forma de pago
+Fase 3: Selección de forma de pago El desarrollador explicó que el sistema debe soportar las tres formas de pago más comunes en mercadillos:
+Bizum:
+•	Proceso directo sin cálculos adicionales
+•	Se registra la venta inmediatamente
+•	No afecta el efectivo en caja física
+Tarjeta de crédito:
+•	Proceso directo similar a Bizum
+•	Se registra la venta inmediatamente
+•	No afecta el efectivo en caja física
+Efectivo:
+•	Proceso especial con cálculo de cambio:
+1.	Se presenta una pantalla adicional
+2.	Campo para introducir: "¿Cuánto paga el cliente?"
+3.	Cálculo automático: La aplicación calcula y muestra la devolución
+4.	Ejemplo: Venta 17€, cliente paga 20€ → Devolución: 3€
+5.	Confirmación antes de completar la venta
+4.3.4 Sistema de Anulación de Ventas
+Principio fundamental: El desarrollador estableció claramente que las ventas nunca se deben borrar de la base de datos. Esto es crucial para:
+•	Mantener integridad de datos
+•	Conservar trazabilidad completa
+•	Evitar inconsistencias en los arqueos
+•	Cumplir con buenas prácticas contables
+Proceso de anulación mediante "venta negativa":
+1.	Identificación: El usuario mantiene pulsada una venta en la lista de ventas
+2.	Confirmación: El sistema pregunta: "¿Generar venta negativa?" (explicando que es una devolución)
+3.	Creación automática: Si se confirma, se crea una venta idéntica pero con todos los importes en negativo
+4.	Método de pago: La venta negativa usa automáticamente el mismo método de pago que la original
+5.	Registro dual: Ambas ventas (original y negativa) quedan permanentemente registradas
+Ejemplos prácticos:
+•	Venta original: "Camiseta 20€ - Efectivo"
+•	Venta negativa: "Camiseta -20€ - Efectivo"
+•	Resultado en arqueo: Las dos ventas se cancelan mutuamente
+Visualización diferenciada:
+•	Ventas normales: Se muestran en color estándar (negro o azul)
+•	Ventas negativas: Se muestran en color rojo para identificación inmediata
+•	Posible iconografía: Icono de devolución (↩️) para reforzar la identificación
+4.3.5 Movimientos de Efectivo en Caja (Funcionalidad Futura)
+Durante nuestra conversación se identificó la necesidad de registrar movimientos de efectivo que no son ventas ni gastos:
+Añadir dinero propio a la caja:
+•	Situación típica: No hay suficiente cambio para los clientes
+•	Ejemplo: Solo tienes billetes de 20€ y necesitas dar cambio de una venta de 7€
+•	Acción: Añades billetes de 5€ y 10€ de tu dinero personal
+•	Registro: "Añadir efectivo para cambio: +50€"
+Retirar dinero de la caja:
+•	Situación típica: Se ha acumulado demasiado dinero en efectivo (riesgo de seguridad)
+•	Ejemplo: Tienes 300€ en efectivo y decides guardar 200€ en un lugar más seguro
+•	Acción: Retiras dinero de la caja
+•	Registro: "Retirar efectivo por seguridad: -200€"
+Integración con arqueo:
+Efectivo final en caja = Saldo inicial + Ventas efectivo - Gastos efectivo + Dinero añadido - Dinero retirado
+4.4 Sistema de Arqueo
+4.4.1 Concepto de Arqueo
+El desarrollador explicó que el arqueo es el proceso fundamental de cuadrar las cuentas al final del día de mercadillo. Consiste en comparar lo que debería haber en caja según las operaciones registradas con lo que realmente hay físicamente.
+4.4.2 Dos Tipos de Arqueo Diferenciados
+Se establecieron claramente dos cálculos diferentes que sirven para propósitos distintos:
+Arqueo de Caja Real (Dinero físico en efectivo): Este cálculo determina exactamente cuánto dinero en efectivo debería haber físicamente en la caja:
+Saldo Inicial en Efectivo
++ Ventas realizadas en Efectivo
+- Gastos pagados en Efectivo
+- Dinero Retirado durante el día (si aplica)
++ Dinero Añadido durante el día (si aplica)
+= Efectivo que debe haber físicamente en la caja
+Saldo Total de Ventas del Día (Resultado económico completo): Este cálculo muestra el resultado económico total del mercadillo, incluyendo todas las formas de pago:
+Saldo Inicial
++ TODAS las Ventas (efectivo + tarjeta + bizum)
+- TODOS los Gastos (efectivo + tarjeta + bizum)
+= Resultado económico total del día
+4.4.3 Proceso de Arqueo Detallado
+El desarrollador describió cómo debería funcionar el proceso de arqueo:
+Paso 1: Finalización de la actividad comercial
+•	El usuario indica en la aplicación que ha terminado de vender
+•	Se bloquean nuevas ventas para ese mercadillo
+Paso 2: Conteo físico del efectivo
+•	El vendedor cuenta manualmente todo el dinero en efectivo de la caja
+•	Introduce el importe contado en la aplicación
+Paso 3: Comparación automática
+•	La aplicación compara el dinero contado con el "arqueo de caja real" calculado
+•	Muestra claramente si hay diferencias (descuadres)
+Paso 4: Gestión de descuadres
+•	Si hay diferencias, se registran como descuadre con motivo opcional
+•	Se permite continuar el proceso (los descuadres menores son normales)
+Paso 5: Cierre contable
+•	Se registra oficialmente el arqueo en la base de datos
+•	El mercadillo queda marcado como "finalizado"
+•	Se procede a la gestión del saldo para el próximo mercadillo
+4.5 Gestión de Gastos
+4.5.1 Filosofía de Simplicidad
+El desarrollador explicó que la gestión de gastos debe ser simple y directa, reconociendo que en un mercadillo los gastos suelen ser pocos, variados y no siguen patrones complejos.
+4.5.2 Proceso de Registro de Gastos
+Características del sistema:
+•	Entrada individual: Cada gasto se registra uno por uno cuando ocurre
+•	Datos mínimos: Solo descripción libre e importe
+•	Formas de pago: Efectivo, Bizum o Tarjeta (las mismas que las ventas)
+•	Sin categorías predefinidas: Máxima flexibilidad con descripción libre
+Ejemplos típicos de gastos:
+•	"Gasolina ida y vuelta - 15€"
+•	"Desayuno bar mercadillo - 3.50€"
+•	"Parking zona comercial - 2€"
+•	"Material publicitario folletos - 8€"
+•	"Comida mediodía - 12€"
+4.5.3 Integración con el Arqueo
+Los gastos se integran automáticamente en ambos tipos de arqueo:
+•	Gastos en efectivo: Se restan del arqueo de caja real
+•	Todos los gastos: Se restan del saldo total de ventas del día
+4.6 Control de Stock (Versión Premium)
+4.6.1 Arquitectura Flexible del Control de Stock
+Durante nuestra conversación se diseñó un sistema de control de stock con máxima flexibilidad, reconociendo que no todos los vendedores necesitan esta funcionalidad y que incluso quienes la usan pueden querer aplicarla solo a algunos productos.
+4.6.2 Configuración Global
+Switch principal en configuración:
+•	Ubicado en la tabla de configuración de la aplicación
+•	Permite activar o desactivar el control de stock para toda la aplicación
+•	Ventajas:
+•	Usuarios que no necesitan control: Lo mantienen desactivado y la funcionalidad no molesta
+•	Usuarios que sí lo necesitan: Lo activan y acceden a todas las funcionalidades
+4.6.3 Configuración por Artículo Individual
+Incluso con el control global activado, cada artículo puede tener configuración independiente:
+Checkbox "Controlar stock en este artículo":
+•	Permite activar/desactivar el control para cada producto específicamente
+•	Ejemplo de uso: Controlar camisetas (cantidad limitada) pero no controlar servicios de personalización
+Campos adicionales cuando está activado:
+•	Unidades en stock: Cantidad actual disponible del producto
+•	Stock mínimo: Nivel mínimo que genera avisos automáticos cuando se alcanza
+4.6.4 Funcionalidad de Venta sin Stock
+Se diseñó una funcionalidad especial para situaciones prácticas:
+Checkbox "Permitir venta sin stock" por artículo:
+•	Propósito: Permitir ventas incluso cuando el stock sea cero o negativo
+•	Caso de uso típico: Situaciones de prisa en el mercadillo donde no hay tiempo de actualizar el inventario
+•	Comportamiento: Si está activado, se puede vender aunque stock = 0, quedando el inventario en negativo
+•	Gestión posterior: El vendedor ajusta el stock real cuando tiene tiempo
+4.6.5 Momento de Descuento de Stock
+Se estableció claramente cuándo se debe descontar el stock:
+Regla fundamental: El stock se descuenta únicamente cuando una venta está completamente cerrada (forma de pago confirmada), no durante la construcción del ticket.
+Justificación:
+•	Evita descuentos erróneos por ventas que se cancelan durante el proceso
+•	El cliente puede cambiar de opinión hasta el momento del pago
+•	Solo las ventas realmente completadas afectan el inventario
+Flujo detallado:
+1.	Cliente selecciona productos → NO se descuenta stock
+2.	Se construye el ticket → NO se descuenta stock
+3.	Se confirma el ticket → NO se descuenta stock
+4.	Se selecciona forma de pago → NO se descuenta stock
+5.	Se completa el pago → SÍ se descuenta stock automáticamente
+4.7 Control de Costes (Versión Premium)
+4.7.1 Funcionalidad de Análisis de Márgenes
+El control de costes fue diseñado para permitir análisis de rentabilidad por artículo, proporcionando información valiosa para la toma de decisiones comerciales.
+4.7.2 Configuración por Artículo
+Sistema similar al control de stock:
+•	Checkbox "Controlar costes en este artículo": Permite activar la funcionalidad para cada producto específicamente
+•	Campo precio de coste: Solo aparece y es obligatorio si está activado el control
+•	Cálculo automático: La aplicación calcula automáticamente: Precio de venta - Precio de coste = Beneficio unitario
+4.7.3 Información que Proporcionará
+Una vez implementado completamente, el sistema proporcionará:
+A nivel de artículo individual:
+•	Beneficio por unidad de cada producto
+•	Margen porcentual de cada artículo
+A nivel de venta:
+•	Beneficio total por cada ticket de venta
+•	Desglose de márgenes por artículos dentro de cada venta
+A nivel de análisis:
+•	Márgenes de beneficio por categoría de productos
+•	Identificación de artículos más rentables
+•	Identificación de artículos menos rentables
+•	Análisis de rentabilidad por períodos
+A nivel de mercadillo:
+•	Beneficio bruto del día (suma de todos los beneficios de ventas)
+•	Beneficio neto del día (beneficio bruto - todos los gastos)
+•	Comparativa de rentabilidad entre mercadillos
+4.8 Sistema de Avisos
+4.8.1 Arquitectura de Dos Niveles
+Durante nuestra conversación se diseñó un sistema de avisos sofisticado que utiliza una arquitectura de dos tablas para máxima flexibilidad y eficiencia:
+Tabla de Avisos Base (Catálogo de tipos):
+•	Contiene los tipos de avisos estándar predefinidos por la aplicación
+•	No es configurable por el usuario final
+•	Define para cada tipo: título, mensaje base y prioridad
+•	Se inicializa automáticamente al crear la base de datos
+Tabla de Avisos Usuario (Instancias específicas):
+•	Contiene las instancias específicas de avisos para el usuario actual
+•	Se crean y destruyen dinámicamente según el estado de la aplicación
+•	Pueden estar vinculados a mercadillos específicos o ser avisos generales
+•	Incluyen información contextual específica (fechas, importes, etc.)
+4.8.2 Tipos de Avisos por Comportamiento
+Se establecieron dos categorías fundamentales de avisos:
+Avisos Auto-descartables (Informativos):
+•	Son avisos meramente informativos que notifican al usuario sobre situaciones
+•	El usuario puede marcarlos como leídos y desaparecen de la lista
+•	Ejemplo: "Tienes artículos con stock negativo"
+•	Característica: Se pueden resolver simplemente "tomando nota" de la información
+Avisos No Descartables (Acción requerida):
+•	Son avisos que requieren una acción específica del usuario para resolverse
+•	NO se pueden marcar como leídos hasta que se resuelva el problema subyacente
+•	Persisten en la lista hasta que se ejecute la acción requerida
+•	Ejemplos:
+•	"Tienes un arqueo de caja pendiente de cerrar"
+•	"Hay un mercadillo anterior que sigue abierto"
+•	Característica: Solo desaparecen cuando se completa la acción correspondiente
+4.8.3 Interfaz de Usuario del Sistema de Avisos
+Campanita de Notificaciones: El desarrollador especificó detalladamente cómo debería funcionar:
+•	Ubicación: Icono de campana en la esquina superior derecha de todas las pantallas principales
+•	Badge numérico: Círculo rojo con el número de avisos no leídos
+•	Comportamiento del badge:
+•	Se oculta completamente cuando no hay avisos pendientes (count = 0)
+•	Muestra el número exacto hasta 9
+•	Muestra "9+" cuando hay más de 9 avisos pendientes
+•	Interacción: Al tocar la campanita se abre el modal de avisos
+Modal de Lista de Avisos:
+•	Activación: Se abre al tocar la campanita de notificaciones
+•	Contenido: Lista completa de todos los avisos pendientes, ordenados por fecha de creación (más recientes primero)
+•	Información por aviso: Título, mensaje descriptivo, fecha/hora de creación
+•	Interacciones diferenciadas:
+•	Avisos descartables: Botón "Marcar como leído"
+•	Avisos no descartables: Sin opción de descarte, solo visualización
+•	Cierre: Se puede cerrar tocando fuera del modal o botón de cerrar
+4.8.4 Ejemplos de Avisos Predefinidos Implementados
+Durante el análisis se identificaron y definieron avisos específicos:
+1. "Arqueo pendiente" (Prioridad 1, No descartable)
+•	Cuándo se genera: Cuando hay un mercadillo que terminó su actividad comercial pero no se ha realizado el arqueo
+•	Mensaje: "No has cerrado el arqueo del último mercadillo"
+•	Resolución: Solo desaparece cuando se completa el proceso de arqueo
+2. "Mercadillo sin cerrar" (Prioridad 1, No descartable)
+•	Cuándo se genera: Cuando hay un mercadillo que sigue marcado como "en curso" pasado un tiempo prudencial
+•	Mensaje: "Hay un mercadillo anterior que sigue abierto"
+•	Resolución: Solo desaparece cuando se cierra oficialmente el mercadillo
+3. "Stock bajo" (Prioridad 2, Descartable)
+•	Cuándo se genera: Cuando artículos con control de stock alcanzan o superan el nivel mínimo configurado
+•	Mensaje: "Algunos artículos están bajo el nivel mínimo"
+•	Resolución: Se puede marcar como leído o desaparece cuando se actualiza el stock
+4.8.5 Sistema de Prioridades
+Se estableció un sistema de prioridades numéricas:
+•	Prioridad 1: Avisos críticos que requieren atención inmediata
+•	Prioridad 2: Avisos importantes pero no críticos
+•	Prioridad 3: Avisos informativos de baja importancia
+5. ESTRUCTURA DE DATOS Y ENTIDADES
+5.1 Entidades Completamente Implementadas
+5.1.1 CategoriaEntity
+Durante nuestra conversación se revisó la implementación completa de esta entidad:
+Campos y características:
+•	idCategoria (UUID): Identificador único para evitar conflictos en sincronización multiplataforma
+•	nombre (String): Identificación de la categoría
+•	colorHex (String): Color personalizable en formato hexadecimal para diferenciación visual
+•	orden (Int): Permite reorganización manual por el usuario
+•	activa (Boolean): Implementa "soft delete" para no perder datos históricos
+•	pendienteSincronizar (Boolean): Flag para gestión de sincronización offline-first
+Funcionalidades implementadas:
+•	CRUD completo con sincronización automática
+•	Sistema de colores personalizables con selector profesional
+•	Reordenamiento manual por el usuario
+•	Activación/desactivación sin pérdida de datos históricos
+•	Compatible con constructor vacío requerido por Firestore
+5.1.2 ConfiguracionEntity
+Se revisó la implementación de la configuración global:
+Concepto de registro único:
+•	id = 1: Siempre fijo para garantizar una sola configuración global
+•	Simplifica la gestión al no tener múltiples registros de configuración
+Campos de versión y licenciamiento:
+•	versionApp: FREE, BETA, PREMIUM (control de funcionalidades)
+•	numeroVersion: Versión funcional exacta de la aplicación
+•	isConfigurated: Indica si se completó el setup inicial
+Campos de funcionalidades Premium:
+•	controlStock (Int): 0 = desactivado, 1 = activado (más flexible que boolean)
+•	controlCoste (Int): 0 = desactivado, 1 = activado
+Campos de autenticación y dispositivos:
+•	ultimoDispositivo: ID del dispositivo autorizado (crucial para sistema monopuesto)
+•	usuarioEmail: Email del usuario autenticado
+•	usuarioId: UID en Firebase para funcionalidades Premium
+Campos de personalización:
+•	idioma: Configuración de internacionalización
+•	temaOscuro: Preferencia de tema visual
+•	fuente: Tipografía seleccionada
+•	moneda: Formato de moneda para la aplicación
+Campos de sincronización:
+•	fechaUltimaSync: Control de estado de sincronización con Firebase
+5.1.3 Sistema de Avisos (AvisoBaseEntity + AvisoUsuarioEntity)
+Se implementó un sistema completo de dos entidades relacionadas:
+AvisoBaseEntity (Catálogo de tipos):
+•	idAvisoBase (Int): ID numérico para tipos predefinidos
+•	titulo: Título estándar del tipo de aviso
+•	mensaje: Mensaje base que se mostrará al usuario
+•	prioridad: Nivel de importancia (1 = crítico, 2 = importante, 3 = informativo)
+AvisoUsuarioEntity (Instancias específicas):
+•	idAvisoUsuario (String UUID): Identificador único para sincronización
+•	idAvisoBase (Int FK): Relación con el tipo de aviso base
+•	fechaCreacion (Long): Timestamp de cuando se generó el aviso
+•	leido (Boolean): Estado de lectura del aviso
+•	pendienteSincronizar (Boolean): Para sincronización offline-first
+•	mercadilloId (String opcional): Para avisos específicos de un mercadillo
+AvisoConDetalle (Relación completa):
+•	Utiliza @Embedded y @Relation para obtener información completa
+•	Una sola consulta obtiene el aviso del usuario + detalles del tipo base
+•	Perfecto para mostrar en la interfaz del modal de avisos
+5.2 Entidades Documentadas Pendientes de Implementación
+Durante nuestra conversación se revisó la documentación técnica proporcionada, identificando las siguientes entidades que están completamente especificadas pero aún requieren implementación:
+5.2.1 MercadillosEntity
+Campos principales identificados:
+•	id (String UUID): Identificador único
+•	fechaHora (DateTime): Fecha y hora del mercadillo
+•	lugar, organizador: Información básica obligatoria
+•	turno, ubicacion, municipio: Información adicional opcional
+•	esGratis, importeSuscripcion: Datos económicos del puesto
+•	puntoDeLuz, requiereCarpa, requiereMesa: Datos logísticos
+•	estado (Int): Estado del mercadillo (programado, en curso, finalizado, etc.)
+•	saldoInicial (Double): Saldo de inicio del mercadillo
+5.2.2 ArticulosEntity
+Campos principales identificados:
+•	idArticulo (String UUID): Identificador único
+•	nombre: Nombre del artículo
+•	idCategoria (String FK): Relación con categorías
+•	precioVenta (Double): Precio al público
+•	activo (Boolean): Estado del artículo
+•	stock (Int): Solo versión Premium si se activa control
+•	controlarStock (Boolean): Activación individual del control
+•	precioCoste (Double): Para control de márgenes (Premium)
+•	controlarCoste (Boolean): Activación individual del control de costes
+•	favorito (Boolean): Para accesos rápidos
+•	fotoUri (String): Imagen del artículo (Premium)
+5.2.3 Sistema de Ventas Completo
+VentasEntity:
+•	id (Integer PK): Clave primaria autoincremental
+•	mercadilloId (Integer FK): Relación con mercadillo
+•	fechaHora (Text): Timestamp de la venta
+•	tipoPago: Efectivo, tarjeta, bizum (sin mixto en v1.0)
+•	importeTotal (Real): Total de la venta
+•	observaciones: Comentarios opcionales
+•	usuarioId: Para versión Premium multiusuario
+VentaDetalleEntity:
+•	id (Integer PK): Clave primaria
+•	ventaId (Integer FK): Relación con venta principal
+•	articuloId (Integer FK): Artículo vendido
+•	cantidad (Integer): Unidades (puede ser negativa para devoluciones)
+•	precioUnidad (Real): Precio en el momento de la venta
+•	subtotal (Real): cantidad × precioUnidad
+•	controlaStock (Boolean): Estado del control en momento de venta
+•	esDevolucion (Boolean): Indica si es venta negativa
+PagosEntity:
+•	id (Integer PK): Clave primaria
+•	ventaId (Integer FK): Relación con venta
+•	tipoPago: Efectivo, tarjeta, bizum
+•	importe (Real): Importe de este método de pago
+5.2.4 Otras Entidades Documentadas
+GastosEntity, ArticulosStockEntity, ArqueosEntity, UsuariosEntity: Todas completamente especificadas en la documentación técnica con campos detallados, tipos de datos y relaciones.
+6. COMPONENTES DE INTERFAZ DE USUARIO
+6.1 Componentes Básicos Implementados
+6.1.1 BotonHome
+Se implementó un componente reutilizable para la pantalla principal:
+Características de diseño:
+•	Superficie con color personalizable: Fondo configurable para diferenciación
+•	Icono vectorial con tinte: Iconos SVG que se adaptan al color del tema
+•	Texto descriptivo: Debajo del icono, con tipografía Material Design
+•	Bordes redondeados: 16dp para aspecto moderno
+•	Dimensiones responsivas: widthIn(140dp, 160dp) para adaptación
+•	Área de toque adecuada: 140dp height para accesibilidad
+Funcionalidad:
+•	Completamente configurable: Icono, texto, colores y acción onclick
+•	Material Design 3: Integración completa con el sistema de colores del tema
+•	Uso típico: Los 4 botones principales de la pantalla Home (Mercadillos, Artículos y Categorías, Listados, Configuración)
+6.1.2 CampanaAvisos
+Componente especializado para el sistema de notificaciones:
+Funcionalidades implementadas:
+•	Icono de campana: SVG personalizado tinteable
+•	Badge dinámico: Círculo rojo con número de avisos
+•	Lógica inteligente del badge:
+•	Se oculta completamente cuando count = 0
+•	Muestra número exacto del 1 al 9
+•	Muestra "9+" cuando count > 9 (estándar de aplicaciones móviles)
+•	Posicionamiento preciso: Badge en esquina superior derecha con offset
+•	Colores configurables: Tanto el icono como el badge son personalizables
+•	Área de toque: 48dp para cumplir estándares de accesibilidad
+Integración con el sistema:
+•	Se conecta directamente con el Flow de avisos no leídos
+•	Actualización en tiempo real cuando cambia el estado de los avisos
+•	Callback onClick para abrir el modal de avisos
+6.1.3 DialogSelectorColor
+Selector de color profesional implementado:
+Funcionalidades técnicas:
+•	Librería Skydoves ColorPicker: Solución robusta y profesional
+•	Rueda de colores HSV: Selector principal intuitivo
+•	Control de transparencia: AlphaSlider para opacidad
+•	Control de brillo: BrightnessSlider para luminosidad
+•	Preview en tiempo real: El controlador actualiza automáticamente la selección
+Integración:
+•	Controller pattern: rememberColorPickerController() maneja todo el estado
+•	Callback simple: Devuelve Color directamente sin conversiones complejas
+•	Uso principal: Personalización de colores de categorías
+6.1.4 CustomDialogConfirmacion
+Diálogo reutilizable para confirmaciones críticas:
+Características:
+•	AlertDialog estándar: Cumple patrones de Material Design
+•	Totalmente configurable: Título, mensaje, texto del botón y colores
+•	Dos botones: Confirmar (configurable) y Cancelar (estándar)
+•	Gestión de eventos: onConfirmar y onCancelar bien separados
+•	onDismissRequest: Permite cerrar tocando fuera o con botón back
+Casos de uso identificados:
+•	Eliminar categorías
+•	Cerrar mercadillos
+•	Confirmar arqueos
+•	Cualquier acción irreversible
+6.2 Filosofía de Diseño de Componentes
+6.2.1 Material Design 3
+Todos los componentes implementados siguen estrictamente las directrices:
+•	Sistema de colores: Uso consistente de MaterialTheme.colorScheme
+•	Tipografía: MaterialTheme.typography para textos coherentes
+•	Elevaciones y sombras: tonalElevation apropiada
+•	Formas: RoundedCornerShape con radios consistentes
+6.2.2 Accesibilidad
+•	Áreas de toque mínimas: 48dp para todos los elementos interactivos
+•	Contraste adecuado: Verificación entre colores de fondo y contenido
+•	ContentDescription: Descripciones para lectores de pantalla
+•	Navegación por teclado: Soporte cuando aplica
+6.2.3 Consistencia Visual
+•	Paleta de colores unificada: Todos los componentes usan los mismos colores base
+•	Espaciados consistentes: Sistema de espaciado basado en múltiplos de 8dp
+•	Formas uniformes: Mismos radios de borde en toda la aplicación
+•	Iconografía coherente: Estilo consistente de iconos SVG
+7. PATRONES DE DESARROLLO Y ARQUITECTURA
+7.1 Repository Pattern Implementado
+Cada entidad principal tiene su repositorio que implementa la misma estructura:
+Responsabilidades del Repository:
+•	Abstracción de fuentes de datos: Oculta si los datos vienen de Room o Firebase
+•	Implementación offline-first: Toda operación va primero a Room
+•	Sincronización automática: Intenta subir a Firebase inmediatamente
+•	Gestión de errores: Maneja fallos de conectividad sin afectar la UI
+•	Interfaces limpias: Proporciona métodos simples a los ViewModels
+Patrón de operaciones típico:
+suspend fun insertItem(item: Entity) {
+    // 1. Guardar local primero (UI inmediata)
+    dao.insert(item.copy(pendienteSincronizar = true))
+    
+    // 2. Intentar sincronización
+    try {
+        firestore.collection("items").document(item.id).set(item).await()
+        dao.marcarComoSincronizada(item.id)
+    } catch (_: Exception) {
+        // Si falla, queda pendiente para próxima sincronización
+    }
+}
+7.2 MVVM Architecture
+La arquitectura sigue estrictamente el patrón MVVM:
+Model (Capa de datos):
+•	Entidades de Room que representan los datos
+•	Repositorios que gestionan el acceso a datos
+•	Lógica de negocio pura sin dependencias de UI
+View (Capa de presentación):
+•	Composables de Jetpack Compose
+•	UI reactiva que se actualiza automáticamente
+•	Sin lógica de negocio, solo presentación
+ViewModel (Capa de lógica de presentación):
+•	Gestión del estado de UI
+•	Exposición de datos mediante Flow
+•	Manejo de eventos de usuario
+•	Comunicación con repositorios
+7.3 Reactive Programming con Flow
+Se utiliza extensivamente programación reactiva:
+Flujos de datos reactivos:
+•	Todos los datos se exponen como Flow desde los repositorios
+•	La UI se actualiza automáticamente cuando cambian los datos
+•	No hay necesidad de refrescar manualmente las pantallas
+Beneficios observados:
+•	UI siempre sincronizada con los datos
+•	Menos errores por estados inconsistentes
+•	Código más limpio y mantenible
+7.4 Clean Architecture Principles
+La organización sigue principios de Clean Architecture:
+Separación de capas:
+•	Capa de datos (Room + Firebase)
+•	Capa de dominio (Repositorios + Lógica de negocio)
+•	Capa de presentación (UI + ViewModels)
+Regla de dependencias:
+•	Las dependencias apuntan hacia adentro
+•	La UI depende de ViewModels, no de datos directamente
+•	Los repositorios pueden cambiar sin afectar la UI
+8. ESTRATEGIA DE SINCRONIZACIÓN
+8.1 Principios Fundamentales del Sistema
+Durante nuestra conversación se establecieron principios claros:
+Local First (Primero Local):
+•	Toda operación se ejecuta primero en la base de datos local (Room)
+•	La UI recibe respuesta inmediata sin esperar operaciones de red
+•	Los datos están siempre disponibles, con o sin internet
+Sync When Possible (Sincronizar Cuando Sea Posible):
+•	Si hay conectividad, se sincroniza inmediatamente con Firebase
+•	Si no hay conectividad, se marca como "pendiente de sincronizar"
+•	No se bloquea nunca la operación por problemas de red
+Never Block UI (Nunca Bloquear la UI):
+•	La interfaz de usuario nunca espera por operaciones de red
+•	Todas las operaciones de red son asíncronas y en background
+•	El usuario puede seguir trabajando independientemente del estado de la red
+Graceful Degradation (Degradación Elegante):
+•	La aplicación funciona completamente sin internet
+•	Las funcionalidades no se limitan por falta de conectividad
+•	La experiencia de usuario es prácticamente idéntica online y offline
+8.2 Mecánica Detallada de Sincronización
+Fase 1: Operación Local
+1.	El usuario ejecuta una acción (crear categoría, registrar venta, etc.)
+2.	Los datos se guardan inmediatamente en Room con pendienteSincronizar = true
+3.	La UI se actualiza instantáneamente mostrando los cambios
+4.	El usuario puede continuar trabajando inmediatamente
+Fase 2: Intento de Sincronización
+1.	En paralelo, se verifica la conectividad a internet
+2.	Si hay conexión, se intenta subir los datos a Firebase Firestore
+3.	La operación de red se ejecuta en background sin afectar la UI
+Fase 3: Gestión del Resultado
+•	Si la sincronización es exitosa: Se marca el registro como pendienteSincronizar = false
+•	Si la sincronización falla: El registro queda como pendienteSincronizar = true para reintento posterior
+Fase 4: Recuperación Automática
+1.	La aplicación monitorea constantemente el estado de conectividad
+2.	Cuando se detecta que se ha recuperado la conexión a internet
+3.	Se ejecuta automáticamente un proceso de sincronización de todos los elementos pendientes
+4.	Este proceso es transparente e invisible para el usuario
+8.3 Gestión de Conflictos y Integridad
+Uso de UUIDs:
+•	Todas las entidades principales usan UUIDs como clave primaria
+•	Esto evita conflictos de ID entre dispositivos
+•	Permite generar IDs únicos offline sin riesgo de duplicados
+Timestamps para Resolución Temporal:
+•	Cada registro incluye timestamps de creación y modificación
+•	Permite implementar estrategias de resolución basadas en "última escritura gana"
+Estrategia "Last Write Wins":
+•	En caso de conflicto, prevalece la última modificación (por timestamp)
+•	Simplicidad de implementación y comprensión
+•	Apropiada para el contexto de uso (mayormente un solo usuario activo)
+8.4 Monitoreo y Recuperación
+Detección de Conectividad:
+•	Monitoreo continuo del estado de red del dispositivo
+•	Detección automática de recuperación de conexión
+•	No requiere intervención manual del usuario
+Proceso de Recuperación:
+1.	Se identifica automáticamente cuando se recupera la conectividad
+2.	Se consultan todos los registros con pendienteSincronizar = true
+3.	Se intenta sincronizar cada registro pendiente
+4.	Se actualiza el estado de cada registro según el resultado
+5.	El proceso es completamente invisible para el usuario
+9. CONSIDERACIONES DE EXPERIENCIA DE USUARIO
+9.1 Adaptación al Contexto de Uso
+Durante nuestra conversación se identificaron las particularidades del contexto de uso:
+Entorno de mercadillo:
+•	Uso frecuente en exteriores con luz solar variable
+•	Posible uso con guantes en temporadas frías
+•	Necesidad de operación rápida durante picos de venta
+•	Posible uso con una sola mano mientras se atiende al cliente
+Adaptaciones implementadas:
+•	Botones de tamaño generoso: Mínimo 48dp para facilitar el toque
+•	Textos legibles: Tamaños de fuente apropiados para lectura en exteriores
+•	Colores con buen contraste: Visibilidad en diferentes condiciones de luz
+•	Flujos de trabajo optimizados: Mínimo número de taps para operaciones comunes
+9.2 Flujo de Usuario Optimizado
+El flujo está diseñado para minimizar taps y maximizar eficiencia:
+Accesos directos:
+•	Funciones más utilizadas accesibles desde la pantalla principal
+•	Navegación intuitiva y predecible
+•	Breadcrumbs claros para saber dónde se está
+Confirmaciones inteligentes:
+•	Confirmaciones solo para acciones críticas e irreversibles
+•	Operaciones comunes sin confirmaciones innecesarias
+•	Opciones de deshacer cuando es posible
+Feedback visual inmediato:
+•	Respuesta visual instantánea a toda interacción
+•	Estados de carga mínimos (gracias a la arquitectura offline-first)
+•	Indicadores claros del estado de sincronización cuando es relevante
+9.3 Internacionalización y Personalización
+Se ha preparado la base para personalización:
+Soporte multiidioma:
+•	Configuración de idioma almacenada en ConfiguracionEntity
+•	Preparado para implementar strings.xml para diferentes idiomas
+•	Adaptación cultural de elementos UI según el mercado
+Personalización visual:
+•	Tema oscuro: Configuración por usuario para diferentes preferencias
+•	Fuente configurable: Adaptación a diferentes necesidades de legibilidad
+•	Colores de categorías: Personalización completa del sistema de colores
+•	Formato de moneda: Adaptación a diferentes regiones y monedas
+10. CONSIDERACIONES DE SEGURIDAD Y PRIVACIDAD
+10.1 Autenticación y Autorización
+El sistema de seguridad se basa en:
+OAuth con Google:
+•	Delegación de autenticación a Google para máxima seguridad
+•	No almacenamiento de contraseñas en la aplicación
+•	Tokens de sesión gestionados automáticamente por Firebase
+Control de dispositivos:
+•	Validación de dispositivo autorizado en cada operación crítica
+•	Revocación automática de acceso en dispositivos no autorizados
+•	Logs de acceso para monitoreo (en versión Premium)
+10.2 Protección de Datos
+Datos locales:
+•	Protección mediante permisos nativos de Android
+•	Base de datos local no accesible por otras aplicaciones
+•	No almacenamiento de información sensible en texto plano
+Comunicación con Firebase:
+•	Todas las comunicaciones cifradas mediante HTTPS/TLS
+•	Reglas de seguridad de Firestore para acceso controlado
+•	Validación de permisos en el backend
+Backup y recuperación:
+•	Sincronización automática como sistema principal de backup
+•	Exportación de datos para respaldo adicional (funcionalidad Premium)
+•	Recuperación completa desde la nube en caso de pérdida de dispositivo
+11. ROADMAP DETALLADO Y PRÓXIMOS PASOS
+11.1 Fase 1 - Funcionalidades Core (Prioridad Alta)
+1.1 Implementación de Autenticación Google
+•	Setup completo de Firebase Authentication
+•	Configuración de OAuth con Google
+•	Implementación del flujo de login/logout
+•	Sistema de control de dispositivo monopuesto
+•	Detección y gestión de cambios de dispositivo
+•	Testing exhaustivo del sistema monopuesto
+1.2 Módulo de Artículos Completo
+•	Implementación de ArticulosEntity según especificaciones
+•	CRUD completo de artículos
+•	Integración con sistema de categorías existente
+•	Interfaz de gestión de artículos
+•	Búsqueda y filtrado de artículos
+•	Sistema de favoritos para acceso rápido
+1.3 Gestión Básica de Mercadillos
+•	Implementación de MercadillosEntity
+•	Alta y edición de mercadillos
+•	Vista de calendario con códigos de colores
+•	Estados básicos de mercadillo
+•	Gestión de saldos entre mercadillos
+•	Sistema de cancelación de mercadillos
+11.2 Fase 2 - Sistema de Ventas y Arqueo (Prioridad Alta)
+2.1 Motor de Ventas Completo
+•	Implementación de VentasEntity y VentaDetalleEntity
+•	Interfaz de venta con soporte para artículos predefinidos/manuales
+•	Sistema de tickets híbridos
+•	Cálculo automático de totales
+•	Gestión completa de formas de pago
+•	Sistema de ventas negativas para anulaciones
+2.2 Sistema de Arqueo
+•	Implementación de ArqueosEntity
+•	Cálculos automáticos de arqueo real vs esperado
+•	Gestión de descuadres
+•	Integración con cierre de mercadillos
+•	Reportes de arqueo detallados
+2.3 Gestión de Gastos
+•	Implementación de GastosEntity
+•	Interfaz simple para registro de gastos
+•	Integración con sistema de arqueo
+•	Categorización opcional de gastos
+11.3 Fase 3 - Funcionalidades Premium (Prioridad Media)
+3.1 Control de Stock Avanzado
+•	Implementación de ArticulosStockEntity
+•	Sistema de movimientos de inventario con trazabilidad
+•	Diferentes tipos de movimientos (venta, ajuste, devolución, entrada)
+•	Alertas automáticas de stock bajo
+•	Reportes de movimientos de stock
+•	Integración con sistema de ventas para descuento automático
+3.2 Control de Costes y Márgenes
+•	Implementación completa del sistema de costes
+•	Cálculo automático de márgenes por artículo
+•	Análisis de rentabilidad por categoría
+•	Reportes de beneficios y márgenes
+•	Identificación de productos más/menos rentables
+•	Análisis comparativo entre mercadillos
+3.3 Sistema de Reportes Avanzado
+•	Análisis de ventas por períodos (diario, semanal, mensual, anual)
+•	Comparativas entre mercadillos
+•	Evolución de beneficios en el tiempo
+•	Identificación de tendencias de venta
+•	Análisis de productos más vendidos
+•	Reportes de gastos por categorías
+11.4 Fase 4 - Pulimiento y Lanzamiento (Prioridad Media-Baja)
+4.1 Optimización de Performance
+•	Análisis y optimización de consultas de base de datos
+•	Implementación de paginación para listas grandes
+•	Optimización de sincronización (solo datos modificados)
+•	Caching inteligente de datos frecuentemente accedidos
+•	Reducción del tamaño de la APK
+4.2 Testing Exhaustivo
+•	Testing unitario de repositorios y ViewModels
+•	Testing de integración del sistema de sincronización
+•	Testing de UI con Compose Testing
+•	Testing del sistema monopuesto con múltiples dispositivos
+•	Testing de rendimiento con grandes volúmenes de datos
+•	Testing de usabilidad con usuarios reales
+4.3 Documentación y Preparación para Lanzamiento
+•	Documentación completa de usuario
+•	Guías de inicio rápido
+•	Videos tutoriales para funcionalidades principales
+•	Preparación de assets para Play Store
+•	Configuración de analytics y crash reporting
+•	Setup de sistema de feedback de usuarios
+11.5 Funcionalidades Futuras Identificadas (Backlog)
+Mejoras de UI/UX:
+•	Animaciones y transiciones mejoradas
+•	Modo nocturno optimizado para uso en exteriores
+•	Soporte para tablets con layout adaptativo
+•	Widgets para acceso rápido desde la pantalla principal
+Funcionalidades Avanzadas:
+•	Lectura de códigos de barras con cámara
+•	Fotos de artículos con compresión automática
+•	Sistema de clientes frecuentes con historial
+•	Integración con sistemas de facturación
+•	Soporte para múltiples monedas
+•	Backup automático en Google Drive
+Integraciones:
+•	Sincronización con plataformas de e-commerce
+•	Integración con sistemas de contabilidad
+•	APIs para terceros
+•	Exportación directa a gestores contables
+12. ESTADO ACTUAL DEL DESARROLLO
+12.1 Funcionalidades Completamente Implementadas
+Arquitectura Base Sólida:
+•	Sistema de base de datos Room configurado y funcionando
+•	Integración con Firebase Firestore establecida
+•	Patrón Repository implementado con sincronización offline-first
+•	Arquitectura MVVM completamente funcional
+•	Sistema de navegación con Jetpack Compose Navigation
+Sistema de Categorías Completo:
+•	CRUD completo de categorías funcionando
+•	Sincronización automática Room ↔ Firebase
+•	Selector de colores profesional integrado
+•	Reordenamiento manual de categorías
+•	Sistema de activación/desactivación (soft delete)
+•	Interfaz de usuario completa y pulida
+Sistema de Avisos Funcional:
+•	Arquitectura de dos tablas completamente implementada
+•	Generación automática de avisos según el estado de la aplicación
+•	Campanita de notificaciones con badge dinámico
+•	Modal de avisos con diferenciación entre tipos
+•	Sistema de marcado como leído para avisos descartables
+•	Integración completa con el flujo de la aplicación
+Componentes UI Reutilizables:
+•	BotonHome para pantalla principal
+•	CampanaAvisos para sistema de notificaciones
+•	DialogSelectorColor para personalización de colores
+•	CustomDialogConfirmacion para acciones críticas
+•	Todos siguiendo Material Design 3 y principios de accesibilidad
+12.2 Funcionalidades En Desarrollo
+Sistema de Configuración:
+•	Estado actual: Pantalla creada, tabla de configuración implementada con todos los campos necesarios
+•	Pendiente: Integración completa con Firebase Authentication
+•	Pendiente: Implementación del sistema monopuesto completo
+•	Pendiente: Flujo de configuración inicial (onboarding)
+Base de Datos:
+•	Estado actual: 4 entidades completamente implementadas (Categorías, Configuración, Avisos Base, Avisos Usuario)
+•	Pendiente: Implementación de las 8 entidades restantes documentadas
+•	Pendiente: Relaciones entre entidades y foreign keys
+12.3 Funcionalidades Completamente Pendientes
+Autenticación y Seguridad:
+•	Setup completo de Firebase Authentication
+•	Implementación del flujo de login/logout con Google
+•	Sistema de control de dispositivos monopuesto
+•	Gestión de sesiones y tokens
+•	Validación de permisos por funcionalidad
+Módulo de Artículos:
+•	Implementación de ArticulosEntity
+•	CRUD completo de artículos
+•	Relación con categorías existentes
+•	Interfaz de gestión de artículos
+•	Sistema de búsqueda y filtrado
+Gestión de Mercadillos:
+•	Implementación de MercadillosEntity
+•	Vista de calendario con códigos de colores
+•	Sistema de estados de mercadillo
+•	Gestión de saldos entre mercadillos
+•	Proceso de cierre y cancelación
+Sistema de Ventas:
+•	Implementación de entidades de ventas (Ventas, VentaDetalle, Pagos)
+•	Motor de ventas con artículos predefinidos/manuales
+•	Gestión de formas de pago con cálculo de cambio
+•	Sistema de ventas negativas para anulaciones
+•	Integración con control de stock
+Sistema de Arqueo:
+•	Implementación de ArqueosEntity
+•	Cálculos automáticos de arqueo
+•	Gestión de descuadres
+•	Integración con cierre de mercadillos
+Funcionalidades Premium:
+•	Control de stock avanzado
+•	Control de costes y márgenes
+•	Sistema de reportes
+•	Gestión multiusuario
+13. ANÁLISIS DE RIESGOS Y CONSIDERACIONES TÉCNICAS
+13.1 Riesgos Técnicos Identificados
+Complejidad de Sincronización:
+•	Riesgo: La sincronización bidireccional Room ↔ Firebase puede generar conflictos complejos
+•	Mitigación: Sistema de timestamps y UUIDs ya implementado, estrategia "last write wins"
+•	Estado: Parcialmente mitigado, requiere testing exhaustivo
+Performance con Grandes Volúmenes:
+•	Riesgo: Degradación de performance con muchos mercadillos/ventas
+•	Mitigación: Implementar paginación y caching inteligente
+•	Estado: Identificado, pendiente de implementación
+Gestión de Estado Offline/Online:
+•	Riesgo: Inconsistencias entre estado local y remoto
+•	Mitigación: Arquitectura offline-first ya implementada
+•	Estado: Bien mitigado por la arquitectura actual
+13.2 Consideraciones de Escalabilidad
+Crecimiento de Datos:
+•	La aplicación debe manejar años de datos de mercadillos
+•	Necesidad de archivado/compresión de datos antiguos
+•	Optimización de consultas para historiales largos
+Múltiples Usuarios (Premium):
+•	Sistema de permisos y roles
+•	Gestión de conflictos entre usuarios simultáneos
+•	Audit trail para acciones críticas
+13.3 Dependencias Externas
+Firebase:
+•	Dependencia crítica de Google Firebase
+•	Necesidad de plan de contingencia para cambios de pricing
+•	Monitoreo de quotas y límites de uso
+APIs de Google:
+•	OAuth depende de servicios de Google
+•	Necesidad de mantener credenciales actualizadas
+•	Gestión de cambios en políticas de Google
+14. MODELO ECONÓMICO Y VIABILIDAD
+14.1 Costos de Desarrollo Identificados
+Costos de Infraestructura:
+•	Firebase: Costos variables según uso (probablemente mínimos inicialmente)
+•	Google Play Store: $25 registro + 30% comisión en ventas
+•	Certificados y herramientas de desarrollo
+Costos de Mantenimiento:
+•	Actualizaciones por cambios en Android
+•	Mantenimiento de compatibilidad con Firebase
+•	Soporte técnico a usuarios
+•	Nuevas funcionalidades y mejoras
+14.2 Estrategia de Monetización
+Versión FREE como Acquisition:
+•	Funcionalidad completa para atraer usuarios
+•	Sistema monopuesto que incentiva upgrade natural
+•	Word-of-mouth en comunidad de mercadillos
+Versión PREMIUM como Retention:
+•	Funcionalidades realmente valiosas (stock, costes, reportes)
+•	Pago único atractivo vs suscripciones
+•	Valor claro y mesurable para el usuario
+14.3 Mercado Objetivo
+Mercado Primario:
+•	Vendedores ambulantes individuales en mercadillos artesanos
+•	Pequeños negocios familiares en ferias
+•	Artesanos que venden en múltiples ubicaciones
+Mercado Secundario:
+•	Pequeños comercios que participan en ferias ocasionalmente
+•	Organizadores de mercadillos que necesitan herramientas para vendedores
+•	Cooperativas de artesanos
+15. CONCLUSIONES Y REFLEXIONES FINALES
+15.1 Fortalezas del Proyecto
+Experiencia Real como Base:
+•	El proyecto surge de necesidades reales identificadas por experiencia directa
+•	Cada funcionalidad resuelve problemas específicos del sector
+•	Comprensión profunda del contexto de uso y limitaciones
+Arquitectura Técnica Sólida:
+•	Sistema offline-first probado y robusto
+•	Tecnologías modernas y bien soportadas
+•	Patrones de desarrollo escalables y mantenibles
+Diferenciación Clara:
+•	Especialización en mercadillos vs aplicaciones generalistas
+•	Modelo de negocio equilibrado entre accesibilidad y monetización
+•	Funcionalidades específicas no disponibles en competidores
+15.2 Desafíos Principales
+Complejidad de Implementación:
+•	Muchas funcionalidades interconectadas
+•	Sistema de sincronización complejo
+•	Necesidad de testing exhaustivo
+Mercado Nicho:
+•	Mercado específico y potencialmente limitado
+•	Dependencia del crecimiento del sector artesano
+•	Necesidad de estrategia de marketing específica
+Competencia Potencial:
+•	Riesgo de que grandes players introduzcan funcionalidades similares
+•	Necesidad de mantener ventaja competitiva con innovación continua
+15.3 Factores Críticos de Éxito
+Calidad de Implementación:
+•	Sistema que funcione de manera absolutamente confiable
+•	Performance excelente en condiciones reales de uso
+•	UI/UX adaptada específicamente al contexto de mercadillos
+Adopción del Mercado:
+•	Penetración inicial en comunidades de artesanos
+•	Feedback temprano y mejora iterativa
+•	Construcción de reputación en el sector
+Evolución Continua:
+•	Capacidad de adaptarse a cambios en el mercado
+•	Incorporación de feedback de usuarios reales
+•	Innovación continua en funcionalidades
+15.4 Visión a Largo Plazo
+El proyecto tiene potencial para evolucionar desde una aplicación de control de caja específica hacia una plataforma integral para vendedores ambulantes, incluyendo:
+•	Gestión completa de inventario multi-ubicación
+•	Herramientas de marketing y fidelización de clientes
+•	Integración con plataformas de venta online
+•	Análisis predictivo de ventas por ubicación/temporada
+•	Comunidad de vendedores con intercambio de información
+La base técnica sólida y la comprensión profunda del mercado objetivo proporcionan una fundación excelente para esta evolución futura.
+________________________________________
+ANEXO: ESTADO DE LA CONVERSACIÓN
+Este documento refleja el análisis completo y detallado desarrollado durante nuestra conversación sobre la aplicación "Caja Mercadillos". Durante el chat se establecieron:
+•	Visión global del proyecto antes de implementar funcionalidades específicas
+•	Arquitectura técnica basada en principios offline-first
+•	Funcionalidades detalladas pensadas desde la experiencia real de uso
+•	Modelo de negocio equilibrado entre accesibilidad y monetización
+•	Roadmap estructurado para desarrollo por fases
+•	Consideraciones técnicas para escalabilidad y mantenimiento
+
+En lo hablado con la IA faltan algunas cosas, entre ellas la implementación de los recibos tras venta. Una vez finalizada la venta, si es Bizum o Tarjeta nada mas registrar el pago y si es efectivo tras indicar la vuelta, hay que generar un recibo y dar dos opciones, envio por correo o por sms/WhatsApp.
+Tambien se incluye para una versión futura 2.0, 3.0 etc, la posibilidad de integrar el propio pago con tarjeta en la app, usando SumUp o similares.
+El diseño no esta completamente cerrado y seguramente se ira ampliando sobre la construcción de la aplicación.  Siempre que se implemente una nueva funcionalidad se debe decidir si es para la versión gratuita o para la Premium. La IA deberá tener una lista de tareas pendientes actualizada. 
+Este documento se irá ampliando durante el desarrollo de la aplicación.
+El desarrollador expresó específicamente la necesidad de tener esta visión completa para evitar el problema de "arreglar una cosa y estropear otra" que había experimentado con otras inteligencias artificiales. Este documento servirá como referencia completa para continuar el desarrollo manteniendo la coherencia y visión global del proyecto.

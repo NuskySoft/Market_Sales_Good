@@ -1,0 +1,344 @@
+# 📄 **DOCUMENTO MAESTRO V7 FINAL - MARKET SALES**
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Estado Actual:** ✅ AUTENTICACIÓN OPCIONAL FUNCIONAL + MENÚ DINÁMICO + GOOGLE AUTH PREPARADO
+
+---
+
+## ✅ **V7 COMPLETADO - IMPLEMENTACIONES FINALIZADAS**
+
+### **🎨 SISTEMA DINÁMICO 100% FUNCIONAL:**
+- ✅ **Idiomas dinámicos** (Español/English) aplicándose en tiempo real
+- ✅ **Fuentes dinámicas** (Montserrat/Poppins/Roboto) cambiando instantáneamente
+- ✅ **Modo oscuro/claro** funcionando perfectamente
+- ✅ **Restricciones Premium/FREE** operativas con emoji cohete 🚀
+- ✅ **Botón desarrollo** para cambiar FREE ↔ PREMIUM
+
+### **🔐 AUTENTICACIÓN V7 - OPCIONAL Y FUNCIONAL:**
+- ✅ **Email/Password completo** - registro/login/logout funcional
+- ✅ **MenuHamburguesa inteligente** - muestra Login o Logout según estado
+- ✅ **Estados de usuario** mostrados en header del menú (email visible)
+- ✅ **App funciona 100%** sin necesidad de registro
+- ✅ **Navegación condicional** - usuario autenticado ve opciones adicionales
+- ✅ **PantallaLogin accesible** desde menú hamburguesa
+
+### **🍔 MENÚ HAMBURGUESA V7 - DINÁMICO COMPLETO:**
+- ✅ **Estados de autenticación** integrados
+- ✅ **Localización funcionando** - todos los textos cambian según idioma
+- ✅ **Email del usuario** mostrado en header cuando está autenticado
+- ✅ **Login/Logout condicional** según estado de usuario
+- ✅ **Navegación completa** a todas las pantallas
+- ✅ **Salir app** con finishAffinity() operativo
+
+### **🔧 ARQUITECTURA HÍBRIDA OFFLINE-FIRST ESTABLE:**
+- ✅ **ConfigurationManager** singleton global con StateFlows
+- ✅ **StringResourceManager** localización completa ES/EN
+- ✅ **Firebase Auth** completamente integrado y funcional
+- ✅ **Room + Firebase** sincronización bidireccional
+- ✅ **AuthViewModel** opcional - no causa ANR
+
+---
+
+## 🔐 **FIREBASE AUTH V7 - COMPLETAMENTE FUNCIONAL**
+
+### **✅ FASE 1 - Conexión verificada y operativa**
+### **✅ FASE 2 - Email/Password 100% funcional**
+
+#### **Estados implementados:**
+```kotlin
+sealed class AuthState {
+    object Loading : AuthState()
+    object Unauthenticated : AuthState()
+    data class Authenticated(val user: FirebaseUser) : AuthState()
+    data class Error(val message: String) : AuthState()
+}
+
+sealed class AuthResult {
+    data class Success(val user: FirebaseUser?) : AuthResult()
+    data class Error(val message: String) : AuthResult()
+}
+```
+
+#### **AuthRepository métodos funcionales:**
+- ✅ `registerWithEmail()` - Registro completo con Firestore
+- ✅ `loginWithEmail()` - Login con carga de configuración  
+- ✅ `logout()` - Logout completo con limpieza de estados
+- ✅ `testConnection()` - Testing Firebase conexión
+- ✅ `isUserAuthenticated()` - Verificación estado usuario
+
+### **📋 FASE 3 - Google Auth (PREPARADA PARA IMPLEMENTAR)**
+
+#### **Pasos necesarios para Google Auth:**
+1. **Configurar Google Sign-In** en Firebase Console
+2. **Agregar dependencia** `play-services-auth` (ya incluida)
+3. **Modificar AuthRepository** - agregar método `signInWithGoogle()`
+4. **Botón Google** en PantallaLogin (solo lógica, NO cambiar diseño)
+5. **Testing completo** Google Auth
+
+---
+
+## 📁 **ESTRUCTURA ACTUAL V7 COMPLETADA**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── MainActivity.kt ✅ (navegación sin AuthViewModel para estabilidad)
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   └── ConfiguracionDao.kt ✅ (métodos específicos)
+│   │   ├── entity/
+│   │   │   └── ConfiguracionEntity.kt ✅ (extension properties)
+│   │   └── database/
+│   │       └── AppDatabase.kt ✅ (v2 + sincronización Firebase)
+│   └── repository/
+│       ├── ConfiguracionRepository.kt ✅ (híbrido offline-first)
+│       └── AuthRepository.kt ✅ (Email/Password completo + Google preparado)
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt ✅ (verde pastel completo + extendidos)
+│   │   ├── Shape.kt ✅ (formas personalizadas)
+│   │   ├── Type.kt ✅ (3 fuentes dinámicas completas)
+│   │   ├── Theme.kt ✅ (dinámico con StateFlows)
+│   │   └── LocalConfiguration.kt ✅ (CompositionLocal)
+│   ├── components/
+│   │   └── MenuHamburguesa.kt ✅ (estados auth + localización funcional)
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt ✅ (animada y elegante)
+│   │   ├── PantallaMercadillos.kt ✅ (diseño original preservado)
+│   │   ├── PantallaConfiguracion.kt ✅ (dropdowns + switches Premium)
+│   │   └── PantallaLogin.kt ✅ (registro/login/logout completo)
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt ✅ (sincronización Room+Firebase)
+│       ├── ConfiguracionViewModelFactory.kt ✅
+│       ├── AuthViewModel.kt ✅ (Email/Password + Google preparado)
+│       └── AuthViewModelFactory.kt ✅
+├── utils/
+│   ├── FooterMarca.kt ✅ (sin solapamiento)
+│   ├── ConfigurationManager.kt ✅ (StateFlows + métodos set)
+│   └── StringResourceManager.kt ✅ (ES/EN completo)
+└── res/
+    ├── drawable/ ✅ (21 iconos personalizados)
+    └── font/ ✅ (Montserrat + Poppins + Roboto)
+```
+
+---
+
+## 💾 **CONFIGURACIÓN FIREBASE V7**
+
+### **Firebase Project completamente configurado:**
+- **Project ID:** market-sales-2168b
+- **SHA-1:** DF:92:0E:75:F9:07:5B:A4:C7:47:5B:04:A9:88:17:C6:90:8A
+- **Authentication:** Email/Password funcional + Google configurado
+- **Firestore:** Colecciones "usuarios" y "configuraciones" operativas
+- **Sincronización:** Bidireccional Room ↔ Firestore funcionando
+
+### **Dependencias actuales:**
+```gradle
+implementation("com.google.firebase:firebase-auth:22.3.0")
+implementation("com.google.android.gms:play-services-auth:20.7.0") // ✅ Para Google Auth
+implementation("com.google.firebase:firebase-firestore:24.9.1")
+implementation("androidx.room:room-ktx:2.6.0")
+implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+implementation("androidx.compose.material:material-icons-extended:1.5.4")
+```
+
+---
+
+## 🍔 **MENÚ HAMBURGUESA V7 - FUNCIONALIDAD COMPLETA**
+
+### **✅ Estados Dinámicos:**
+```kotlin
+@Composable
+fun MenuHamburguesa(navController, drawerState) {
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory())
+    val currentUser by authViewModel.currentUser.collectAsState()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    
+    // Header muestra email si está autenticado
+    if (currentUser != null) {
+        Text("👤 ${currentUser?.email}")
+    }
+    
+    // Opciones condicionales
+    if (currentUser != null) {
+        MenuOption("Cerrar Sesión") { authViewModel.logout() }
+    } else {
+        MenuOption("Iniciar Sesión") { navController.navigate("login") }
+    }
+}
+```
+
+### **🎯 Funcionalidad Resultante:**
+- **👤 Usuario NO autenticado:** Ve "Iniciar Sesión" 
+- **🔐 Usuario autenticado:** Ve email + "Cerrar Sesión"
+- **🔄 App funciona 100%** sin necesidad de registro
+- **🌍 Localización perfecta** - todos los textos cambian según idioma
+- **📱 Navegación completa** sin problemas
+
+---
+
+## 🚀 **PLAN GOOGLE AUTH V8 - IMPLEMENTACIÓN INMEDIATA**
+
+### **📋 PASOS ESPECÍFICOS PARA GOOGLE AUTH:**
+
+#### **1. Configuración Firebase Console:**
+```
+Firebase Console → Authentication → Sign-in method → Google → Enable
+- Download new google-services.json
+- Add to app/ folder
+```
+
+#### **2. AuthRepository - Agregar método Google:**
+```kotlin
+suspend fun signInWithGoogle(idToken: String): AuthResult {
+    return try {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        val authResult = firebaseAuth.signInWithCredential(credential).await()
+        val user = authResult.user
+        
+        if (user != null) {
+            createUserDocument(user) // Crear en Firestore si es nuevo
+            loadUserConfiguration(user.uid) // Cargar configuración
+            AuthResult.Success(user)
+        } else {
+            AuthResult.Error("Error en autenticación con Google")
+        }
+    } catch (e: Exception) {
+        AuthResult.Error("Error Google Auth: ${e.message}")
+    }
+}
+```
+
+#### **3. AuthViewModel - Agregar método Google:**
+```kotlin
+fun signInWithGoogle(idToken: String) {
+    viewModelScope.launch {
+        when (val result = authRepository.signInWithGoogle(idToken)) {
+            is AuthResult.Success -> Log.d(TAG, "Google Auth exitoso")
+            is AuthResult.Error -> Log.e(TAG, "Error Google Auth: ${result.message}")
+        }
+    }
+}
+```
+
+#### **4. PantallaLogin - Botón Google (SOLO LÓGICA):**
+```kotlin
+// ✅ AGREGAR: Solo lógica, mantener diseño exacto
+val context = LocalContext.current
+val googleSignInClient = GoogleSignIn.getClient(context, GoogleSignInOptions.DEFAULT_SIGN_IN)
+
+// Botón Google después del divisor "o"
+OutlinedButton(
+    onClick = { 
+        // Lanzar Google Sign-In Intent
+        val signInIntent = googleSignInClient.signInIntent
+        // TODO: Manejar resultado con Activity Result API
+    },
+    modifier = Modifier.fillMaxWidth()
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // Icon Google (usar drawable o composable)
+        Text("Continuar con Google")
+    }
+}
+```
+
+#### **5. MainActivity - Activity Result para Google:**
+```kotlin
+// Manejar resultado Google Sign-In
+private val googleSignInLauncher = registerForActivityResult(
+    ActivityResultContracts.StartActivityForResult()
+) { result ->
+    // Procesar resultado y extraer idToken
+}
+```
+
+---
+
+## 📖 **ANEXO V7 - REGLAS DE DESARROLLO (ACTUALIZADAS)**
+
+### **🔒 REGLAS ESTRICTAS DE MODIFICACIÓN:**
+
+#### **1. CUMPLIMIENTO UNIVERSAL DE TEMA:**
+- ✅ **TODAS las pantallas** deben respetar tema oscuro/claro
+- ✅ **TODAS las pantallas** deben aplicar idioma dinámico ES/EN
+- ✅ **TODAS las pantallas** deben usar fuente configurada
+- ✅ **StateFlows obligatorios** para cambios en tiempo real
+- ✅ **Localización correcta** - siempre pasar `currentLanguage` como parámetro
+
+#### **2. PRESERVACIÓN DE DISEÑO:**
+- 🚫 **NUNCA modificar diseño** de pantalla al cambiar código
+- 🚫 **NUNCA alterar layout** sin autorización explícita
+- 🚫 **NUNCA cambiar colores** de interfaz establecidos
+- ✅ **SOLO modificar lógica** manteniendo diseño exacto
+- ✅ **Para Google Auth** - solo agregar botón, NO cambiar diseño existente
+
+#### **3. PROTOCOLO DE MODIFICACIÓN:**
+- 🚫 **NUNCA modificar archivo** sin solicitar versión actual
+- ✅ **SIEMPRE pedir código fuente** antes de cambios
+- ✅ **SOLICITAR confirmación** de modificaciones propuestas
+- ✅ **DOCUMENTAR cambios** realizados específicamente
+- ✅ **VERIFICAR localización** - pasar `currentLanguage` correctamente
+
+#### **4. ESTABILIDAD Y ANR:**
+- ✅ **Evitar AuthViewModel** en MainActivity si causa ANR
+- ✅ **Usar AuthViewModel** solo en componentes específicos (MenuHamburguesa)
+- ✅ **Testing paso a paso** antes de agregar funcionalidades complejas
+- ✅ **Backup obligatorio** antes de cambios mayores
+
+---
+
+## 🎯 **ESTADO ACTUAL V7 - PREPARADO PARA GOOGLE AUTH**
+
+### **✅ COMPLETADO AL 100%:**
+- **Autenticación opcional** funcionando perfectamente
+- **MenuHamburguesa dinámico** con estados de usuario
+- **Localización corregida** - idiomas funcionando en toda la app
+- **Email/Password Auth** completo y estable
+- **Navegación sin ANR** - app inicia siempre correctamente
+- **Estados de usuario** mostrados apropiadamente
+- **App funcional** sin registro obligatorio
+
+### **🔐 AUTENTICACIÓN V7:**
+- ✅ **Email/Password** 100% funcional
+- ✅ **Estados condicionales** en menú funcionando
+- ✅ **Login/Logout** desde menú hamburguesa operativo
+- ✅ **Sincronización** Firebase automática
+- 📋 **Próximo:** Google Auth implementation
+
+### **📱 EXPERIENCIA DE USUARIO V7:**
+- **Usuario anónimo:** Usa app completa + opción "Iniciar Sesión" en menú
+- **Usuario autenticado:** Ve email en menú + opción "Cerrar Sesión"
+- **Transiciones fluidas:** Login → Email visible / Logout → Email desaparece
+- **Localización perfecta:** Todos los textos cambian según idioma configurado
+
+---
+
+## 🚀 **PRÓXIMA IMPLEMENTACIÓN V8:**
+
+### **📋 TAREA INMEDIATA:**
+**"Implementar Google Auth en PantallaLogin manteniendo diseño exacto"**
+
+### **🎯 OBJETIVOS V8:**
+1. **Google Sign-In** funcional en PantallaLogin
+2. **Botón Google** agregado después del divisor "o"
+3. **Mantener diseño** exacto de PantallaLogin
+4. **Testing completo** Google Auth
+5. **Integración** con estados existentes del menú
+
+### **📊 PRIORIDADES:**
+- **Alta:** Google Auth implementation
+- **Media:** Testing en dispositivos reales
+- **Baja:** Optimizaciones adicionales
+
+---
+
+**✅ V7 COMPLETADO - AUTENTICACIÓN OPCIONAL FUNCIONAL + GOOGLE AUTH PREPARADO**
+
+### **📋 ESTADO PARA V8:**
+**"App completamente funcional con Email/Password Auth + MenuHamburguesa dinámico + Google Auth listo para implementar"**
+
+**ESTADO:** 🚀 **PREPARADO PARA GOOGLE AUTH IMPLEMENTATION V8**

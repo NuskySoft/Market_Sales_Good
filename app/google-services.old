@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1031868303998",
+    "project_id": "market-sales-2168b",
+    "storage_bucket": "market-sales-2168b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1031868303998:android:015af9efdd849be2e4e62f",
+        "android_client_info": {
+          "package_name": "es.nuskysoftware.marketsales"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlibuoOoCHVWNJjR0TIGqS-REuJWlibmo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

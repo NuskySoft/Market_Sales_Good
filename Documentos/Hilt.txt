@@ -1,0 +1,152 @@
+Guía para Integrar Hilt en un Proyecto Android ExistenteIntroducciónHilt es una biblioteca de inyección de dependencias para Android recomendada por Google, construida sobre Dagger. Simplifica la inyección de dependencias en aplicaciones Android al proporcionar contenedores para clases del framework de Android y reducir la cantidad de código repetitivo necesario con Dagger. Esta guía te ayudará a integrar Hilt en un proyecto existente.Beneficios de Usar Hilt:•Reducción de código repetitivo: Menos configuración manual en comparación con Dagger.•Gestión del ciclo de vida: Hilt se integra con los ciclos de vida de los componentes de Android.•Facilidad de uso: Anotaciones simples para la mayoría de los casos de uso.•Mejor testeabilidad: Facilita la sustitución de dependencias en las pruebas.•Integración con Jetpack: Buen soporte para ViewModels, WorkManager, etc.Pasos para la Integración:Paso 1: Añadir Dependencias de Hilt1.Archivo build.gradle (Nivel de Proyecto): Añade el plugin de Hilt al bloque plugins.Kotlin// Top-level build file
+plugins {
+    // ... otros plugins ...
+    id 'com.google.dagger.hilt.android' version '2.51.1' apply false // Usar la última versión estable
+}2.Archivo build.gradle (Nivel de Módulo - ej: app/build.gradle): Aplica el plugin de Hilt y añade las dependencias necesarias.Gradleplugins {
+    // ... otros plugins ...
+    id 'com.google.dagger.hilt.android'
+    id 'kotlin-kapt' // O id 'org.jetbrains.kotlin.kapt'
+}
+
+android {
+    // ...
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8 // O superior
+        targetCompatibility JavaVersion.VERSION_1_8 // O superior
+    }
+    kotlinOptions {
+        jvmTarget = '1.8' // O superior
+    }
+}
+
+dependencies {
+    // ... otras dependencias ...
+
+    // Hilt Core
+    implementation "com.google.dagger:hilt-android:2.51.1" // Misma versión que el plugin
+    kapt "com.google.dagger:hilt-compiler:2.51.1"
+
+    // Opcional: Para inyectar ViewModels con Hilt y Navigation Compose
+    implementation "androidx.hilt:hilt-navigation-compose:1.2.0" // O la última versión
+}
+
+// Asegúrate de tener la configuración de kapt (si no está ya)
+kapt {
+    correctErrorTypes true
+}•Nota: Siempre verifica y utiliza las últimas versiones estables de Hilt.Paso 2: Crear una Clase Application AnotadaHilt necesita una clase Application que sirva como punto de entrada para la generación de código.1.Crea (o modifica) tu clase Application:Kotlinpackage com.example.myapp // Tu paquete raíz
+
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class MyApplication : Application() {
+    // Puedes añadir lógica de inicialización aquí si es necesario,
+    // pero Hilt se encarga de la configuración de DI.
+}2.Actualiza tu AndroidManifest.xml para usar esta clase:Manifest<application
+    android:name=".MyApplication"
+    ...>
+    <!-- ... el resto de tu manifest ... -->
+</application>Merge Into ManifestPaso 3: Anotar Componentes de Android para InyecciónPara que Hilt pueda inyectar dependencias en tus Activities, Fragments, Services, etc., deben estar anotadas con @AndroidEntryPoint.•Activity:Kotlinimport dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    // Ejemplo de inyección de un campo
+    // @Inject lateinit var myDependency: MyDependency
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // ...
+    }
+}•Fragment: (Similar, si usas Fragments)•Compose UI: Para la UI de Compose, los ViewModels se obtienen de manera especial (ver Paso 6). Las Activities que alojan Composables deben ser @AndroidEntryPoint.Paso 4: Habilitar la Inyección en Clases PersonalizadasPara clases que no son componentes de Android pero que quieres que Hilt provea (como Repositorios, Casos de Uso, o un ConfigurationManager convertido en clase):1.Añade @Inject al constructor:Kotlinclass MyRepository @Inject constructor(
+    private val apiService: ApiService,
+    private val myDao: MyDao
+) {
+    // ...
+}2.Añade @Singleton (u otros scopes de Hilt) si es necesario: Si quieres que Hilt provea siempre la misma instancia de una clase.Kotlinimport javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ConfigurationManager @Inject constructor(
+    private val authViewModel: AuthViewModel // Ejemplo de inyección de ViewModel (ver consideraciones)
+) {
+    // ...
+}•Consideración: Inyectar un ViewModel directamente en otra clase que no sea un componente de UI o otro ViewModel puede ser un anti-patrón si no se maneja con cuidado el ciclo de vida. A menudo es mejor inyectar StateFlows específicos o interfaces.Paso 5: Proveer Dependencias con Módulos de HiltCuando no puedes usar @Inject en el constructor (ej: interfaces, clases de bibliotecas externas como Room, Retrofit, Firebase), debes usar Módulos de Hilt.1.Crea un paquete di (convención) en tu módulo.2.Define un Módulo:Kotlinpackage com.example.myapp.di
+
+import android.content.Context
+import com.example.myapp.data.local.AppDatabase
+import com.example.myapp.data.local.MyDao
+import com.google.firebase.auth.FirebaseAuth
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent // O ActivityComponent, ViewModelComponent, etc.
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class) // Define el alcance del módulo
+object AppModule { // O cualquier nombre descriptivo, ej: DatabaseModule, NetworkModule
+
+    @Provides
+    @Singleton // La instancia será un singleton a nivel de aplicación
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(context, AppDatabase::class.java, "my_database").build()
+    }
+
+    @Provides
+    // No necesita @Singleton si AppDatabase es singleton y el DAO se obtiene de ella
+    fun provideMyDao(database: AppDatabase): MyDao {
+        return database.myDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAuth(): FirebaseAuth {
+        return FirebaseAuth.getInstance()
+    }
+
+    // Puedes proveer otras dependencias aquí (Retrofit, SharedPreferences, etc.)
+}•@Module: Indica que esta clase es un módulo de Hilt.•@InstallIn: Especifica en qué componente de Hilt se instalarán las vinculaciones de este módulo (ej: SingletonComponent para dependencias a nivel de aplicación, ViewModelComponent para ViewModels, ActivityComponent para Activities).•@Provides: Indica que el método provee una instancia de una dependencia.•@Singleton: (Opcional) Indica que la dependencia debe ser un singleton dentro del scope del componente especificado en @InstallIn.•@ApplicationContext: Provee el Context de la aplicación.Paso 6: Inyectar y Usar ViewModels con HiltHilt simplifica la inyección de ViewModels.1.Anota tu ViewModel con @HiltViewModel:Kotlinimport androidx.lifecycle.ViewModel
+import com.example.myapp.domain.MyRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+
+@HiltViewModel
+class MyViewModel @Inject constructor(
+    private val repository: MyRepository // Hilt sabrá cómo proveer MyRepository
+) : ViewModel() {
+    // ... lógica del ViewModel ...
+}2.Elimina las Factories de ViewModel Manuales: Ya no necesitas crear clases ViewModelProvider.Factory manualmente para ViewModels anotados con @HiltViewModel. Hilt las genera.3.Obtén el ViewModel en tu UI (Compose):Kotlinimport androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
+
+@Composable
+fun MyScreen(
+    viewModel: MyViewModel = hiltViewModel() // Obtiene la instancia del ViewModel
+) {
+    // Usa el viewModel
+}•Si estás en una Activity o Fragment (sin Compose), puedes usar: private val viewModel: MyViewModel by viewModels()Paso 7: Realizar la Inyección de CamposPara dependencias que no son ViewModels y que necesitas en tus componentes anotados con @AndroidEntryPoint (como Activities):Kotlin@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var configurationManager: ConfigurationManager // Ejemplo
+
+    @Inject
+    lateinit var someOtherService: SomeOtherService
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // A partir de aquí, configurationManager y someOtherService están disponibles.
+    }
+}•Nota: La inyección de campos ocurre después de super.onCreate() en Activities y después de super.onAttach() en Fragments.Consideraciones Importantes y Buenas Prácticas:•Empezar de a poco: Si el proyecto es grande, puedes integrar Hilt módulo por módulo o componente por componente.•Scoping: Entiende los diferentes scopes de Hilt (@Singleton, @ActivityScoped, @ViewModelScoped, etc.) y úsalos apropiadamente para gestionar el ciclo de vida de tus dependencias. SingletonComponent es el más común para dependencias globales.•Abstracciones: Usa interfaces para tus dependencias siempre que sea posible. Esto facilita las pruebas y el cambio de implementaciones.Kotlininterface AnalyticsService { fun trackEvent(name: String) }
+
+@Singleton
+class FirebaseAnalyticsService @Inject constructor(...) : AnalyticsService { ... }
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AnalyticsModule {
+    @Binds // Usa @Binds para vincular una implementación a una interfaz (más eficiente que @Provides)
+    abstract fun bindAnalyticsService(
+        firebaseAnalyticsService: FirebaseAnalyticsService
+    ): AnalyticsService
+}•Pruebas: Hilt ofrece un excelente soporte para pruebas, permitiendo reemplazar dependencias fácilmente en tus tests unitarios y de instrumentación.•Refactorización: Es posible que necesites refactorizar algunas partes de tu código para que sean más amigables con la inyección de dependencias (ej: evitar la creación manual de objetos con new o llamadas a singletons estáticos en clases que deberían recibir dependencias).•Documentación Oficial: La documentación de Hilt es el recurso definitivo y siempre debe ser consultada.Flujo de Trabajo Típico Post-Integración:1.¿Necesitas una nueva dependencia (ej: ApiService)?•Si puedes anotar su constructor con @Inject y Hilt sabe cómo proveer sus parámetros, hazlo.•Si no (es una interfaz, clase externa), añádela a un @Module con un método @Provides (o @Binds).2.¿Necesitas la dependencia en un ViewModel?•Asegúrate que el ViewModel esté anotado con @HiltViewModel.•Añade la dependencia como un parámetro en el constructor del ViewModel (con @Inject en el constructor del ViewModel).3.¿Necesitas la dependencia en una Activity/Fragment?•Asegúrate que el componente esté anotado con @AndroidEntryPoint.•Inyecta la dependencia usando @Inject lateinit var myDependency: MyDependency.Al seguir estos pasos, podrás integrar Hilt en tu proyecto, lo que llevará a una base de código más limpia, organizada y fácil de mantener y probar.

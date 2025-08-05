@@ -1,0 +1,450 @@
+# 📄 **DOCUMENTO MAESTRO V10 - MARKET SALES**
+
+## 📱 **INFORMACIÓN DEL PROYECTO**
+
+### **Nombre del Proyecto:** Market Sales
+### **Package Name:** es.nuskysoftware.marketsales
+### **Estado Actual:** 🔄 **V10 - REFACTORIZACIÓN MONOUSUARIO SIMPLIFICADA**
+
+---
+
+## 🚨 **CAMBIOS CRÍTICOS V10 - NUEVA ARQUITECTURA MONOUSUARIO**
+
+### **📋 CAMBIOS FUNDAMENTALES:**
+- ❌ **Eliminado sistema multiusuario** - Arquitectura simplificada
+- ✅ **App monousuario** - Un usuario logueado o usuario_default
+- ✅ **Configuración global** - Moneda, idioma, fuente y tema comunes
+- ✅ **Solo Premium diferencia** - Único dato específico por usuario
+- ✅ **Datos por usuario** - Todas las tablas (mercadillos, artículos, etc.)
+- ✅ **Sincronización mejorada** - Timestamp + versionado para conflictos
+
+---
+
+## 🗑️ **ARCHIVOS OBSOLETOS IDENTIFICADOS**
+
+### **Archivos a ELIMINAR:**
+```
+❌ MenuLateral.kt - No se usa (confirmado en código)
+❌ UserManager.kt - Gestión multiusuario obsoleta
+```
+
+### **Archivos a MANTENER pero SIMPLIFICAR:**
+```
+✅ UserRepository.kt - MANTENER (para gestión de usuarios registrados)
+✅ UserDao.kt - MANTENER (para datos de usuarios)
+✅ UserEntity.kt - MANTENER pero SIMPLIFICAR (sin empresas/roles)
+```
+
+### **Archivos a REFACTORIZAR:**
+```
+🔄 AuthRepository.kt - Simplificar sin sistema multiusuario
+🔄 ConfigurationManager.kt - Remover campos de empresas/roles
+🔄 AppDatabase.kt - Eliminar tabla usuarios, actualizar a v5
+🔄 ConfiguracionEntity.kt - Agregar campos de sincronización
+🔄 MercadilloEntity.kt - Agregar campos version/lastModified
+```
+
+---
+
+## ✅ **NUEVA ARQUITECTURA V10**
+
+### **🎯 CONFIGURACIÓN SIMPLIFICADA:**
+
+#### **Tabla `configuracion` (GLOBAL - Común a todos):**
+```kotlin
+@Entity(tableName = "configuracion")
+data class ConfiguracionEntity(
+    @PrimaryKey val id: Int = 1,
+    
+    // CONFIGURACIÓN GLOBAL (común a todos los usuarios)
+    val moneda: String = "€ Euro",        
+    val idioma: String = "es",            
+    val fuente: String = "Montserrat",    
+    val temaOscuro: Boolean = false,      
+    
+    // USUARIO ACTUAL LOGUEADO
+    val usuarioLogueado: String? = null,  // UID del usuario actual o null
+    
+    // SINCRONIZACIÓN
+    val version: Long = 1,
+    val lastModified: Long = System.currentTimeMillis(),
+    val pendienteSync: Boolean = false
+)
+```
+
+#### **Tabla `usuarios` (SIMPLIFICADA - Solo datos básicos):**
+```kotlin
+@Entity(tableName = "usuarios")
+data class UserEntity(
+    @PrimaryKey val uid: String,          // Firebase UID
+    val email: String,                    // Email del usuario
+    val displayName: String = "",         // Nombre del usuario
+    val photoUrl: String = "",            // URL foto perfil
+    val esPremium: Boolean = false,       // ÚNICO dato específico por usuario
+    
+    // SINCRONIZACIÓN
+    val version: Long = 1,
+    val lastModified: Long = System.currentTimeMillis(),
+    val sincronizadoFirebase: Boolean = false,
+    val activo: Boolean = true
+)
+```
+
+### **🏪 TABLA MERCADILLOS (POR USUARIO):**
+```kotlin
+@Entity(tableName = "mercadillos")
+data class MercadilloEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    
+    // USUARIO PROPIETARIO
+    val userId: String,                   // Usuario actual o "usuario_default"
+    
+    // DATOS DEL MERCADILLO
+    val fechaHora: Long,
+    val lugar: String,
+    val organizador: String,
+    val esGratis: Boolean = true,
+    val estado: Int = 0,                  // Estados 0-7
+    
+    // CAMPOS OPCIONALES
+    val turno: String? = null,
+    val ubicacion: String? = null,
+    val municipio: String? = null,
+    val importeSuscripcion: Double = 0.0,
+    val puntoDeLuz: Boolean = false,
+    val requiereCarpa: Boolean = true,
+    val requiereMesa: Boolean = true,
+    val horaInicio: String? = null,
+    val horaFin: String? = null,
+    val saldoInicial: Double = 0.0,
+    
+    // SINCRONIZACIÓN V10
+    val version: Long = 1,
+    val lastModified: Long = System.currentTimeMillis(),
+    val sincronizadoFirebase: Boolean = false
+)
+```
+
+---
+
+## 🔑 **LÓGICA DE USUARIOS V10**
+
+### **Estados posibles:**
+1. **Usuario logueado** → `usuarioLogueado = "firebase_uid"`, `esPremium = true/false`
+2. **Sin usuario** → `usuarioLogueado = null`, `esPremium = false` (datos de usuario_default)
+
+### **Reglas de Premium:**
+- ✅ **Usuario_default** → `esPremium = false` SIEMPRE
+- ✅ **Usuario logueado** → `esPremium = true/false` según su plan
+- ✅ **Logout** → Cambiar a usuario_default con `esPremium = false`
+
+### **Permisos en Configuración:**
+```kotlin
+// TODOS (logueado o no)
+- Cambiar tema oscuro ✅
+
+// SOLO PREMIUM
+- Cambiar moneda ✅
+- Cambiar idioma ✅  
+- Cambiar fuente ✅
+```
+
+---
+
+## 🔄 **SINCRONIZACIÓN V10 - MEJORADA**
+
+### **📊 Campos de sincronización en TODAS las tablas:**
+```kotlin
+val version: Long = 1,                    // Número de versión del registro
+val lastModified: Long = timestamp,       // Timestamp última modificación
+val sincronizadoFirebase: Boolean = false // Pendiente de enviar a Firebase
+```
+
+### **🚀 Estrategia de sincronización:**
+1. **Escritura**: Siempre en Room first
+2. **Incrementar version** en cada modificación
+3. **Actualizar lastModified** en cada cambio
+4. **Marcar sincronizadoFirebase = false**
+5. **Intentar sync a Firebase** en background
+6. **Si success** → `sincronizadoFirebase = true`
+7. **Si fail** → Queda pendiente hasta próxima conexión
+
+### **⚔️ Resolución de conflictos:**
+- **Last-write-wins** - El timestamp `lastModified` más reciente gana
+- **Campo `version`** para detectar conflictos
+- **Merge automático** sin intervención del usuario
+
+---
+
+## 📁 **ESTRUCTURA V10 SIMPLIFICADA**
+
+```
+app/src/main/java/es/nuskysoftware/marketsales/
+├── MainActivity.kt ✅
+├── data/
+│   ├── local/
+│   │   ├── dao/
+│   │   │   ├── ConfiguracionDao.kt 🔄 (simplificar)
+│   │   │   └── MercadilloDao.kt ✅ (agregar sync fields)
+│   │   ├── entity/
+│   │   │   ├── ConfiguracionEntity.kt 🔄 (nueva estructura)
+│   │   │   └── MercadilloEntity.kt 🔄 (agregar version/lastModified)
+│   │   └── database/
+│   │       └── AppDatabase.kt 🔄 (v5, eliminar tabla usuarios)
+│   └── repository/
+│       ├── ConfiguracionRepository.kt 🔄 (simplificar)
+│       ├── AuthRepository.kt 🔄 (refactorizar monousuario)
+│       └── MercadilloRepository.kt ✅ (crear con sync)
+├── ui/
+│   ├── theme/ ✅ (sin cambios)
+│   ├── components/
+│   │   └── MenuHamburguesa.kt 🔄 (simplificar sin multiusuario)
+│   ├── pantallas/
+│   │   ├── PantallaSplash.kt ✅
+│   │   ├── PantallaLogin.kt 🔄 (simplificar)
+│   │   ├── PantallaConfiguracion.kt 🔄 (nueva lógica permisos)
+│   │   ├── PantallaPerfil.kt 🔄 (simplificar)
+│   │   └── PantallaMercadillos.kt ✅
+│   └── viewmodel/
+│       ├── ConfiguracionViewModel.kt 🔄 (simplificar)
+│       ├── AuthViewModel.kt 🔄 (refactorizar)
+│       └── MercadilloViewModel.kt ✅ (crear)
+├── utils/
+│   ├── ConfigurationManager.kt 🔄 (simplificar enormemente)
+│   ├── StringResourceManager.kt ✅
+│   ├── GoogleAuthHelper.kt ✅
+│   ├── EstadosMercadillo.kt ✅
+│   └── FooterMarca.kt ✅
+└── sync/ ✅ (NUEVO)
+    ├── SyncManager.kt ✅ (gestión de sincronización)
+    └── ConflictResolver.kt ✅ (resolución de conflictos)
+```
+
+---
+
+## 🔄 **MIGRACIÓN DE BASE DE DATOS V10**
+
+### **De AppDatabase v4 → v5:**
+```kotlin
+@Database(
+    entities = [ConfiguracionEntity::class, MercadilloEntity::class],
+    version = 5,
+    exportSchema = false
+)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun configuracionDao(): ConfiguracionDao
+    abstract fun mercadilloDao(): MercadilloDao
+    
+    // MIGRATION 4 → 5
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // 1. Eliminar tabla usuarios (no se necesita)
+            database.execSQL("DROP TABLE IF EXISTS usuarios")
+            
+            // 2. Recrear tabla configuracion con nueva estructura
+            database.execSQL("DROP TABLE IF EXISTS configuracion")
+            database.execSQL("""
+                CREATE TABLE configuracion (
+                    id INTEGER PRIMARY KEY NOT NULL,
+                    moneda TEXT NOT NULL DEFAULT '€ Euro',
+                    idioma TEXT NOT NULL DEFAULT 'es',
+                    fuente TEXT NOT NULL DEFAULT 'Montserrat',
+                    temaOscuro INTEGER NOT NULL DEFAULT 0,
+                    usuarioLogueado TEXT,
+                    esPremium INTEGER NOT NULL DEFAULT 0,
+                    version INTEGER NOT NULL DEFAULT 1,
+                    lastModified INTEGER NOT NULL DEFAULT 0,
+                    pendienteSync INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            
+            // 3. Agregar campos de sync a mercadillos
+            database.execSQL("ALTER TABLE mercadillos ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+            database.execSQL("ALTER TABLE mercadillos ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+        }
+    }
+}
+```
+
+---
+
+## 🎯 **FUNCIONALIDADES V10**
+
+### **✅ ConfigurationManager simplificado:**
+```kotlin
+object ConfigurationManager {
+    // CONFIGURACIÓN GLOBAL
+    private val _moneda = MutableStateFlow("€ Euro")
+    private val _idioma = MutableStateFlow("es") 
+    private val _fuente = MutableStateFlow("Montserrat")
+    private val _temaOscuro = MutableStateFlow(false)
+    
+    // USUARIO ACTUAL
+    private val _usuarioLogueado = MutableStateFlow<String?>(null)
+    private val _esPremium = MutableStateFlow(false)
+    
+    // Estados públicos
+    val moneda: StateFlow<String> = _moneda.asStateFlow()
+    val idioma: StateFlow<String> = _idioma.asStateFlow()
+    val fuente: StateFlow<String> = _fuente.asStateFlow()
+    val temaOscuro: StateFlow<Boolean> = _temaOscuro.asStateFlow()
+    val esPremium: StateFlow<Boolean> = _esPremium.asStateFlow()
+    
+    // MÉTODOS SIMPLIFICADOS
+    fun login(userId: String, isPremium: Boolean) {
+        _usuarioLogueado.value = userId
+        _esPremium.value = isPremium
+    }
+    
+    fun logout() {
+        _usuarioLogueado.value = null
+        _esPremium.value = false
+    }
+    
+    fun canChangeConfiguration(): Boolean = _esPremium.value
+    fun canChangeTheme(): Boolean = true // Todos pueden cambiar tema
+}
+```
+
+### **✅ AuthRepository simplificado:**
+```kotlin
+class AuthRepository(context: Context) {
+    private val configuracionRepo = ConfiguracionRepository(context)
+    
+    suspend fun login(email: String, password: String): AuthResult {
+        // 1. Autenticar con Firebase
+        val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
+        
+        // 2. Cargar configuración con nuevo usuario
+        val isPremium = checkUserPremiumStatus(result.user?.uid)
+        configuracionRepo.setUsuarioLogueado(result.user?.uid, isPremium)
+        
+        // 3. Actualizar ConfigurationManager
+        ConfigurationManager.login(result.user?.uid ?: "", isPremium)
+        
+        return AuthResult.Success(result.user)
+    }
+    
+    suspend fun logout(): AuthResult {
+        // 1. Logout Firebase
+        firebaseAuth.signOut()
+        
+        // 2. Cambiar a usuario_default
+        configuracionRepo.setUsuarioLogueado(null, false)
+        
+        // 3. Actualizar ConfigurationManager
+        ConfigurationManager.logout()
+        
+        return AuthResult.Success(null)
+    }
+}
+```
+
+---
+
+## 📋 **TAREAS INMEDIATAS V10**
+
+### **🔴 CRÍTICO - Eliminar archivos obsoletos:**
+1. ❌ `MenuLateral.kt` - Eliminar completamente
+2. ❌ `UserRepository.kt` - Eliminar
+3. ❌ `UserDao.kt` - Eliminar  
+4. ❌ `UserEntity.kt` - Eliminar
+5. ❌ `UserManager.kt` - Eliminar
+
+### **🟡 REFACTORIZAR archivos existentes:**
+1. 🔄 `ConfiguracionEntity.kt` - Nueva estructura simplificada
+2. 🔄 `ConfigurationManager.kt` - Eliminar 80% del código multiusuario
+3. 🔄 `AuthRepository.kt` - Simplificar flujo monousuario
+4. 🔄 `AppDatabase.kt` - Migración v4→v5, eliminar tabla usuarios
+5. 🔄 `PantallaConfiguracion.kt` - Nueva lógica de permisos Premium
+6. 🔄 `MenuHamburguesa.kt` - Simplificar sin roles/empresas
+
+### **🟢 CREAR nuevos archivos:**
+1. ✅ `MercadilloRepository.kt` - Con sistema de sincronización
+2. ✅ `MercadilloViewModel.kt` - Para PantallaMercadillos
+3. ✅ `SyncManager.kt` - Gestión central de sincronización
+4. ✅ `ConflictResolver.kt` - Resolución automática de conflictos
+
+---
+
+## 🔒 **REGLAS V10**
+
+### **✅ Configuración Global:**
+- Moneda, idioma, fuente, tema → Comunes a TODOS los usuarios
+- Se guardan en tabla `configuracion` id=1
+- Solo Premium puede cambiar (excepto tema)
+
+### **✅ Datos por Usuario:**
+- Mercadillos, artículos, categorías, ventas → Por `userId`
+- Usuario logueado → `firebase_uid`
+- Sin usuario → `"usuario_default"`
+
+### **✅ Sincronización:**
+- SIEMPRE escribir en Room primero
+- Sync a Firebase en background (no bloqueante)
+- Last-write-wins para conflictos
+- Cola de pendientes hasta recuperar conexión
+
+### **✅ Premium:**
+- Solo afecta permisos de configuración
+- No afecta funcionalidad core de mercadillos
+- Usuario_default → Siempre FREE
+
+---
+
+## 📊 **ESTADO V10**
+
+### **🗑️ Eliminaciones (20% del código):**
+- Sistema multiusuario completo
+- Gestión de empresas y roles
+- Tabla usuarios
+- Configuración por usuario
+
+### **🔄 Refactorizaciones (60% del código):**
+- ConfigurationManager simplificado
+- AuthRepository monousuario
+- Base de datos v5
+- Pantallas actualizadas
+
+### **✅ Nuevas funcionalidades (20% del código):**
+- Sistema de sincronización mejorado
+- Resolución de conflictos automática
+- Gestión de versiones
+- Cola de sincronización
+
+---
+
+## 🎉 **RESUMEN V10**
+
+**Market Sales V10** representa una **refactorización completa** hacia una arquitectura **monousuario simplificada**:
+
+### **🚀 Beneficios:**
+- ✅ **Código 60% más simple** - Eliminación sistema multiusuario
+- ✅ **Mejor rendimiento** - Menos complejidad en queries
+- ✅ **Sincronización robusta** - Timestamp + versionado
+- ✅ **UX más clara** - Premium solo para configuración avanzada
+- ✅ **Mantenimiento reducido** - Arquitectura simplificada
+
+### **📱 Funcionalidad mantenida:**
+- ✅ Autenticación Firebase (simplificada)
+- ✅ Configuración dinámica (optimizada)
+- ✅ Gestión de mercadillos (mejorada)
+- ✅ Tema oscuro/claro
+- ✅ Localización ES/EN
+
+---
+
+**VERSIÓN:** V10.0  
+**FECHA:** Enero 2025  
+**ESTADO:** 🔄 **REFACTORIZACIÓN EN CURSO - ARQUITECTURA MONOUSUARIO**
+
+---
+
+## 📝 **PRÓXIMOS PASOS V10.1**
+
+1. **ELIMINAR** archivos obsoletos identificados
+2. **REFACTORIZAR** ConfigurationManager (eliminar 80% código multiusuario)  
+3. **CREAR** migración AppDatabase v4→v5
+4. **ACTUALIZAR** PantallaConfiguracion con nueva lógica permisos
+5. **IMPLEMENTAR** MercadilloRepository con sincronización
+6. **TESTING** completo del flujo login/logout simplificado

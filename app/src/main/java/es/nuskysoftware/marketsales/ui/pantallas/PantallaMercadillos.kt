@@ -1,186 +1,759 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaMercadillos.kt
+/**
+ * Pantalla de calendario de mercadillos.
+ * - Mantiene el diseño actual.
+ * - Navegación por estado: 4/5/6 → pantalla de Arqueo; 1/2/3/7 → editar mercadillo.
+ * - El icono de leyenda (Info) se muestra dentro del Card del calendario (no en el TopAppBar).
+ */
 package es.nuskysoftware.marketsales.ui.pantallas
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
+import es.nuskysoftware.marketsales.data.repository.SyncState
+import es.nuskysoftware.marketsales.ui.components.BottomBarMercadillo
+import es.nuskysoftware.marketsales.ui.components.DialogoSeleccionMercadilloActivo
+import es.nuskysoftware.marketsales.ui.components.DownloadProgressBar
+import es.nuskysoftware.marketsales.ui.components.MenuHamburguesa
+import es.nuskysoftware.marketsales.ui.components.calendario.CalendarioGrid
+import es.nuskysoftware.marketsales.ui.components.dialogs.DialogoSeleccionMercadillo
+import es.nuskysoftware.marketsales.ui.components.leyenda.LeyendaColoresDialog
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
+import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModel
+import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.EstadosMercadillo
+import es.nuskysoftware.marketsales.ui.components.mercadillos.ProximosMercadillosSection
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import es.nuskysoftware.marketsales.R
-import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
-import es.nuskysoftware.marketsales.ui.components.MenuHamburguesa
-import es.nuskysoftware.marketsales.utils.ConfigurationManager
-import es.nuskysoftware.marketsales.utils.FooterMarca
-import es.nuskysoftware.marketsales.utils.StringResourceManager
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaMercadillos(
-    navController: NavController,
-    configuracionViewModel: ConfiguracionViewModel
+    navController: NavController? = null
 ) {
-    val configuracion by configuracionViewModel.configuracion.collectAsState()
+    val context = LocalContext.current
+
+    val mercadilloViewModel: MercadilloViewModel = viewModel(factory = MercadilloViewModelFactory(context))
+    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context.applicationContext))
+
+    // Sync/progreso
+    val syncState by authViewModel.syncState.collectAsState()
+    val progress by authViewModel.downloadProgress.collectAsState()
+    val message by authViewModel.downloadMessage.collectAsState()
+
+    // Config
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val esPremium by ConfigurationManager.esPremium.collectAsState()
+
+    // VM-States
+    val uiState by mercadilloViewModel.uiState.collectAsState()
+    val calendarioState by mercadilloViewModel.calendarioState.collectAsState()
+    val mercadillosPorDia by mercadilloViewModel.mercadillosPorDia.collectAsState()
+    val nombreMesActual by mercadilloViewModel.nombreMesActual.collectAsState()
+
+    val mostrarBottomBar by mercadilloViewModel.mostrarBottomBar.collectAsState()
+    val mercadillosEnCurso by mercadilloViewModel.mercadillosEnCurso.collectAsState()
+    val mercadilloActivoParaOperaciones by mercadilloViewModel.mercadilloActivoParaOperaciones.collectAsState()
+
+    // Local UI
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    // Estados de configuración
-    val currentLanguage by ConfigurationManager.idioma.collectAsState()
-    val isDarkTheme by ConfigurationManager.temaOscuro.collectAsState()
-    val currentFont by ConfigurationManager.fuente.collectAsState()
-    val versionApp by ConfigurationManager.versionApp.collectAsState()
-    val isPremium = versionApp == 1
-    val versionText = if (isPremium) "Premium V1.0" else "Free V1.0"
+    var mostrarLeyenda by remember { mutableStateOf(false) }
+    var mostrarDialogoSeleccionEdicion by remember { mutableStateOf(false) }
+    var mercadillosParaSeleccionar by remember { mutableStateOf<List<MercadilloEntity>>(emptyList()) }
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            MenuHamburguesa(
-                navController = navController,
-                drawerState = drawerState
-                // ✅ REMOVIDO AuthViewModel temporalmente para evitar ANR
-            )
+    var mostrarDialogoSeleccionActivo by remember { mutableStateOf(false) }
+    var accionPendiente by remember { mutableStateOf<String?>(null) } // "ventas" | "gastos" | "resumen"
+
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    // Mensajes
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let {
+            snackbarHostState.showSnackbar(it)
+            mercadilloViewModel.limpiarMensaje()
         }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = {
-                        Text(
-                            StringResourceManager.getString("mercadillos", currentLanguage),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_menu),
-                                contentDescription = StringResourceManager.getString("menu", currentLanguage),
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+    }
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            mercadilloViewModel.limpiarError()
+        }
+    }
+
+    // 🔴 Se eliminan todas las llamadas de actualización/programación de estados desde esta pantalla.
+
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            scope.launch {
+                isRefreshing = true
+                if (esPremium) {
+                    mercadilloViewModel.forzarSincronizacion()
+                } else {
+                    delay(600)
+                    val result = snackbarHostState.showSnackbar(
+                        message = StringResourceManager.getString("premium_required", currentLanguage),
+                        actionLabel = StringResourceManager.getString("go_premium", currentLanguage),
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Short
                     )
-                )
-            },
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { /* TODO: Añadir mercadillo */ },
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_add),
-                        contentDescription = StringResourceManager.getString("add_market", currentLanguage),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        navController?.navigate("configuracion")
+                    }
                 }
-            },
-            bottomBar = { FooterMarca() }
-        ) { paddingValues ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Tarjeta bienvenida
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
+                isRefreshing = false
+            }
+        },
+        modifier = Modifier.fillMaxSize()
+    ) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            drawerContent = {
+                navController?.let { nav -> MenuHamburguesa(navController = nav, drawerState = drawerState) }
+            }
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
                             Text(
-                                text = "¡Bienvenido a Market Sales!",
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface
+                                StringResourceManager.getString("mercadillos", currentLanguage),
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Tu aplicación para control de caja en mercadillos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Card(colors = CardDefaults.cardColors(
-                                containerColor = if (isPremium)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.secondaryContainer
-                            )) {
-                                Text(
-                                    text = "Versión: $versionText",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isPremium)
-                                        MaterialTheme.colorScheme.onPrimary
-                                    else
-                                        MaterialTheme.colorScheme.onSecondaryContainer,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_menu),
+                                    contentDescription = StringResourceManager.getString("menu", currentLanguage)
                                 )
                             }
-                        }
-                    }
-                }
-
-                // Sección en desarrollo
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        },
+                        // (Se elimina el actions con el icono de leyenda)
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                        )
+                    )
+                },
+                snackbarHost = { SnackbarHost(snackbarHostState) },
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = { navController?.navigate("alta_mercadillo") },
+                        shape = CircleShape,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                            Text(
-                                text = "🚧 En Desarrollo",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Esta pantalla se completará con:",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "• Lista de mercadillos\n• Gestión de ventas\n• Control de caja\n• Reportes y estadísticas",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = StringResourceManager.getString("add_mercadillo", currentLanguage)
+                        )
+                    }
+                },
+                bottomBar = {
+                    if (mostrarBottomBar) {
+                        BottomBarMercadillo(
+                            mercadilloActivo = mercadilloActivoParaOperaciones,
+                            onVentasClick = {
+                                val (ok, m) = mercadilloViewModel.manejarNavegacionVentas()
+                                if (ok && m != null) navController?.navigate("ventas/${m.idMercadillo}")
+                                else { accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true }
+                            },
+                            onGastosClick = {
+                                val (ok, m) = mercadilloViewModel.manejarNavegacionGastos()
+                                if (ok && m != null) navController?.navigate("gastos/${m.idMercadillo}")
+                                else { accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true }
+                            },
+                            onResumenClick = {
+                                val (ok, m) = mercadilloViewModel.manejarNavegacionResumen()
+                                if (ok && m != null) navController?.navigate("resumen/${m.idMercadillo}")
+                                else { accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true }
+                            },
+                            onCambiarMercadillo = {
+                                mercadilloViewModel.cambiarMercadilloActivo()
+                                mostrarDialogoSeleccionActivo = true
+                            },
+                            currentLanguage = currentLanguage,
+                            mostrarBotonCambiar = (mercadilloActivoParaOperaciones != null && mercadillosEnCurso.size > 1)
+                        )
+                    }
+                }
+            ) { paddingValues ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+
+                    DownloadProgressBar(
+                        visible = syncState != SyncState.Idle && syncState != SyncState.Done && syncState !is SyncState.Error,
+                        progressPercent = progress,
+                        message = message,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+
+                    // ==== CALENDARIO ====
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(350.dp)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(Modifier.fillMaxSize().padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                IconButton(onClick = { mercadilloViewModel.navegarMesAnterior() }) {
+                                    Text("←", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                                Text(
+                                    text = nombreMesActual,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    // 👉 Icono de leyenda dentro del calendario
+                                    IconButton(onClick = { mostrarLeyenda = true }, modifier = Modifier.size(32.dp)) {
+                                        Icon(
+                                            imageVector = Icons.Default.Info,
+                                            contentDescription = StringResourceManager.getString("ver_leyenda", currentLanguage)
+                                        )
+                                    }
+                                    IconButton(onClick = { mercadilloViewModel.navegarMesSiguiente() }) {
+                                        Text("→", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                                    Text(
+                                        text = dia,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                        modifier = Modifier.weight(1f),
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+
+                            Spacer(Modifier.height(8.dp))
+
+                            CalendarioGrid(
+                                ano = calendarioState.ano,
+                                mes = calendarioState.mes,
+                                mercadillosPorDia = mercadillosPorDia,
+                                onDiaClick = { dia ->
+                                    val uid = ConfigurationManager.getCurrentUserId()
+                                    val delDia = (mercadillosPorDia[dia] ?: emptyList()).filter { it.userId == uid }
+                                    when (delDia.size) {
+                                        0 -> Unit
+                                        1 -> {
+                                            val m = delDia.first()
+                                            val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)
+                                            val ruta = if (estado == EstadosMercadillo.Estado.PENDIENTE_ARQUEO ||
+                                                estado == EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO ||
+                                                estado == EstadosMercadillo.Estado.CERRADO_COMPLETO) {
+                                                "arqueo/${m.idMercadillo}"
+                                            } else {
+                                                "editar_mercadillo/${m.idMercadillo}"
+                                            }
+                                            navController?.navigate(ruta)
+                                        }
+                                        else -> {
+                                            mercadillosParaSeleccionar = delDia // SOLO del usuario
+                                            mostrarDialogoSeleccionEdicion = true
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
-                }
+                    Spacer(Modifier.height(8.dp))
 
-                // Footer de configuración
-//                item {
-//                    FooterMarca()
-//                }
+                    // 👉 Sección de próximos mercadillos (solo estados 1 y 2), con navegación
+                    ProximosMercadillosSection(
+                        navController = navController,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)     // opcional
+                    )
+
+                }
+            }
+
+            // Leyenda
+            if (mostrarLeyenda) {
+                LeyendaColoresDialog(onDismiss = { mostrarLeyenda = false }, currentLanguage = currentLanguage)
+            }
+
+            // Diálogo selección para editar / arqueo según estado
+            if (mostrarDialogoSeleccionEdicion) {
+                DialogoSeleccionMercadillo(
+                    mercadillos = mercadillosParaSeleccionar,
+                    currentUserId = ConfigurationManager.getCurrentUserId(),
+                    onMercadilloSeleccionado = { m ->
+                        mostrarDialogoSeleccionEdicion = false
+                        val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)
+                        val ruta = if (estado == EstadosMercadillo.Estado.PENDIENTE_ARQUEO ||
+                            estado == EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO ||
+                            estado == EstadosMercadillo.Estado.CERRADO_COMPLETO) {
+                            "arqueo/${m.idMercadillo}"
+                        } else {
+                            "editar_mercadillo/${m.idMercadillo}"
+                        }
+                        navController?.navigate(ruta)
+                    },
+                    onDismiss = { mostrarDialogoSeleccionEdicion = false },
+                    currentLanguage = currentLanguage
+                )
+            }
+
+            // Diálogo de selección de mercadillo activo (ventas/gastos/resumen)
+            if (mostrarDialogoSeleccionActivo) {
+                DialogoSeleccionMercadilloActivo(
+                    mercadillosEnCurso = mercadillosEnCurso,
+                    onMercadilloSeleccionado = { m ->
+                        mercadilloViewModel.seleccionarMercadilloActivo(m)
+                        mostrarDialogoSeleccionActivo = false
+                        when (accionPendiente) {
+                            "ventas" -> navController?.navigate("ventas/${m.idMercadillo}")
+                            "gastos" -> navController?.navigate("gastos/${m.idMercadillo}")
+                            "resumen" -> navController?.navigate("resumen/${m.idMercadillo}")
+                        }
+                        accionPendiente = null
+                    },
+                    onDismiss = { mostrarDialogoSeleccionActivo = false; accionPendiente = null },
+                    currentLanguage = currentLanguage
+                )
             }
         }
     }
 }
 
+
+
+//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaMercadillos.kt
+///**
+// * Pantalla de calendario de mercadillos.
+// * - Mantiene el diseño actual.
+// * - Navegación por estado: 4/5/6 → pantalla de Arqueo; 1/2/3/7 → editar mercadillo.
+// * - El icono de leyenda (Info) se muestra dentro del Card del calendario (no en el TopAppBar).
+// */
+//package es.nuskysoftware.marketsales.ui.pantallas
+//
+//import android.os.Build
+//import androidx.annotation.RequiresApi
+//import es.nuskysoftware.marketsales.R
+//import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
+//import es.nuskysoftware.marketsales.data.repository.SyncState
+//import es.nuskysoftware.marketsales.ui.components.BottomBarMercadillo
+//import es.nuskysoftware.marketsales.ui.components.DialogoSeleccionMercadilloActivo
+//import es.nuskysoftware.marketsales.ui.components.DownloadProgressBar
+//import es.nuskysoftware.marketsales.ui.components.MenuHamburguesa
+//import es.nuskysoftware.marketsales.ui.components.calendario.CalendarioGrid
+//import es.nuskysoftware.marketsales.ui.components.dialogs.DialogoSeleccionMercadillo
+//import es.nuskysoftware.marketsales.ui.components.leyenda.LeyendaColoresDialog
+//import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
+//import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
+//import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModel
+//import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModelFactory
+//import es.nuskysoftware.marketsales.utils.ConfigurationManager
+//import es.nuskysoftware.marketsales.utils.StringResourceManager
+//import es.nuskysoftware.marketsales.utils.EstadosMercadillo
+//import es.nuskysoftware.marketsales.ui.components.mercadillos.ProximosMercadillosSection
+//import androidx.compose.foundation.background
+//import androidx.compose.foundation.layout.*
+//import androidx.compose.foundation.shape.CircleShape
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.Add
+//import androidx.compose.material.icons.filled.Info
+//import androidx.compose.material3.*
+//import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+//import androidx.compose.runtime.*
+//import androidx.compose.ui.Alignment
+//import androidx.compose.ui.Modifier
+//import androidx.compose.ui.graphics.Color
+//import androidx.compose.ui.platform.LocalContext
+//import androidx.compose.ui.res.painterResource
+//import androidx.compose.ui.text.font.FontWeight
+//import androidx.compose.ui.text.style.TextAlign
+//import androidx.compose.ui.unit.dp
+//import androidx.compose.ui.unit.sp
+//import androidx.lifecycle.viewmodel.compose.viewModel
+//import androidx.navigation.NavController
+//import kotlinx.coroutines.delay
+//import kotlinx.coroutines.launch
+//
+//@RequiresApi(Build.VERSION_CODES.O)
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun PantallaMercadillos(
+//    navController: NavController? = null
+//) {
+//    val context = LocalContext.current
+//
+//    val mercadilloViewModel: MercadilloViewModel = viewModel(factory = MercadilloViewModelFactory(context))
+//    val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(context.applicationContext))
+//
+//    // Sync/progreso
+//    val syncState by authViewModel.syncState.collectAsState()
+//    val progress by authViewModel.downloadProgress.collectAsState()
+//    val message by authViewModel.downloadMessage.collectAsState()
+//
+//    // Config
+//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+//    val esPremium by ConfigurationManager.esPremium.collectAsState()
+//
+//    // VM-States
+//    val uiState by mercadilloViewModel.uiState.collectAsState()
+//    val calendarioState by mercadilloViewModel.calendarioState.collectAsState()
+//    val mercadillosPorDia by mercadilloViewModel.mercadillosPorDia.collectAsState()
+//    val nombreMesActual by mercadilloViewModel.nombreMesActual.collectAsState()
+//
+//    val mostrarBottomBar by mercadilloViewModel.mostrarBottomBar.collectAsState()
+//    val mercadillosEnCurso by mercadilloViewModel.mercadillosEnCurso.collectAsState()
+//    val mercadilloActivoParaOperaciones by mercadilloViewModel.mercadilloActivoParaOperaciones.collectAsState()
+//
+//    // Local UI
+//    val drawerState = rememberDrawerState(DrawerValue.Closed)
+//    val scope = rememberCoroutineScope()
+//    val snackbarHostState = remember { SnackbarHostState() }
+//
+//    var mostrarLeyenda by remember { mutableStateOf(false) }
+//    var mostrarDialogoSeleccionEdicion by remember { mutableStateOf(false) }
+//    var mercadillosParaSeleccionar by remember { mutableStateOf<List<MercadilloEntity>>(emptyList()) }
+//
+//    var mostrarDialogoSeleccionActivo by remember { mutableStateOf(false) }
+//    var accionPendiente by remember { mutableStateOf<String?>(null) } // "ventas" | "gastos" | "resumen"
+//
+//    var isRefreshing by remember { mutableStateOf(false) }
+//
+//    // Mensajes
+//    LaunchedEffect(uiState.message) {
+//        uiState.message?.let {
+//            snackbarHostState.showSnackbar(it)
+//            mercadilloViewModel.limpiarMensaje()
+//        }
+//    }
+//    LaunchedEffect(uiState.error) {
+//        uiState.error?.let {
+//            snackbarHostState.showSnackbar(it)
+//            mercadilloViewModel.limpiarError()
+//        }
+//    }
+//
+//    LaunchedEffect(Unit) {
+//        // ✅ Cuando se abre la app: revisar estados y programar 00:00 y 05:00
+//        try {
+//            es.nuskysoftware.marketsales.work.AutoEstadoScheduler.runOnceNow(context.applicationContext)
+//            es.nuskysoftware.marketsales.work.AutoEstadoScheduler.scheduleDaily(context.applicationContext)
+//        } catch (_: Exception) { /* no bloquear UI */ }
+//    }
+//
+//    PullToRefreshBox(
+//        isRefreshing = isRefreshing,
+//        onRefresh = {
+//            scope.launch {
+//                isRefreshing = true
+//                if (esPremium) {
+//                    mercadilloViewModel.forzarSincronizacion()
+//                } else {
+//                    delay(600)
+//                    val result = snackbarHostState.showSnackbar(
+//                        message = StringResourceManager.getString("premium_required", currentLanguage),
+//                        actionLabel = StringResourceManager.getString("go_premium", currentLanguage),
+//                        withDismissAction = true,
+//                        duration = SnackbarDuration.Short
+//                    )
+//                    if (result == SnackbarResult.ActionPerformed) {
+//                        navController?.navigate("configuracion")
+//                    }
+//                }
+//                isRefreshing = false
+//            }
+//        },
+//        modifier = Modifier.fillMaxSize()
+//    ) {
+//        ModalNavigationDrawer(
+//            drawerState = drawerState,
+//            drawerContent = {
+//                navController?.let { nav -> MenuHamburguesa(navController = nav, drawerState = drawerState) }
+//            }
+//        ) {
+//            Scaffold(
+//                topBar = {
+//                    TopAppBar(
+//                        title = {
+//                            Text(
+//                                StringResourceManager.getString("mercadillos", currentLanguage),
+//                                fontWeight = FontWeight.Bold
+//                            )
+//                        },
+//                        navigationIcon = {
+//                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+//                                Icon(
+//                                    painter = painterResource(id = R.drawable.ic_menu),
+//                                    contentDescription = StringResourceManager.getString("menu", currentLanguage)
+//                                )
+//                            }
+//                        },
+//                        // (Se elimina el actions con el icono de leyenda)
+//                        colors = TopAppBarDefaults.topAppBarColors(
+//                            containerColor = MaterialTheme.colorScheme.primary,
+//                            titleContentColor = MaterialTheme.colorScheme.onPrimary,
+//                            navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+//                        )
+//                    )
+//                },
+//                snackbarHost = { SnackbarHost(snackbarHostState) },
+//                floatingActionButton = {
+//                    FloatingActionButton(
+//                        onClick = { navController?.navigate("alta_mercadillo") },
+//                        shape = CircleShape,
+//                        containerColor = MaterialTheme.colorScheme.primary,
+//                        contentColor = MaterialTheme.colorScheme.onPrimary
+//                    ) {
+//                        Icon(
+//                            imageVector = Icons.Default.Add,
+//                            contentDescription = StringResourceManager.getString("add_mercadillo", currentLanguage)
+//                        )
+//                    }
+//                },
+//                bottomBar = {
+//                    if (mostrarBottomBar) {
+//                        BottomBarMercadillo(
+//                            mercadilloActivo = mercadilloActivoParaOperaciones,
+//                            onVentasClick = {
+//                                val (ok, m) = mercadilloViewModel.manejarNavegacionVentas()
+//                                if (ok && m != null) navController?.navigate("ventas/${m.idMercadillo}")
+//                                else { accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true }
+//                            },
+//                            onGastosClick = {
+//                                val (ok, m) = mercadilloViewModel.manejarNavegacionGastos()
+//                                if (ok && m != null) navController?.navigate("gastos/${m.idMercadillo}")
+//                                else { accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true }
+//                            },
+//                            onResumenClick = {
+//                                val (ok, m) = mercadilloViewModel.manejarNavegacionResumen()
+//                                if (ok && m != null) navController?.navigate("resumen/${m.idMercadillo}")
+//                                else { accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true }
+//                            },
+//                            onCambiarMercadillo = {
+//                                mercadilloViewModel.cambiarMercadilloActivo()
+//                                mostrarDialogoSeleccionActivo = true
+//                            },
+//                            currentLanguage = currentLanguage,
+//                            mostrarBotonCambiar = (mercadilloActivoParaOperaciones != null && mercadillosEnCurso.size > 1)
+//                        )
+//                    }
+//                }
+//            ) { paddingValues ->
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .padding(paddingValues)
+//                        .background(MaterialTheme.colorScheme.background)
+//                ) {
+//
+//                    DownloadProgressBar(
+//                        visible = syncState != SyncState.Idle && syncState != SyncState.Done && syncState !is SyncState.Error,
+//                        progressPercent = progress,
+//                        message = message,
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(horizontal = 16.dp, vertical = 8.dp)
+//                    )
+//
+//                    // ==== CALENDARIO ====
+//                    Card(
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(350.dp)
+//                            .padding(horizontal = 16.dp, vertical = 8.dp),
+//                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+//                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+//                    ) {
+//                        Column(Modifier.fillMaxSize().padding(16.dp)) {
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                horizontalArrangement = Arrangement.SpaceBetween,
+//                                verticalAlignment = Alignment.CenterVertically
+//                            ) {
+//                                IconButton(onClick = { mercadilloViewModel.navegarMesAnterior() }) {
+//                                    Text("←", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
+//                                }
+//                                Text(
+//                                    text = nombreMesActual,
+//                                    style = MaterialTheme.typography.titleLarge,
+//                                    fontWeight = FontWeight.Bold,
+//                                    color = MaterialTheme.colorScheme.onSurface
+//                                )
+//                                Row(verticalAlignment = Alignment.CenterVertically) {
+//                                    // 👉 Icono de leyenda dentro del calendario
+//                                    IconButton(onClick = { mostrarLeyenda = true }, modifier = Modifier.size(32.dp)) {
+//                                        Icon(
+//                                            imageVector = Icons.Default.Info,
+//                                            contentDescription = StringResourceManager.getString("ver_leyenda", currentLanguage)
+//                                        )
+//                                    }
+//                                    IconButton(onClick = { mercadilloViewModel.navegarMesSiguiente() }) {
+//                                        Text("→", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
+//                                    }
+//                                }
+//                            }
+//
+//                            Spacer(Modifier.height(8.dp))
+//
+//                            Row(
+//                                modifier = Modifier.fillMaxWidth(),
+//                                horizontalArrangement = Arrangement.SpaceEvenly
+//                            ) {
+//                                listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+//                                    Text(
+//                                        text = dia,
+//                                        style = MaterialTheme.typography.bodySmall,
+//                                        fontWeight = FontWeight.Bold,
+//                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+//                                        modifier = Modifier.weight(1f),
+//                                        textAlign = TextAlign.Center
+//                                    )
+//                                }
+//                            }
+//
+//                            Spacer(Modifier.height(8.dp))
+//
+//                            CalendarioGrid(
+//                                ano = calendarioState.ano,
+//                                mes = calendarioState.mes,
+//                                mercadillosPorDia = mercadillosPorDia,
+//                                onDiaClick = { dia ->
+//                                    val uid = ConfigurationManager.getCurrentUserId()
+//                                    val delDia = (mercadillosPorDia[dia] ?: emptyList()).filter { it.userId == uid }
+//                                    when (delDia.size) {
+//                                        0 -> Unit
+//                                        1 -> {
+//                                            val m = delDia.first()
+//                                            val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)
+//                                            val ruta = if (estado == EstadosMercadillo.Estado.PENDIENTE_ARQUEO ||
+//                                                estado == EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO ||
+//                                                estado == EstadosMercadillo.Estado.CERRADO_COMPLETO) {
+//                                                "arqueo/${m.idMercadillo}"
+//                                            } else {
+//                                                "editar_mercadillo/${m.idMercadillo}"
+//                                            }
+//                                            navController?.navigate(ruta)
+//                                        }
+//                                        else -> {
+//                                            mercadillosParaSeleccionar = delDia // SOLO del usuario
+//                                            mostrarDialogoSeleccionEdicion = true
+//                                        }
+//                                    }
+//                                }
+//                            )
+//                        }
+//                    }
+//                    Spacer(Modifier.height(8.dp))
+//
+//                    // 👉 Sección de próximos mercadillos (solo estados 1 y 2), con navegación
+//                    ProximosMercadillosSection(
+//                        navController = navController,
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .padding(bottom = 8.dp)     // opcional
+//                    )
+//
+//                }
+//            }
+//
+//            // Leyenda
+//            if (mostrarLeyenda) {
+//                LeyendaColoresDialog(onDismiss = { mostrarLeyenda = false }, currentLanguage = currentLanguage)
+//            }
+//
+//            // Diálogo selección para editar / arqueo según estado
+//            if (mostrarDialogoSeleccionEdicion) {
+//                DialogoSeleccionMercadillo(
+//                    mercadillos = mercadillosParaSeleccionar,
+//                    currentUserId = ConfigurationManager.getCurrentUserId(),
+//                    onMercadilloSeleccionado = { m ->
+//                        mostrarDialogoSeleccionEdicion = false
+//                        val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)
+//                        val ruta = if (estado == EstadosMercadillo.Estado.PENDIENTE_ARQUEO ||
+//                            estado == EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO ||
+//                            estado == EstadosMercadillo.Estado.CERRADO_COMPLETO) {
+//                            "arqueo/${m.idMercadillo}"
+//                        } else {
+//                            "editar_mercadillo/${m.idMercadillo}"
+//                        }
+//                        navController?.navigate(ruta)
+//                    },
+//                    onDismiss = { mostrarDialogoSeleccionEdicion = false },
+//                    currentLanguage = currentLanguage
+//                )
+//            }
+//
+//            // Diálogo de selección de mercadillo activo (ventas/gastos/resumen)
+//            if (mostrarDialogoSeleccionActivo) {
+//                DialogoSeleccionMercadilloActivo(
+//                    mercadillosEnCurso = mercadillosEnCurso,
+//                    onMercadilloSeleccionado = { m ->
+//                        mercadilloViewModel.seleccionarMercadilloActivo(m)
+//                        mostrarDialogoSeleccionActivo = false
+//                        when (accionPendiente) {
+//                            "ventas" -> navController?.navigate("ventas/${m.idMercadillo}")
+//                            "gastos" -> navController?.navigate("gastos/${m.idMercadillo}")
+//                            "resumen" -> navController?.navigate("resumen/${m.idMercadillo}")
+//                        }
+//                        accionPendiente = null
+//                    },
+//                    onDismiss = { mostrarDialogoSeleccionActivo = false; accionPendiente = null },
+//                    currentLanguage = currentLanguage
+//                )
+//            }
+//        }
+//    }
+//}

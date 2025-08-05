@@ -1,0 +1,3764 @@
+package es.nuskysoftware.cajamercadillos.data.local.dao
+
+import androidx.room.*
+import es.nuskysoftware.cajamercadillos.data.local.entity.ArticuloEntity
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * ✅ ArticuloDao:
+ * - Proporciona operaciones CRUD para la tabla Artículos.
+ * - Devuelve Flows para actualizaciones en tiempo real.
+ */
+@Dao
+interface ArticuloDao {
+
+    /**
+     * Inserta o reemplaza un artículo.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertArticulo(articulo: ArticuloEntity)
+
+    /**
+     * Actualiza un artículo existente.
+     */
+    @Update
+    suspend fun updateArticulo(articulo: ArticuloEntity)
+
+    /**
+     * Elimina un artículo.
+     */
+    @Delete
+    suspend fun deleteArticulo(articulo: ArticuloEntity)
+
+    /**
+     * Obtiene todos los artículos ordenados por nombre.
+     */
+    @Query("SELECT * FROM articulos ORDER BY nombre ASC")
+    fun getAllArticulos(): Flow<List<ArticuloEntity>>
+
+    /**
+     * Obtiene artículos filtrados por categoría.
+     */
+    @Query("SELECT * FROM articulos WHERE idCategoria = :categoriaId ORDER BY nombre ASC")
+    fun getArticulosPorCategoria(categoriaId: String): Flow<List<ArticuloEntity>>
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.dao
+
+import androidx.room.*
+import es.nuskysoftware.cajamercadillos.data.local.entity.AvisoEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface AvisoDao {
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAviso(aviso: AvisoEntity)
+
+    @Update
+    suspend fun updateAviso(aviso: AvisoEntity)
+
+    @Delete
+    suspend fun deleteAviso(aviso: AvisoEntity)
+
+    @Query("SELECT * FROM avisos ORDER BY fechaCreacion DESC")
+    fun getAvisos(): Flow<List<AvisoEntity>>
+
+    @Query("SELECT COUNT(*) FROM avisos WHERE leido = 0")
+    fun getAvisosNoLeidosCount(): Flow<Int>
+
+    @Query("UPDATE avisos SET leido = 1 WHERE idAviso = :idAviso")
+    suspend fun marcarAvisoComoLeido(idAviso: String)
+
+    // ✅ Aquí está el método que faltaba
+    @Query("UPDATE avisos SET leido = 1")
+    suspend fun marcarTodosLeidos()
+
+    @Query("SELECT * FROM avisos WHERE pendienteSincronizar = 1")
+    suspend fun getAvisosPendientes(): List<AvisoEntity>
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.dao
+
+import androidx.room.*
+import es.nuskysoftware.cajamercadillos.data.local.entity.CategoriaEntity
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * CategoriaDao:
+ * Define todas las operaciones CRUD sobre la tabla "categorias".
+ * Incluye métodos extra para sincronización con Firestore.
+ */
+
+@Dao
+interface CategoriaDao {
+
+    // ---------------- INSERTAR ----------------
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategoria(categoria: CategoriaEntity)
+    /**
+     * Inserta una categoría en Room.
+     * - Si ya existe (mismo idCategoria) → la reemplaza (estrategia REPLACE).
+     * - Operación suspendida (corrutina).
+     */
+
+    // ---------------- ACTUALIZAR ----------------
+    @Update
+    suspend fun updateCategoria(categoria: CategoriaEntity)
+    /**
+     * Actualiza una categoría existente en la base local.
+     * Necesita que idCategoria exista previamente.
+     */
+
+    // ---------------- ELIMINAR ----------------
+    @Delete
+    suspend fun deleteCategoria(categoria: CategoriaEntity)
+    /**
+     * Elimina una categoría específica.
+     */
+
+    // ---------------- OBTENER TODAS ----------------
+    @Query("SELECT * FROM categorias ORDER BY nombre ASC")
+    fun getAllCategorias(): Flow<List<CategoriaEntity>>
+    /**
+     * Devuelve todas las categorías en tiempo real (Flow).
+     * La UI se actualizará automáticamente cuando haya cambios en Room.
+     */
+
+    // ---------------- SINCRONIZACIÓN FIRESTORE ----------------
+
+    @Query("SELECT * FROM categorias WHERE pendienteSincronizar = 1")
+    suspend fun getCategoriasPendientes(): List<CategoriaEntity>
+    /**
+     * Devuelve las categorías que aún NO están sincronizadas con Firestore.
+     * Se usará en el repositorio para enviar cambios cuando haya conexión.
+     */
+
+    @Query("UPDATE categorias SET pendienteSincronizar = 0 WHERE idCategoria = :idCategoria")
+    suspend fun marcarComoSincronizada(idCategoria: String)
+    /**
+     * Marca como sincronizada una categoría (pendienteSincronizar = false)
+     * cuando se confirma que fue subida correctamente a Firestore.
+     */
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.dao
+
+import androidx.room.*
+import es.nuskysoftware.cajamercadillos.data.local.entity.ConfiguracionEntity
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * ConfiguracionDao:
+ * ✅ Define operaciones CRUD para la tabla 'configuracion'.
+ * - Solo debe existir 1 registro (id = 1).
+ */
+@Dao
+interface ConfiguracionDao {
+
+    /**
+     * Obtiene la configuración actual (único registro).
+     * Se observa en tiempo real gracias a Flow.
+     */
+    @Query("SELECT * FROM configuracion WHERE id = 1 LIMIT 1")
+    fun getConfiguracion(): Flow<ConfiguracionEntity?>
+
+    /**
+     * Inserta la configuración inicial.
+     * Si ya existe, reemplaza la anterior.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertConfiguracion(config: ConfiguracionEntity)
+
+    /**
+     * Actualiza la configuración completa.
+     */
+    @Update
+    suspend fun updateConfiguracion(config: ConfiguracionEntity)
+
+    /**
+     * Marca la configuración como completada o no.
+     */
+    @Query("UPDATE configuracion SET isConfigurated = :estado WHERE id = 1")
+    suspend fun marcarConfigurada(estado: Boolean)
+
+    /**
+     * Actualiza el dispositivo autorizado.
+     */
+    @Query("UPDATE configuracion SET ultimoDispositivo = :dispositivo WHERE id = 1")
+    suspend fun actualizarDispositivo(dispositivo: String)
+
+    /**
+     * Actualiza credenciales de usuario (Premium).
+     */
+    @Query("UPDATE configuracion SET usuarioEmail = :email, usuarioId = :uid WHERE id = 1")
+    suspend fun actualizarUsuario(email: String, uid: String)
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.database
+
+import android.content.Context
+import androidx.room.Database
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import es.nuskysoftware.cajamercadillos.data.local.dao.AvisoDao
+import es.nuskysoftware.cajamercadillos.data.local.dao.CategoriaDao
+import es.nuskysoftware.cajamercadillos.data.local.dao.ConfiguracionDao
+import es.nuskysoftware.cajamercadillos.data.local.dao.ArticuloDao // ✅ NUEVO
+import es.nuskysoftware.cajamercadillos.data.local.entity.AvisoEntity
+import es.nuskysoftware.cajamercadillos.data.local.entity.CategoriaEntity
+import es.nuskysoftware.cajamercadillos.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.cajamercadillos.data.local.entity.ArticuloEntity // ✅ NUEVO
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+/**
+ * AppDatabase:
+ * ✅ Base de datos Room para categorías, configuración, avisos y artículos.
+ */
+@Database(
+    entities = [
+        CategoriaEntity::class,
+        ConfiguracionEntity::class,
+        AvisoEntity::class,
+        ArticuloEntity::class // ✅ NUEVO
+    ],
+    version = 3, // ✅ Incrementamos la versión por nueva tabla
+    exportSchema = false
+)
+abstract class AppDatabase : RoomDatabase() {
+
+    abstract fun categoriaDao(): CategoriaDao
+    abstract fun configuracionDao(): ConfiguracionDao
+    abstract fun avisoDao(): AvisoDao
+    abstract fun articuloDao(): ArticuloDao // ✅ NUEVO
+
+    companion object {
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
+        fun getDatabase(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "caja_mercadillos_db"
+                )
+                    // ✅ BORRA y recrea la base de datos si hay cambios en el esquema (ideal para desarrollo)
+                    .fallbackToDestructiveMigration(true)
+                    .addCallback(object : Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            INSTANCE?.let { database ->
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    // ✅ Inserta configuración por defecto en la tabla "configuracion"
+                                    database.configuracionDao()
+                                        .insertConfiguracion(ConfiguracionEntity())
+                                }
+                            }
+                        }
+                    })
+                    .build()
+
+                // ✅ FORZAR INICIALIZACIÓN DE LA BASE DE DATOS
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        // Hacer una consulta simple para activar onCreate si es necesario
+                        instance.configuracionDao().getConfiguracion()
+                        println(">>> [DATABASE] Verificación de inicialización completa")
+                    } catch (e: Exception) {
+                        println(">>> [DATABASE ERROR] Error en verificación: ${e.message}")
+                    }
+                }
+
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+/**
+ * ✅ Entidad Articulo:
+ * - Representa un artículo en la base de datos local (Room).
+ * - Compatible con Firestore (mismos nombres de campos).
+ * - Incluye todos los campos del PDF (menos "activo" que decidiste no usar en el diálogo).
+ */
+@Entity(tableName = "articulos")
+data class ArticuloEntity(
+    @PrimaryKey
+    val idArticulo: String = UUID.randomUUID().toString(),
+    val nombre: String = "",                  // ✅ Valor por defecto
+    val idCategoria: String = "",             // ✅ Valor por defecto
+    val precioVenta: Double = 0.0,            // ✅ Valor por defecto
+    val precioCoste: Double? = null,
+    val stock: Int? = null,
+    val controlarStock: Boolean = false,
+    val controlarCoste: Boolean = false,
+    val favorito: Boolean = false,
+    val fotoUri: String? = null,
+    val sincronizado: Boolean = false,
+    val ultimaModificacion: Long = System.currentTimeMillis()
+)
+
+package es.nuskysoftware.cajamercadillos.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+/**
+ * AvisoEntity:
+ * ✅ Representa un aviso/notificación dentro de la app.
+ * Compatible con Room (local) y Firestore (nube).
+ */
+@Entity(tableName = "avisos")
+data class AvisoEntity(
+    @PrimaryKey
+    val idAviso: String = UUID.randomUUID().toString(), // ID único global
+
+    val titulo: String,        // Ej: "Mercadillo abierto"
+    val mensaje: String,       // Detalle del aviso
+    val tipo: String,          // INFO, WARNING, ERROR
+    val fechaCreacion: Long,   // System.currentTimeMillis()
+    val leido: Boolean = false, // true cuando el usuario lo abre
+    val pendienteSincronizar: Boolean = true // Para la sincronización híbrida
+)
+
+package es.nuskysoftware.cajamercadillos.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+/**
+ * CategoriaEntity:
+ * ✅ Representa una categoría en la base de datos local (Room) y en Firestore.
+ * ✅ Compatible con sincronización híbrida:
+ *    - Room: persistencia offline.
+ *    - Firestore: sincronización en la nube.
+ * ✅ Incluye constructor vacío obligatorio para Firestore.
+ */
+@Entity(tableName = "categorias")
+data class CategoriaEntity(
+
+    @PrimaryKey
+    val idCategoria: String = UUID.randomUUID().toString(),
+    // ✅ ID único (UUID) para evitar conflictos entre Room y Firestore.
+
+    val nombre: String = "",
+    // ✅ Nombre de la categoría. Ejemplo: "Frutas", "Bebidas".
+
+    val colorHex: String = "#FFFFFF",
+    // ✅ Color en formato HEX. Ejemplo: "#FF5733".
+
+    val orden: Int = 0,
+    // ✅ Orden manual de visualización (por defecto = 0).
+
+    val activa: Boolean = true,
+    // ✅ Estado lógico: true = activa, false = deshabilitada.
+
+    val pendienteSincronizar: Boolean = true
+    // ✅ Flag para saber si debe sincronizarse con Firestore.
+) {
+    // 🔑 Firestore necesita un constructor vacío explícito.
+    constructor() : this(
+        idCategoria = "",
+        nombre = "",
+        colorHex = "#FFFFFF",
+        orden = 0,
+        activa = true,
+        pendienteSincronizar = true
+    )
+}
+
+package es.nuskysoftware.cajamercadillos.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+/**
+ * ConfiguracionEntity:
+ * ✅ Define la configuración global de la app (solo 1 registro en la tabla).
+ */
+@Entity(tableName = "configuracion")
+data class ConfiguracionEntity(
+    @PrimaryKey
+    val id: Int = 1, // Siempre será 1 → una sola fila en la tabla.
+
+    val versionApp: String = "FREE",          // FREE | BETA | PREMIUM
+    val numeroVersion: String = "V1.0",       // Versión funcional exacta
+    val isConfigurated: Boolean = false,      // ¿Configuración inicial completada?
+
+    val controlStock: Int = 0,                // 0 = NO, 1 = SÍ (Premium)
+    val controlCoste: Int = 0,                // 0 = NO, 1 = SÍ (Premium)
+
+    val ultimoDispositivo: String? = null,    // ID único del dispositivo permitido
+    val usuarioEmail: String? = null,         // Email del usuario (Premium)
+    val usuarioId: String? = null,            // UID en Firebase (Premium)
+
+    val idioma: String = "es",                // Idioma por defecto (es/en)
+    val temaOscuro: Boolean = false,          // Modo oscuro activado o no
+    val fuente: String = "Montserrat",        // Fuente por defecto
+    val moneda: String = "€ Euro",            // Moneda por defecto
+
+    val fechaUltimaSync: String? = null       // Fecha última sincronización (ISO 8601)
+)
+
+package es.nuskysoftware.cajamercadillos.data.repository
+
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.dao.ArticuloDao
+import es.nuskysoftware.cajamercadillos.data.local.entity.ArticuloEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
+
+/**
+ * ✅ ArticuloRepository:
+ * - Gestiona la lógica híbrida (Room + Firestore) para Artículos.
+ * - Siempre guarda primero en Room (respuesta rápida en UI).
+ * - Luego intenta sincronizar con Firestore.
+ */
+class ArticuloRepository(
+    private val dao: ArticuloDao,
+    private val firestore: FirebaseFirestore
+) {
+
+    /**
+     * ✅ Devuelve todos los artículos en tiempo real desde Room.
+     */
+    fun getAllArticulos(): Flow<List<ArticuloEntity>> = dao.getAllArticulos()
+
+    /**
+     * ✅ Devuelve artículos filtrados por categoría.
+     */
+    fun getArticulosPorCategoria(categoriaId: String): Flow<List<ArticuloEntity>> =
+        dao.getArticulosPorCategoria(categoriaId)
+
+    /**
+     * ✅ Inserta un artículo:
+     * 1. Lo guarda en Room.
+     * 2. Intenta sincronizar con Firestore.
+     */
+    suspend fun insertArticulo(articulo: ArticuloEntity) {
+        dao.insertArticulo(articulo.copy(sincronizado = false)) // Primero local
+        try {
+            firestore.collection("articulos")
+                .document(articulo.idArticulo)
+                .set(articulo.copy(sincronizado = true)) // Luego nube
+                .await()
+            // ✅ Si Firestore OK → actualiza el flag en Room
+            dao.insertArticulo(articulo.copy(sincronizado = true))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * ✅ Actualiza un artículo:
+     * - Misma lógica híbrida que insert.
+     */
+    suspend fun updateArticulo(articulo: ArticuloEntity) {
+        dao.updateArticulo(articulo.copy(sincronizado = false))
+        try {
+            firestore.collection("articulos")
+                .document(articulo.idArticulo)
+                .set(articulo.copy(sincronizado = true))
+                .await()
+            dao.updateArticulo(articulo.copy(sincronizado = true))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * ✅ Elimina un artículo:
+     * - Primero en Room, luego en Firestore.
+     */
+    suspend fun deleteArticulo(articulo: ArticuloEntity) {
+        dao.deleteArticulo(articulo)
+        try {
+            firestore.collection("articulos")
+                .document(articulo.idArticulo)
+                .delete()
+                .await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    // Añadir este método a ArticuloRepository
+    suspend fun sincronizarDesdeFirestore() {
+        try {
+            println(">>> [DEBUG] Descargando artículos desde Firestore...")
+            val snapshot = firestore.collection("articulos").get().await()
+            println(">>> [DEBUG] Firestore artículos count: ${snapshot.size()}")
+
+            for (doc in snapshot.documents) {
+                println(">>> [DEBUG] Firestore artículo doc: ${doc.data}")
+                val articulo = doc.toObject(ArticuloEntity::class.java)
+                if (articulo != null) {
+                    println(">>> [DEBUG] Artículo parseado: $articulo")
+                    dao.insertArticulo(articulo.copy(sincronizado = true))
+                } else {
+                    println(">>> [ERROR] No se pudo parsear el artículo")
+                }
+            }
+        } catch (e: Exception) {
+            println(">>> [ERROR] sincronizarArticulosDesdeFirestore: ${e.message}")
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.data.repository
+
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.dao.AvisoDao
+import es.nuskysoftware.cajamercadillos.data.local.entity.AvisoEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
+
+class AvisoRepository(
+    private val dao: AvisoDao,
+    private val firestore: FirebaseFirestore
+) {
+    fun getAvisos(): Flow<List<AvisoEntity>> = dao.getAvisos()
+    fun getAvisosNoLeidosCount(): Flow<Int> = dao.getAvisosNoLeidosCount()
+
+    suspend fun insertAviso(aviso: AvisoEntity) {
+        dao.insertAviso(aviso.copy(pendienteSincronizar = true))
+        try {
+            firestore.collection("avisos")
+                .document(aviso.idAviso)
+                .set(aviso)
+                .await()
+            dao.updateAviso(aviso.copy(pendienteSincronizar = false))
+        } catch (_: Exception) {
+        }
+    }
+
+    suspend fun updateAviso(aviso: AvisoEntity) {
+        dao.updateAviso(aviso.copy(pendienteSincronizar = true))
+        try {
+            firestore.collection("avisos")
+                .document(aviso.idAviso)
+                .set(aviso)
+                .await()
+            dao.updateAviso(aviso.copy(pendienteSincronizar = false))
+        } catch (_: Exception) {
+        }
+    }
+
+    suspend fun deleteAviso(aviso: AvisoEntity) {
+        dao.deleteAviso(aviso)
+        try {
+            firestore.collection("avisos")
+                .document(aviso.idAviso)
+                .delete()
+                .await()
+        } catch (_: Exception) {
+        }
+    }
+
+    suspend fun marcarAvisoComoLeido(idAviso: String) {
+        dao.marcarAvisoComoLeido(idAviso)
+        try {
+            firestore.collection("avisos")
+                .document(idAviso)
+                .update("leido", true)
+                .await()
+        } catch (_: Exception) {
+        }
+    }
+
+    // ✅ Ahora este método funciona porque existe en el DAO
+    suspend fun marcarTodosLeidos() {
+        dao.marcarTodosLeidos()
+        try {
+            firestore.collection("avisos")
+                .get()
+                .await()
+                .documents
+                .forEach { it.reference.update("leido", true) }
+        } catch (_: Exception) {
+        }
+    }
+
+    suspend fun sincronizarPendientes() {
+        val pendientes = dao.getAvisosPendientes()
+        for (aviso in pendientes) {
+            try {
+                firestore.collection("avisos")
+                    .document(aviso.idAviso)
+                    .set(aviso)
+                    .await()
+                dao.updateAviso(aviso.copy(pendienteSincronizar = false))
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    suspend fun sincronizarDesdeFirestore() {
+        try {
+            val snapshot = firestore.collection("avisos").get().await()
+            for (doc in snapshot.documents) {
+                val aviso = doc.toObject(AvisoEntity::class.java)
+                if (aviso != null) {
+                    dao.insertAviso(aviso.copy(pendienteSincronizar = false))
+                }
+            }
+        } catch (e: Exception) {
+            println(">>> [ERROR] sincronizarDesdeFirestore: ${e.message}")
+        }
+    }
+}
+
+
+package es.nuskysoftware.cajamercadillos.data.repository
+
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.dao.CategoriaDao
+import es.nuskysoftware.cajamercadillos.data.local.entity.CategoriaEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
+
+/**
+ * ✅ CategoriaRepository:
+ * - Gestiona sincronización híbrida (Room + Firestore).
+ * - Inserta y actualiza primero en Room → UI inmediata.
+ * - Sincroniza con Firestore en segundo plano.
+ * - Si falla la conexión, marca los datos como pendientes.
+ */
+class CategoriaRepository(
+    private val dao: CategoriaDao,
+    private val firestore: FirebaseFirestore
+) {
+
+    /**
+     * ✅ Devuelve todas las categorías en tiempo real desde Room.
+     */
+    fun getAllCategorias(): Flow<List<CategoriaEntity>> = dao.getAllCategorias()
+
+    /**
+     * ✅ Insertar nueva categoría:
+     * 1️⃣ Guarda en Room (pendiente sincronizar).
+     * 2️⃣ Intenta subir a Firestore.
+     */
+    suspend fun insertCategoria(categoria: CategoriaEntity) {
+        dao.insertCategoria(categoria.copy(pendienteSincronizar = true))
+        try {
+            firestore.collection("categorias")
+                .document(categoria.idCategoria)
+                .set(categoria)
+                .await()
+            dao.marcarComoSincronizada(categoria.idCategoria)
+        } catch (_: Exception) {
+            // ❌ Si falla, se mantiene como pendiente
+        }
+    }
+
+    /**
+     * ✅ Actualizar categoría existente.
+     */
+    suspend fun updateCategoria(categoria: CategoriaEntity) {
+        dao.updateCategoria(categoria.copy(pendienteSincronizar = true))
+        try {
+            firestore.collection("categorias")
+                .document(categoria.idCategoria)
+                .set(categoria)
+                .await()
+            dao.marcarComoSincronizada(categoria.idCategoria)
+        } catch (_: Exception) {
+        }
+    }
+
+    /**
+     * ✅ Eliminar categoría (Room + Firestore).
+     */
+    suspend fun deleteCategoria(categoria: CategoriaEntity) {
+        dao.deleteCategoria(categoria)
+        try {
+            firestore.collection("categorias")
+                .document(categoria.idCategoria)
+                .delete()
+                .await()
+        } catch (_: Exception) {
+            // Futuro: marcar para eliminación pendiente
+        }
+    }
+
+    /**
+     * ✅ Sincronizar datos pendientes (Room → Firestore).
+     */
+    suspend fun sincronizarPendientes() {
+        val pendientes = dao.getCategoriasPendientes()
+        for (categoria in pendientes) {
+            try {
+                firestore.collection("categorias")
+                    .document(categoria.idCategoria)
+                    .set(categoria)
+                    .await()
+                dao.marcarComoSincronizada(categoria.idCategoria)
+            } catch (_: Exception) {
+                // Si falla, lo dejamos pendiente
+            }
+        }
+    }
+
+    /**
+     * ✅ Sincronizar Firestore → Room:
+     * Descarga todas las categorías y las guarda localmente.
+     */
+    suspend fun sincronizarDesdeFirestore() {
+        try {
+            val snapshot = firestore.collection("categorias").get().await()
+            println(">>> [DEBUG] Firestore docs count: ${snapshot.size()}")
+            for (doc in snapshot.documents) {
+                println(">>> [DEBUG] Firestore doc: ${doc.data}")
+                val categoria = doc.toObject(CategoriaEntity::class.java)
+                if (categoria != null) {
+                    println(">>> [DEBUG] Categoria parseada: $categoria")
+                    dao.insertCategoria(categoria.copy(pendienteSincronizar = false))
+                } else {
+                    println(">>> [ERROR] No se pudo parsear la categoría")
+                }
+            }
+        } catch (e: Exception) {
+            println(">>> [ERROR] sincronizarDesdeFirestore: ${e.message}")
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.data.repository
+
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.dao.ConfiguracionDao
+import es.nuskysoftware.cajamercadillos.data.local.entity.ConfiguracionEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
+
+class ConfiguracionRepository(
+    private val configuracionDao: ConfiguracionDao,
+    private val firestore: FirebaseFirestore
+) {
+    fun getConfiguracion(): Flow<ConfiguracionEntity?> = configuracionDao.getConfiguracion()
+
+    suspend fun guardarConfiguracion(config: ConfiguracionEntity) {
+        try {
+            configuracionDao.insertConfiguracion(config) // REPLACE asegura actualización
+            firestore.collection("configuracion")
+                .document("global")
+                .set(config)
+                .await()
+        } catch (_: Exception) {
+        }
+    }
+
+    suspend fun sincronizarDesdeFirestore() {
+        try {
+            val snapshot = firestore.collection("configuracion")
+                .document("global")
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                val config = snapshot.toObject(ConfiguracionEntity::class.java)
+                if (config != null) {
+                    configuracionDao.insertConfiguracion(config)
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+/**
+ * BotonHome:
+ * Composable reutilizable para mostrar un botón con:
+ *  - Un fondo coloreado
+ *  - Un icono centrado
+ *  - Texto debajo
+ *
+ * Parámetros:
+ * @param iconRes: recurso del icono (SVG vector en drawable)
+ * @param texto: texto que se muestra debajo del icono
+ * @param colorFondo: color del fondo del botón
+ * @param colorTexto: color del texto
+ * @param onClick: acción al pulsar el botón
+ */
+@Composable
+fun BotonHome(
+    iconRes: Int,
+    texto: String,
+    colorFondo: Color,
+    colorTexto: Color = MaterialTheme.colorScheme.onBackground,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .widthIn(min = 140.dp, max = 160.dp)
+            .height(140.dp)
+            .clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Contenedor del icono con un fondo coloreado
+        Surface(
+            modifier = Modifier.size(100.dp),
+            color = colorFondo,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            // Icono en blanco sobre el fondo
+            Image(
+                painter = painterResource(id = iconRes),
+                contentDescription = texto,
+                modifier = Modifier
+                    .padding(20.dp)
+                    .size(60.dp),
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onPrimary)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        // Texto centrado debajo del icono
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.bodyMedium,
+            color = colorTexto,
+            textAlign = TextAlign.Center,
+            lineHeight = 16.sp,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import es.nuskysoftware.cajamercadillos.R
+
+/**
+ * CampanaAvisos:
+ * ✅ Icono de campana con badge dinámico (número de avisos no leídos).
+ * - colorIcono: color de la campana.
+ * - colorFondoBadge: color del badge.
+ * - count: número de avisos no leídos (si es 0, no se muestra el badge).
+ * - onClick: acción al pulsar la campana.
+ */
+@Composable
+fun CampanaAvisos(
+    count: Int,
+    colorIcono: Color = MaterialTheme.colorScheme.onBackground,
+    colorFondoBadge: Color = MaterialTheme.colorScheme.error,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.campana_notificacion), // Tu icono SVG personalizado
+            contentDescription = "Notificaciones",
+            tint = colorIcono,
+            modifier = Modifier.size(28.dp)
+        )
+
+        if (count > 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .size(18.dp)
+                    .background(colorFondoBadge, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (count > 9) "9+" else count.toString(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+
+/**
+ * CustomDialogConfirmacion:
+ * Diálogo reutilizable para confirmar acciones (ej. eliminar un ítem).
+ *
+ * Parámetros:
+ * @param titulo -> Texto en la parte superior del diálogo.
+ * @param mensaje -> Mensaje explicativo (ej. "¿Seguro que deseas eliminar...?").
+ * @param textoConfirmar -> Texto del botón principal (ej. "Eliminar").
+ * @param colorConfirmar -> Color del botón principal (ej. rojo para eliminar).
+ * @param onConfirmar -> Acción cuando el usuario confirma.
+ * @param onCancelar -> Acción cuando el usuario cancela o cierra el diálogo.
+ */
+@Composable
+fun CustomDialogConfirmacion(
+    titulo: String,
+    mensaje: String,
+    textoConfirmar: String,
+    colorConfirmar: androidx.compose.ui.graphics.Color,
+    onConfirmar: () -> Unit,
+    onCancelar: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { onCancelar() }, // Si toca fuera o pulsa back → cancelar
+        confirmButton = {
+            Button(
+                onClick = onConfirmar,
+                colors = ButtonDefaults.buttonColors(containerColor = colorConfirmar)
+            ) {
+                Text(textoConfirmar, color =Color.Black)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onCancelar) {
+                Text("Cancelar", color = Color.Black)
+            }
+        },
+        title = {
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Text(
+                text = mensaje,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+        },
+        shape = RoundedCornerShape(16.dp),
+        tonalElevation = 4.dp,
+        modifier = Modifier.padding(8.dp)
+    )
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.github.skydoves.colorpicker.compose.AlphaSlider
+import com.github.skydoves.colorpicker.compose.BrightnessSlider
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+
+/**
+ * DialogSelectorColor:
+ * Diálogo reutilizable con selector de color basado en Skydoves.
+ * Incluye:
+ *  - HsvColorPicker (selector principal)
+ *  - Sliders de brillo y opacidad
+ *  - Botones Aceptar / Cancelar
+ */
+@Composable
+fun DialogSelectorColor(
+    onColorElegido: (Color) -> Unit,
+    onCancelar: () -> Unit
+) {
+    val controller = rememberColorPickerController()
+
+    AlertDialog(
+        onDismissRequest = { onCancelar() },
+        confirmButton = {
+            TextButton(onClick = {
+                onColorElegido(controller.selectedColor.value)
+            }) {
+                Text("Aceptar", color = Color.Black)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancelar) {
+                Text("Cancelar", color = Color.Black)
+            }
+        },
+        title = { Text("Selecciona un color") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Selector principal
+                HsvColorPicker(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(8.dp),
+                    controller = controller,
+                    onColorChanged = {}
+                )
+                // Control de transparencia
+                AlphaSlider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    controller = controller
+                )
+                // Control de brillo
+                BrightnessSlider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    controller = controller
+                )
+            }
+        }
+    )
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+
+/**
+ * HeaderBar:
+ * ✅ Barra superior con:
+ * - Botón Back opcional.
+ * - Título dinámico.
+ * - Campana de avisos (con contador).
+ *
+ * @param titulo Texto que aparece en el centro.
+ * @param avisoViewModel ViewModel para obtener el contador dinámico.
+ * @param navController Para manejar la navegación (volver atrás).
+ * @param mostrarBack Boolean → true para mostrar la flecha atrás.
+ * @param onClickCampana Acción al pulsar la campana.
+ */
+@Composable
+fun HeaderBar(
+    titulo: String,
+    avisoViewModel: AvisoViewModel,
+    navController: NavController,
+    mostrarBack: Boolean,
+    onClickCampana: () -> Unit
+) {
+    // Contador dinámico
+    val contador = avisoViewModel.contadorNoLeidos.collectAsState()
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // ---------- FLECHA ATRÁS ----------
+            if (mostrarBack) {
+                Icon(
+                    painter = painterResource(id = R.drawable.arrow_back),
+                    contentDescription = "Volver",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clickable { navController.popBackStack() }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // ---------- TÍTULO ----------
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        // ---------- CAMPANA CON CONTADOR ----------
+        CampanaAvisos(
+            count = contador.value,
+            colorIcono = MaterialTheme.colorScheme.primary,
+            colorFondoBadge = MaterialTheme.colorScheme.error,
+            onClick = onClickCampana
+        )
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.components
+
+import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+
+/**
+ * ResponsiveAnimatedContainer:
+ * Esta función envuelve contenido y anima los cambios
+ * cuando el "key" cambia (por ejemplo, orientación).
+ *
+ * Parámetros:
+ * - key: cualquier valor que cambie (ej. true/false para horizontal)
+ * - modifier: modificadores opcionales para ajustar tamaño/estilo
+ * - animationDuration: duración de la animación (ms)
+ * - content: contenido composable que queremos animar
+ *
+ * Uso:
+ * ResponsiveAnimatedContainer(key = isHorizontal) {
+ *     if (isHorizontal) Row { ... } else Column { ... }
+ * }
+ */
+@SuppressLint("UnusedContentLambdaTargetStateParameter")
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun ResponsiveAnimatedContainer(
+    key: Any, // Estado que dispara la animación (ej. orientación)
+    modifier: Modifier = Modifier,
+    animationDuration: Int = 400, // Duración animación en ms
+    content: @Composable () -> Unit
+) {
+    AnimatedContent(
+        targetState = key,
+        transitionSpec = {
+            fadeIn(tween(animationDuration)) togetherWith fadeOut(tween(animationDuration))
+        },
+        modifier = modifier,
+        label = "ResponsiveAnimation"
+    ) {
+        content()
+    }
+}
+
+
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.data.local.entity.ArticuloEntity
+import es.nuskysoftware.cajamercadillos.ui.components.DialogoNuevoArticulo
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.components.ResponsiveAnimatedContainer
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.ArticuloViewModel
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.CategoriaViewModel
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.ConfiguracionViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaArticulos(
+    navController: NavController,
+    articuloViewModel: ArticuloViewModel,
+    avisoViewModel: AvisoViewModel,
+    categoriaViewModel: CategoriaViewModel,
+    configuracionViewModel: ConfiguracionViewModel, // ✅ AÑADIDO
+    listaCategorias: List<String>
+) {
+    val listaArticulos by articuloViewModel.articulos.collectAsState()
+
+    val configuracion by configuracionViewModel.configuracion.collectAsState()
+    val esPremium = configuracion?.versionApp?.trim()?.uppercase() == "PREMIUM"
+    val orientation = LocalConfiguration.current.orientation
+
+    var mostrarDialogo by remember { mutableStateOf(false) }
+    var mostrarDialogoConfirmacion by remember { mutableStateOf(false) }
+
+    var articuloSeleccionado by remember { mutableStateOf<ArticuloEntity?>(null) }
+    var articuloAEliminar by remember { mutableStateOf<ArticuloEntity?>(null) }
+
+    // ✅ DETERMINAR SI ES PREMIUM
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(16.dp)
+    ) {
+        // ---------- HEADER ----------
+        HeaderBar(
+            titulo = "Artículos",
+            avisoViewModel = avisoViewModel,
+            navController = navController,
+            mostrarBack = true,
+            onClickCampana = { println(">>> [DEBUG] Campana pulsada en Artículos") }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ---------- CONTENIDO ----------
+        ResponsiveAnimatedContainer(
+            key = orientation,
+            modifier = Modifier.weight(1f)
+        ) {
+            if (listaArticulos.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No hay artículos registrados",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(listaArticulos) { articulo ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        articulo.nombre,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "Precio: ${articulo.precioVenta} €",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    // ✅ MOSTRAR INFORMACIÓN PREMIUM SI ESTÁ DISPONIBLE
+                                    if (esPremium) {
+                                        if (articulo.controlarStock && articulo.stock != null) {
+                                            Text(
+                                                "Stock: ${articulo.stock}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (articulo.controlarCoste && articulo.precioCoste != null) {
+                                            Text(
+                                                "Coste: ${articulo.precioCoste} €",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // ---------- ICONOS ACCIONES ----------
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    // ✅ Editar
+                                    IconButton(onClick = {
+                                        articuloSeleccionado = articulo
+                                        mostrarDialogo = true
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.edit_icono),
+                                            contentDescription = "Editar artículo",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+
+                                    // ✅ Eliminar
+                                    IconButton(onClick = {
+                                        articuloAEliminar = articulo
+                                        mostrarDialogoConfirmacion = true
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.delete_icono),
+                                            contentDescription = "Eliminar artículo",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // ---------- FOOTER ----------
+        FooterMarca()
+    }
+
+    // ---------- FAB ----------
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(end = 24.dp, bottom = 80.dp),
+        contentAlignment = Alignment.BottomEnd
+    ) {
+        FloatingActionButton(
+            onClick = {
+                articuloSeleccionado = null
+                mostrarDialogo = true
+            },
+            shape = CircleShape,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Añadir artículo")
+        }
+    }
+
+    // ---------- DIALOGO ALTA / EDICION ----------
+    if (mostrarDialogo) {
+        DialogoNuevoArticulo(
+            articuloInicial = articuloSeleccionado,
+            esPremium = esPremium, // ✅ PASAR INFORMACIÓN DE PREMIUM
+            onDismiss = {
+                mostrarDialogo = false
+                articuloSeleccionado = null
+            },
+            onGuardar = { articulo ->
+                if (articuloSeleccionado == null) {
+                    articuloViewModel.insertarArticulo(articulo)
+                } else {
+                    articuloViewModel.actualizarArticulo(articulo)
+                }
+                mostrarDialogo = false
+                articuloSeleccionado = null
+            },
+            onNuevaCategoria = { nuevaCategoria ->
+                categoriaViewModel.insertarCategoria(nuevaCategoria, "#808080")
+            },
+            listaCategorias = listaCategorias
+        )
+    }
+
+    // ---------- DIALOGO CONFIRMACION ELIMINAR ----------
+    if (mostrarDialogoConfirmacion && articuloAEliminar != null) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoConfirmacion = false },
+            title = { Text("Eliminar artículo") },
+            text = { Text("¿Seguro que deseas eliminar \"${articuloAEliminar!!.nombre}\"?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        articuloViewModel.eliminarArticulo(articuloAEliminar!!)
+                        mostrarDialogoConfirmacion = false
+                        articuloAEliminar = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarDialogoConfirmacion = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.ui.components.BotonHome
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.components.ResponsiveAnimatedContainer
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+
+@Composable
+fun PantallaArticulosCategorias(
+    navController: NavController,
+    avisoViewModel: AvisoViewModel
+) {
+    val configuracion = LocalConfiguration.current
+    val isHorizontal = configuracion.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // ---------- HEADER ----------
+        HeaderBar(
+            titulo = "Artículos y Categorías",
+            avisoViewModel = avisoViewModel,
+            navController = navController,
+            mostrarBack = true,
+            onClickCampana = {
+                println(">>> [DEBUG] Campana pulsada en Artículos/Categorías")
+            }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // ---------- BOTONES CENTRADOS ----------
+        Spacer(modifier = Modifier.weight(1f)) // Empuja hacia abajo
+        ResponsiveAnimatedContainer(key = isHorizontal) {
+            if (isHorizontal) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    BotonHome(
+                        iconRes = R.drawable.articulos_home,
+                        texto = "Artículos",
+                        colorFondo = MaterialTheme.colorScheme.secondary,
+                        colorTexto = MaterialTheme.colorScheme.onPrimary
+                    ) { navController.navigate("articulos") }
+
+                    BotonHome(
+                        iconRes = R.drawable.categorias_home,
+                        texto = "Categorías",
+                        colorFondo = MaterialTheme.colorScheme.primary,
+                        colorTexto = MaterialTheme.colorScheme.onPrimary
+                    ) { navController.navigate("categorias") }
+                }
+            } else {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    BotonHome(
+                        iconRes = R.drawable.articulos_home,
+                        texto = "Artículos",
+                        colorFondo = MaterialTheme.colorScheme.secondary,
+                        colorTexto = MaterialTheme.colorScheme.onPrimary
+                    ) { navController.navigate("articulos") }
+
+                    BotonHome(
+                        iconRes = R.drawable.categorias_home,
+                        texto = "Categorías",
+                        colorFondo = MaterialTheme.colorScheme.primary,
+                        colorTexto = MaterialTheme.colorScheme.onPrimary
+                    ) { navController.navigate("categorias") }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.weight(1f)) // Empuja hacia arriba el Footer
+
+        // ---------- FOOTER ----------
+        FooterMarca()
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import android.content.res.Configuration
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.data.local.entity.CategoriaEntity
+import es.nuskysoftware.cajamercadillos.ui.components.DialogSelectorColor
+import es.nuskysoftware.cajamercadillos.ui.components.CustomDialogConfirmacion
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.components.ResponsiveAnimatedContainer
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.CategoriaViewModel
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import es.nuskysoftware.cajamercadillos.utils.generarColorAleatorioPastel
+import kotlinx.coroutines.launch
+
+@Composable
+fun PantallaCategorias(
+    navController: NavController,
+    viewModel: CategoriaViewModel,
+    avisoViewModel: AvisoViewModel // ✅ Añadido para el HeaderBar
+) {
+    val categorias by viewModel.categorias.collectAsState()
+
+    var mostrarFormulario by remember { mutableStateOf(false) }
+    var nombreCategoria by remember { mutableStateOf("") }
+    var colorSeleccionado by remember { mutableStateOf(Color(0xFFD1C4E9)) }
+    var modoEdicion by remember { mutableStateOf<CategoriaEntity?>(null) }
+
+    var mostrarColorPicker by remember { mutableStateOf(false) }
+    var mostrarDialogoEliminar by remember { mutableStateOf(false) }
+    var categoriaAEliminar by remember { mutableStateOf<CategoriaEntity?>(null) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val configuracion = LocalConfiguration.current
+    val isHorizontal = configuracion.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(padding)
+                .statusBarsPadding()
+        ) {
+            // ✅ HEADER BAR con campana
+            HeaderBar(
+                titulo = "Categorías",
+                avisoViewModel = avisoViewModel,
+                navController = navController,
+                mostrarBack = true,
+                onClickCampana = {
+                    println(">>> [DEBUG] Campana pulsada en Categorías")
+                }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // ---------- FORMULARIO ----------
+            AnimatedVisibility(visible = mostrarFormulario) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(if (modoEdicion == null) "Nueva Categoría" else "Editar Categoría", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = nombreCategoria,
+                        onValueChange = { nombreCategoria = it },
+                        label = { Text("Nombre") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Selector de color
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { mostrarColorPicker = true }) {
+                        Text("Seleccionar color", color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.width(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(colorSeleccionado)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = {
+                            if (nombreCategoria.isBlank()) {
+                                scope.launch { snackbarHostState.showSnackbar("El nombre no puede estar vacío") }
+                            } else {
+                                val colorFinal = if (colorSeleccionado == Color(0xFFD1C4E9)) {
+                                    generarColorAleatorioPastel()
+                                } else colorSeleccionado
+
+                                val colorHex = String.format("#%06X", 0xFFFFFF and colorFinal.toArgb())
+
+                                if (modoEdicion == null) {
+                                    viewModel.insertarCategoria(nombreCategoria, colorHex)
+                                } else {
+                                    val categoriaEditada = modoEdicion!!.copy(nombre = nombreCategoria, colorHex = colorHex)
+                                    viewModel.actualizarCategoria(categoriaEditada)
+                                }
+
+                                nombreCategoria = ""
+                                colorSeleccionado = Color(0xFFD1C4E9)
+                                modoEdicion = null
+                                mostrarFormulario = false
+                            }
+                        }) { Text("Guardar") }
+
+                        OutlinedButton(onClick = {
+                            mostrarFormulario = false
+                            nombreCategoria = ""
+                            colorSeleccionado = Color(0xFFD1C4E9)
+                            modoEdicion = null
+                        }) { Text("Cancelar") }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // ---------- LISTADO ----------
+            ResponsiveAnimatedContainer(key = categorias.size) {
+                if (categorias.isEmpty()) {
+                    Text("No hay categorías aún", textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                } else {
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(categorias) { categoria ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(android.graphics.Color.parseColor(categoria.colorHex)))
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(categoria.nombre, style = MaterialTheme.typography.bodyLarge)
+                                }
+                                Row {
+                                    IconButton(onClick = {
+                                        mostrarFormulario = true
+                                        nombreCategoria = categoria.nombre
+                                        colorSeleccionado = Color(android.graphics.Color.parseColor(categoria.colorHex))
+                                        modoEdicion = categoria
+                                    }) {
+                                        Icon(painter = painterResource(id = R.drawable.edit_icono), contentDescription = "Editar")
+                                    }
+                                    IconButton(onClick = {
+                                        categoriaAEliminar = categoria
+                                        mostrarDialogoEliminar = true
+                                    }) {
+                                        Icon(painter = painterResource(id = R.drawable.delete_icono), contentDescription = "Eliminar")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+            FooterMarca()
+        }
+
+        // ---------- FAB (BOTÓN REDONDO) ----------
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 24.dp, bottom = 80.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            if (!mostrarFormulario) {
+                FloatingActionButton(
+                    onClick = {
+                        mostrarFormulario = true
+                        nombreCategoria = ""
+                        colorSeleccionado = Color(0xFFD1C4E9)
+                        modoEdicion = null
+                    },
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.add_icono),
+                        contentDescription = "Añadir categoría",
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+        }
+
+        // ---------- DIÁLOGOS ----------
+        if (mostrarColorPicker) {
+            DialogSelectorColor(
+                onColorElegido = { color ->
+                    colorSeleccionado = color
+                    mostrarColorPicker = false
+                },
+                onCancelar = { mostrarColorPicker = false }
+            )
+        }
+
+        if (mostrarDialogoEliminar && categoriaAEliminar != null) {
+            CustomDialogConfirmacion(
+                titulo = "Eliminar Categoría",
+                mensaje = "¿Seguro que deseas eliminar \"${categoriaAEliminar!!.nombre}\"?",
+                textoConfirmar = "Eliminar",
+                colorConfirmar = MaterialTheme.colorScheme.error,
+                onConfirmar = {
+                    viewModel.eliminarCategoria(categoriaAEliminar!!)
+                    mostrarDialogoEliminar = false
+                },
+                onCancelar = { mostrarDialogoEliminar = false }
+            )
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.ConfiguracionViewModel
+import kotlinx.coroutines.launch
+
+@Composable
+fun PantallaConfiguracion(
+    navController: NavController,
+    viewModel: ConfiguracionViewModel,
+    versionApp: String = "FREE"
+) {
+    val alphaAnim = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        alphaAnim.animateTo(1f, animationSpec = tween(1000, easing = FastOutSlowInEasing))
+    }
+
+    val configuracionActual by viewModel.configuracion.collectAsState()
+
+    var idioma by remember { mutableStateOf(configuracionActual?.idioma ?: "es") }
+    var moneda by remember { mutableStateOf(configuracionActual?.moneda ?: "€ Euro") }
+    var fuente by remember { mutableStateOf(configuracionActual?.fuente ?: "Montserrat") }
+    var temaOscuro by remember { mutableStateOf(configuracionActual?.temaOscuro ?: false) }
+    var controlStock by remember { mutableStateOf((configuracionActual?.controlStock ?: 0) == 1) }
+    var controlCoste by remember { mutableStateOf((configuracionActual?.controlCoste ?: 0) == 1) }
+
+    var showIdiomaMenu by remember { mutableStateOf(false) }
+    var showMonedaMenu by remember { mutableStateOf(false) }
+    var showFuenteMenu by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.splash_logo),
+            contentDescription = "Logo Caja Mercadillos",
+            modifier = Modifier
+                .size(120.dp)
+                .alpha(alphaAnim.value)
+        )
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "Configuración inicial",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.alpha(alphaAnim.value)
+        )
+        Spacer(Modifier.height(24.dp))
+
+        Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(4.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Opciones Básicas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Spacer(Modifier.height(16.dp))
+
+                DropdownOption(
+                    label = "Idioma",
+                    selectedValue = if (idioma == "es") "Español" else "Inglés",
+                    options = listOf("Español", "Inglés"),
+                    expanded = showIdiomaMenu,
+                    onExpandChange = { showIdiomaMenu = it },
+                    onSelect = {
+                        idioma = if (it == "Español") "es" else "en"
+                        showIdiomaMenu = false
+                    }
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                DropdownOption(
+                    label = "Moneda",
+                    selectedValue = moneda,
+                    options = listOf("€ Euro", "$ USD", "£ GBP"),
+                    expanded = showMonedaMenu,
+                    onExpandChange = { showMonedaMenu = it },
+                    onSelect = { moneda = it; showMonedaMenu = false }
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                DropdownOption(
+                    label = "Fuente",
+                    selectedValue = fuente,
+                    options = listOf("Montserrat", "Roboto", "Sans Serif", "Serif"),
+                    expanded = showFuenteMenu,
+                    onExpandChange = { showFuenteMenu = it },
+                    onSelect = { fuente = it; showFuenteMenu = false }
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Tema oscuro", fontWeight = FontWeight.Medium)
+                    Switch(checked = temaOscuro, onCheckedChange = { temaOscuro = it })
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(4.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Funciones Premium", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Spacer(Modifier.height(16.dp))
+
+                PremiumSwitch("Control de Stock", controlStock, versionApp != "FREE") { controlStock = it }
+                PremiumSwitch("Control de Coste", controlCoste, versionApp != "FREE") { controlCoste = it }
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+
+        Button(
+            onClick = {
+                scope.launch {
+                    val config = ConfiguracionEntity(
+                        isConfigurated = true,
+                        idioma = idioma,
+                        moneda = moneda,
+                        temaOscuro = temaOscuro,
+                        fuente = fuente,
+                        controlStock = if (controlStock) 1 else 0,
+                        controlCoste = if (controlCoste) 1 else 0,
+                        versionApp = versionApp
+                    )
+                    viewModel.guardarConfiguracion(config)
+                    navController.navigate("home") {
+                        popUpTo("configuracion") { inclusive = true }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) {
+            Text("GUARDAR Y CONTINUAR", fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        OutlinedButton(onClick = { }, modifier = Modifier.fillMaxWidth().height(50.dp)) {
+            Text("MEJORAR A PREMIUM", fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Text("® La Nusky Software", color = Color.Gray, fontSize = 14.sp)
+    }
+}
+
+@Composable
+fun PremiumSwitch(label: String, value: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label)
+        if (enabled) Switch(checked = value, onCheckedChange = onChange) else Text("Solo Premium", color = Color.Gray, fontSize = 14.sp)
+    }
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+fun DropdownOption(
+    label: String,
+    selectedValue: String,
+    options: List<String>,
+    expanded: Boolean,
+    onExpandChange: (Boolean) -> Unit,
+    onSelect: (String) -> Unit
+) {
+    Text(label, fontWeight = FontWeight.Medium)
+    Box {
+        OutlinedButton(onClick = { onExpandChange(true) }, Modifier.fillMaxWidth()) {
+            Text(selectedValue)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandChange(false) }) {
+            options.forEach { option ->
+                DropdownMenuItem(text = { Text(option) }, onClick = { onSelect(option) })
+            }
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import android.content.res.Configuration
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.ui.components.BotonHome
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.components.ResponsiveAnimatedContainer
+import es.nuskysoftware.cajamercadillos.ui.theme.AppTheme
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+import androidx.compose.material3.MaterialTheme
+
+/**
+ * Pantalla principal (Home):
+ * ✅ Incluye HeaderBar con campana y contador dinámico.
+ * ✅ Botones principales (Responsive con animación).
+ * ✅ Footer con © La Nusky Software.
+ * ✅ Botones centrados en pantalla.
+ */
+@Composable
+fun PantallaHome(
+    navController: NavController,
+    avisoViewModel: AvisoViewModel
+) {
+    val configuracion = LocalConfiguration.current
+    val isHorizontal = configuracion.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+    ) {
+        // ---------- HEADER ----------
+        HeaderBar(
+            titulo = "Caja Mercadillos",
+            avisoViewModel = avisoViewModel,
+            navController = navController,
+            mostrarBack = false,
+            onClickCampana = {
+                // Aquí navegaremos a la pantalla de avisos
+                println(">>> [DEBUG] Campana pulsada → abrir pantalla de avisos")
+            }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ---------- BLOQUE DE BOTONES CENTRADO ----------
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f), // Ocupa todo el espacio disponible entre Header y Footer
+            contentAlignment = Alignment.Center
+        ) {
+            ResponsiveAnimatedContainer(key = isHorizontal) {
+                if (isHorizontal) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BotonHome(
+                            iconRes = R.drawable.mercadillo_home,
+                            texto = "Mercadillo",
+                            colorFondo = MaterialTheme.colorScheme.primary,
+                            colorTexto = MaterialTheme.colorScheme.onPrimary
+                        ) {navController.navigate("mercadillos") }
+
+                        BotonHome(
+                            iconRes = R.drawable.articulos_home,
+                            texto = "Artículos\nCategorías",
+                            colorFondo = MaterialTheme.colorScheme.secondary,
+                            colorTexto = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            navController.navigate("articulos_categorias")
+                        }
+
+                        BotonHome(
+                            iconRes = R.drawable.listados_home,
+                            texto = "Listados",
+                            colorFondo = AppTheme.extendedColors.info,
+                            colorTexto = MaterialTheme.colorScheme.onPrimary
+                        ) { }
+
+                        BotonHome(
+                            iconRes = R.drawable.configuracion_home,
+                            texto = "Configuración",
+                            colorFondo = AppTheme.extendedColors.warning,
+                            colorTexto = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            navController.navigate("configuracion")
+                        }
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+                            BotonHome(
+                                iconRes = R.drawable.mercadillo_home,
+                                texto = "Mercadillo",
+                                colorFondo = MaterialTheme.colorScheme.primary,
+                                colorTexto = MaterialTheme.colorScheme.onPrimary
+                            ) { navController.navigate("mercadillos")}
+
+                            BotonHome(
+                                iconRes = R.drawable.articulos_home,
+                                texto = "Artículos\nCategorías",
+                                colorFondo = MaterialTheme.colorScheme.secondary,
+                                colorTexto = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                navController.navigate("articulos_categorias")
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+                            BotonHome(
+                                iconRes = R.drawable.listados_home,
+                                texto = "Listados",
+                                colorFondo = AppTheme.extendedColors.info,
+                                colorTexto = MaterialTheme.colorScheme.onPrimary
+                            ) { }
+
+                            BotonHome(
+                                iconRes = R.drawable.configuracion_home,
+                                texto = "Configuración",
+                                colorFondo = AppTheme.extendedColors.warning,
+                                colorTexto = MaterialTheme.colorScheme.onPrimary
+                            ) {
+                                navController.navigate("configuracion")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ---------- FOOTER ----------
+        FooterMarca()
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.ui.components.HeaderBar
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.AvisoViewModel
+import es.nuskysoftware.cajamercadillos.utils.EstadosMercadillo
+import es.nuskysoftware.cajamercadillos.utils.FooterMarca
+import java.text.SimpleDateFormat
+import java.util.*
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PantallaMercadillos(
+    navController: NavController,
+    avisoViewModel: AvisoViewModel
+) {
+    // Estado para mostrar/ocultar la leyenda
+    var mostrarLeyenda by remember { mutableStateOf(false) }
+
+    // Estado para la navegación del calendario
+    var fechaActualCalendario by remember { mutableStateOf(Calendar.getInstance()) }
+
+    // Datos simulados por mes (TODO: Conectar con ViewModel)
+    val mercadillosPorMes = remember {
+        mapOf(
+            "2025-08" to mapOf(
+                15 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL),
+                18 to listOf(EstadosMercadillo.Estado.EN_CURSO),
+                20 to listOf(EstadosMercadillo.Estado.PENDIENTE_ARQUEO, EstadosMercadillo.Estado.PROGRAMADO_PARCIAL),
+                22 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO),
+                25 to listOf(EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO),
+                28 to listOf(EstadosMercadillo.Estado.CANCELADO)
+            ),
+            "2025-09" to mapOf(
+                5 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL),
+                12 to listOf(EstadosMercadillo.Estado.PROGRAMADO_PARCIAL),
+                20 to listOf(EstadosMercadillo.Estado.PROGRAMADO_TOTAL)
+            ),
+            "2025-07" to mapOf(
+                10 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO),
+                15 to listOf(EstadosMercadillo.Estado.CANCELADO),
+                25 to listOf(EstadosMercadillo.Estado.CERRADO_COMPLETO)
+            )
+        )
+    }
+
+    // Obtener mercadillos del mes actual visible
+    val mesActualKey = "${fechaActualCalendario.get(Calendar.YEAR)}-${String.format("%02d", fechaActualCalendario.get(Calendar.MONTH) + 1)}"
+    val mercadillosDelMes = mercadillosPorMes[mesActualKey] ?: emptyMap()
+
+    // Próximo mercadillo simulado
+    val proximoMercadillo = remember {
+        ProximoMercadillo(
+            fecha = "15 Agosto 2025",
+            hora = "09:00",
+            lugar = "Plaza Mayor, Madrid",
+            organizador = "Ayuntamiento de Madrid"
+        )
+    }
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            // ========== HEADER ==========
+            HeaderBar(
+                titulo = "Mercadillos",
+                avisoViewModel = avisoViewModel,
+                navController = navController,
+                mostrarBack = true,
+                onClickCampana = {
+                    println(">>> [DEBUG] Campana pulsada en Mercadillos")
+                }
+            )
+
+            // ========== CALENDARIO CON MERCADILLOS ==========
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp) // ✅ Altura fija más corta
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    // Header del calendario con navegación entre meses
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Flecha mes anterior
+                        IconButton(
+                            onClick = {
+                                val nuevaFecha = fechaActualCalendario.clone() as Calendar
+                                nuevaFecha.add(Calendar.MONTH, -1)
+                                fechaActualCalendario = nuevaFecha
+                            }
+                        ) {
+                            Text(
+                                text = "←",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Título del mes y año en español
+                        val mesAño = run {
+                            val mes = when(fechaActualCalendario.get(Calendar.MONTH)) {
+                                0 -> "Enero"
+                                1 -> "Febrero"
+                                2 -> "Marzo"
+                                3 -> "Abril"
+                                4 -> "Mayo"
+                                5 -> "Junio"
+                                6 -> "Julio"
+                                7 -> "Agosto"
+                                8 -> "Septiembre"
+                                9 -> "Octubre"
+                                10 -> "Noviembre"
+                                11 -> "Diciembre"
+                                else -> ""
+                            }
+                            "$mes ${fechaActualCalendario.get(Calendar.YEAR)}"
+                        }
+
+                        Text(
+                            text = mesAño,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+
+                        // Flecha mes siguiente
+                        IconButton(
+                            onClick = {
+                                val nuevaFecha = fechaActualCalendario.clone() as Calendar
+                                nuevaFecha.add(Calendar.MONTH, 1)
+                                fechaActualCalendario = nuevaFecha
+                            }
+                        ) {
+                            Text(
+                                text = "→",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        // Botón de leyenda
+                        IconButton(
+                            onClick = { mostrarLeyenda = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Ver leyenda de colores",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Días de la semana
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                            Text(
+                                text = dia,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Grid del calendario con días dinámicos
+                    val diasDelMes = fechaActualCalendario.getActualMaximum(Calendar.DAY_OF_MONTH)
+                    val primerDia = Calendar.getInstance().apply {
+                        time = fechaActualCalendario.time
+                        set(Calendar.DAY_OF_MONTH, 1)
+                    }
+                    val diaInicio = (primerDia.get(Calendar.DAY_OF_WEEK) + 5) % 7 // Ajuste para que lunes sea 0
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(7),
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Espacios vacíos para alinear el primer día del mes
+                        items(diaInicio) {
+                            Box(modifier = Modifier.size(40.dp))
+                        }
+
+                        // Días del mes
+                        items((1..diasDelMes).toList()) { dia ->
+                            DiaCalendario(
+                                dia = dia,
+                                mercadillos = mercadillosDelMes[dia] ?: emptyList(),
+                                onClick = {
+                                    println(">>> [DEBUG] Clicked día $dia del mes ${SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(fechaActualCalendario.time)}")
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ========== CARD PRÓXIMO MERCADILLO ==========
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp), // ✅ Menos padding vertical
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "Próximo Mercadillo",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            // Fecha y hora
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "📅 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = "${proximoMercadillo.fecha} • ${proximoMercadillo.hora}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Lugar
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "📍 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = proximoMercadillo.lugar,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            // Organizador
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "👥 ",
+                                    fontSize = 16.sp
+                                )
+                                Text(
+                                    text = proximoMercadillo.organizador,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        // Indicador visual
+                        IconButton(
+                            onClick = {
+                                println(">>> [DEBUG] Ver detalle del próximo mercadillo")
+                            }
+                        ) {
+                            Text(
+                                text = "→",
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ========== ESPACIADOR PARA EMPUJAR FOOTER AL FONDO ==========
+            Spacer(modifier = Modifier.weight(1f))
+
+            // ========== FOOTER ==========
+            FooterMarca()
+        }
+
+        // ========== FAB ==========
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(end = 24.dp, bottom = 80.dp), // ✅ Más arriba para dejar espacio al footer
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    println(">>> [DEBUG] Añadir nuevo mercadillo")
+                },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Añadir mercadillo"
+                )
+            }
+        }
+    }
+
+    // ========== DIÁLOGO DE LEYENDA ==========
+    if (mostrarLeyenda) {
+        LeyendaColoresDialog(
+            onDismiss = { mostrarLeyenda = false }
+        )
+    }
+}
+
+@Composable
+fun DiaCalendario(
+    dia: Int,
+    mercadillos: List<EstadosMercadillo.Estado>,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clickable { onClick() }
+            .background(
+                color = if (mercadillos.size == 1) {
+                    // Si hay 1 mercadillo: fondo del color del estado
+                    EstadosMercadillo.obtenerColor(mercadillos.first())
+                } else {
+                    // Si hay 0 o múltiples: fondo normal
+                    MaterialTheme.colorScheme.surface
+                },
+                shape = RoundedCornerShape(8.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Número del día
+            Text(
+                text = dia.toString(),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (mercadillos.size == 1) {
+                    EstadosMercadillo.obtenerColorTexto(mercadillos.first())
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                fontWeight = if (mercadillos.isNotEmpty()) FontWeight.Bold else FontWeight.Normal
+            )
+
+            // Puntitos si hay múltiples mercadillos
+            if (mercadillos.size > 1) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(3.dp), // ✅ Más espaciado
+                    modifier = Modifier.padding(top = 2.dp)
+                ) {
+                    mercadillos.take(2).forEach { estado ->
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp) // ✅ Puntitos más grandes
+                                .background(
+                                    EstadosMercadillo.obtenerColor(estado),
+                                    CircleShape
+                                )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LeyendaColoresDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        title = {
+            Text(
+                text = "Leyenda de Estados",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                EstadosMercadillo.obtenerTodosLosEstados().forEach { estado ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        // Círculo de color
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .background(
+                                    EstadosMercadillo.obtenerColor(estado),
+                                    CircleShape
+                                )
+                        )
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // Icono
+                        Text(
+                            text = EstadosMercadillo.obtenerIcono(estado),
+                            fontSize = 16.sp
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Descripción
+                        Text(
+                            text = estado.descripcion,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Entendido")
+            }
+        }
+    )
+}
+
+// Data class para el próximo mercadillo (temporal)
+data class ProximoMercadillo(
+    val fecha: String,
+    val hora: String,
+    val lugar: String,
+    val organizador: String
+)
+
+package es.nuskysoftware.cajamercadillos.ui.pantallas
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
+import androidx.navigation.NavController
+import es.nuskysoftware.cajamercadillos.R
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.ConfiguracionViewModel
+import kotlinx.coroutines.delay
+
+@Composable
+fun PantallaSplash(
+    navController: NavController,
+    configuracionViewModel: ConfiguracionViewModel
+) {
+    val alphaAnim = remember { Animatable(0f) }
+
+    // Animación logo
+    LaunchedEffect(Unit) {
+        alphaAnim.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
+        )
+    }
+
+    // Observamos configuración en tiempo real
+    val config by configuracionViewModel.configuracion.collectAsState()
+
+    // Navegación tras delay y verificación
+    LaunchedEffect(config) {
+        delay(1500)
+
+        // 🔍 DEBUG COMPLETO
+        println("🔍 DEBUG PantallaSplash - config: $config")
+        println("🔍 DEBUG PantallaSplash - config?.isConfigurated: ${config?.isConfigurated}")
+        println("🔍 DEBUG PantallaSplash - config == null: ${config == null}")
+
+        if (config == null || config?.isConfigurated == false) {
+            println("🔍 DEBUG PantallaSplash - Navegando a CONFIGURACION")
+            navController.navigate("configuracion") {
+                popUpTo("splash") { inclusive = true }
+            }
+        } else {
+            println("🔍 DEBUG PantallaSplash - Navegando a HOME")
+            navController.navigate("home") {
+                popUpTo("splash") { inclusive = true }
+            }
+        }
+    }
+
+    // UI
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.splash_logo),
+            contentDescription = "Logo Caja Mercadillos",
+            modifier = Modifier
+                .fillMaxWidth(0.8f)
+                .alpha(alphaAnim.value)
+        )
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+/**
+ * Archivo: Colors.kt
+ * ✅ Colores base (modo claro y oscuro) + paleta extra pastel.
+ */
+
+// ------------------- PALETA PRINCIPAL (MODO CLARO) -------------------
+val PrimaryLight = Color(0xFFA8D5BA)       // Verde menta pastel
+val OnPrimaryLight = Color(0xFF000000)     // Texto sobre primario claro
+
+val SecondaryLight = Color(0xFFC9B6E4)     // Lavanda pastel
+val OnSecondaryLight = Color(0xFF000000)
+
+val BackgroundLight = Color(0xFFFAFAFA)    // Fondo claro
+val OnBackgroundLight = Color(0xFF333333)  // Texto sobre fondo claro
+
+// ------------------- PALETA PRINCIPAL (MODO OSCURO) -------------------
+val PrimaryDark = Color(0xFF7BAE9F)
+val OnPrimaryDark = Color(0xFFFFFFFF)
+
+val SecondaryDark = Color(0xFFA995C7)
+val OnSecondaryDark = Color(0xFFFFFFFF)
+
+val BackgroundDark = Color(0xFF121212)
+val OnBackgroundDark = Color(0xFFE1E1E1)
+
+// ------------------- COLORES EXTRA -------------------
+val Success = Color(0xFFAED581)     // Verde éxito pastel
+val Warning = Color(0xFFFFD54F)     // Amarillo advertencia
+val ErrorCustom = Color(0xFFE57373) // Rojo error pastel
+val Info = Color(0xFF64B5F6)        // Azul info pastel
+
+package es.nuskysoftware.cajamercadillos.ui.theme
+
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
+
+/**
+ * Archivo: CustomColors.kt
+ * ✅ Sistema extendido para colores personalizados en la app.
+ * Incluye tonos extra sin romper MaterialTheme.
+ */
+
+@Immutable
+data class ExtendedColors(
+    val success: Color,      // Confirmaciones
+    val warning: Color,      // Advertencias
+    val error: Color,        // Errores
+    val info: Color,         // Información
+
+    // ✅ Colores para botones extra (PantallaHome)
+    val secondary: Color,
+    val onSecondary: Color,
+    val onInfo: Color,
+    val onWarning: Color
+)
+
+// ---------------------- MODO CLARO ----------------------
+val LightExtendedColors = ExtendedColors(
+    success = Success,
+    warning = Warning,
+    error = ErrorCustom,
+    info = Info,
+
+    secondary = SecondaryLight,
+    onSecondary = OnSecondaryLight,
+    onInfo = Color.White,    // Fondo azul claro → texto blanco
+    onWarning = Color.Black  // Amarillo pastel → texto negro
+)
+
+// ---------------------- MODO OSCURO ----------------------
+val DarkExtendedColors = ExtendedColors(
+    success = Success,
+    warning = Warning,
+    error = ErrorCustom,
+    info = Info,
+
+    secondary = SecondaryDark,
+    onSecondary = OnSecondaryDark,
+    onInfo = Color.Black,    // Fondo info pastel claro → texto negro
+    onWarning = Color.Black
+)
+
+// CompositionLocal para inyectar extendedColors en toda la UI
+val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }
+
+package es.nuskysoftware.cajamercadillos.ui.theme
+
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Shapes
+import androidx.compose.ui.unit.dp
+
+/**
+ * Archivo: Shape.kt
+ * Define las formas (bordes redondeados) que usará la app.
+ * Esto hace que todo el diseño sea consistente y elegante.
+ *
+ * NOTA:
+ * - Material 3 ya trae un sistema de shapes, pero aquí
+ *   lo personalizamos para nuestra estética.
+ */
+
+// ------------------- Definición de formas -------------------
+val Shapes = Shapes(
+    small = RoundedCornerShape(4.dp),   // Elementos pequeños (chips, etiquetas)
+    medium = RoundedCornerShape(8.dp),  // Botones, tarjetas
+    large = RoundedCornerShape(16.dp)   // Diálogos, paneles grandes
+)
+
+/**
+ * Cómo se usan:
+ * - En cualquier Composable, por ejemplo un Card:
+ *   Card(shape = MaterialTheme.shapes.medium) { ... }
+ *
+ * - Botones por defecto ya usan estas formas cuando
+ *   el tema está aplicado.
+ */
+
+
+package es.nuskysoftware.cajamercadillos.ui.theme
+
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+
+/**
+ * Archivo: Theme.kt
+ * ✅ Integra:
+ * - Paleta Material3
+ * - ExtendedColors
+ * - Tipografía y Shapes
+ */
+
+// ------------------- Paleta Material3 -------------------
+private val LightColors = lightColorScheme(
+    primary = PrimaryLight,
+    onPrimary = OnPrimaryLight,
+    secondary = SecondaryLight,
+    onSecondary = OnSecondaryLight,
+    background = BackgroundLight,
+    onBackground = OnBackgroundLight
+)
+
+private val DarkColors = darkColorScheme(
+    primary = PrimaryDark,
+    onPrimary = OnPrimaryDark,
+    secondary = SecondaryDark,
+    onSecondary = OnSecondaryDark,
+    background = BackgroundDark,
+    onBackground = OnBackgroundDark
+)
+
+// ------------------- Tema principal -------------------
+@Composable
+fun CajaMercadillosTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    val colors = if (darkTheme) DarkColors else LightColors
+    val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
+
+    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography = Typography,
+            shapes = Shapes,
+            content = content
+        )
+    }
+}
+
+// ------------------- Acceso rápido a extendedColors -------------------
+object AppTheme {
+    val extendedColors: ExtendedColors
+        @Composable
+        get() = LocalExtendedColors.current
+}
+
+package es.nuskysoftware.cajamercadillos.ui.theme
+
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import es.nuskysoftware.cajamercadillos.R
+
+
+/**
+ * Archivo: Type.kt
+ * Configuramos la tipografía personalizada (Montserrat) para toda la app.
+ */
+// ------------------- 1. Definimos la familia tipográfica -------------------
+val Montserrat = FontFamily(
+    Font(R.font.montserrat_regular, FontWeight.Normal),
+    Font(R.font.montserrat_medium, FontWeight.Medium),
+    Font(R.font.montserrat_bold, FontWeight.Bold)
+)
+
+// ------------------- 2. Definimos los estilos tipográficos -------------------
+val Typography = Typography(
+    // Título grande (pantallas principales)
+    titleLarge = TextStyle(
+        fontFamily = Montserrat,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp
+    ),
+
+    // Título medio
+    titleMedium = TextStyle(
+        fontFamily = Montserrat,
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp
+    ),
+
+    // Texto normal
+    bodyLarge = TextStyle(
+        fontFamily = Montserrat,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp
+    ),
+
+    // Texto pequeño
+    bodyMedium = TextStyle(
+        fontFamily = Montserrat,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp
+    )
+)
+
+/**
+ * Nota:
+ * - Ahora toda la app usará Montserrat.
+ * - Solo falta añadir los .ttf en res/font.
+ */
+
+package es.nuskysoftware.cajamercadillos.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.nuskysoftware.cajamercadillos.data.local.entity.ArticuloEntity
+import es.nuskysoftware.cajamercadillos.data.repository.ArticuloRepository
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+/**
+ * ✅ ArticuloViewModel:
+ * - Mantiene el estado de los artículos.
+ * - Expone métodos para insertar, actualizar y eliminar.
+ */
+class ArticuloViewModel(
+    private val repository: ArticuloRepository
+) : ViewModel() {
+
+    /**
+     * ✅ Lista de todos los artículos en tiempo real.
+     */
+    val articulos: StateFlow<List<ArticuloEntity>> =
+        repository.getAllArticulos()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    /**
+     * ✅ Inserta un nuevo artículo.
+     */
+    fun insertarArticulo(articulo: ArticuloEntity) {
+        viewModelScope.launch {
+            repository.insertArticulo(articulo)
+        }
+    }
+
+    /**
+     * ✅ Actualiza un artículo existente.
+     */
+    fun actualizarArticulo(articulo: ArticuloEntity) {
+        viewModelScope.launch {
+            repository.updateArticulo(articulo)
+        }
+    }
+
+    /**
+     * ✅ Elimina un artículo.
+     */
+    fun eliminarArticulo(articulo: ArticuloEntity) {
+        viewModelScope.launch {
+            repository.deleteArticulo(articulo)
+        }
+    }
+    // Añadir este método a ArticuloViewModel
+    fun sincronizarDesdeFirestore() {
+        viewModelScope.launch {
+            repository.sincronizarDesdeFirestore()
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.nuskysoftware.cajamercadillos.data.local.entity.AvisoEntity
+import es.nuskysoftware.cajamercadillos.data.repository.AvisoRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+
+class AvisoViewModel(
+    private val repository: AvisoRepository
+) : ViewModel() {
+
+    private val _avisos = MutableStateFlow<List<AvisoEntity>>(emptyList())
+    val avisos: StateFlow<List<AvisoEntity>> get() = _avisos
+
+    private val _contadorNoLeidos = MutableStateFlow(0)
+    val contadorNoLeidos: StateFlow<Int> get() = _contadorNoLeidos
+
+    init {
+        viewModelScope.launch {
+            repository.getAvisos().collectLatest { lista ->
+                _avisos.value = lista
+                _contadorNoLeidos.value = lista.count { !it.leido }
+            }
+        }
+    }
+
+    fun insertarAviso(titulo: String, mensaje: String, tipo: String) {
+        viewModelScope.launch {
+            repository.insertAviso(
+                AvisoEntity(
+                    titulo = titulo,
+                    mensaje = mensaje,
+                    tipo = tipo,
+                    fechaCreacion = System.currentTimeMillis()
+                )
+            )
+        }
+    }
+
+    fun marcarComoLeido(aviso: AvisoEntity) {
+        viewModelScope.launch {
+            repository.updateAviso(aviso.copy(leido = true))
+        }
+    }
+
+    fun marcarTodosLeidos() {
+        viewModelScope.launch {
+            repository.marcarTodosLeidos()
+        }
+    }
+
+    fun sincronizarPendientes() {
+        viewModelScope.launch {
+            repository.sincronizarPendientes()
+        }
+    }
+
+    fun sincronizarDesdeFirestore() {
+        viewModelScope.launch {
+            repository.sincronizarDesdeFirestore()
+        }
+    }
+}
+
+
+package es.nuskysoftware.cajamercadillos.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.nuskysoftware.cajamercadillos.data.local.entity.CategoriaEntity
+import es.nuskysoftware.cajamercadillos.data.repository.CategoriaRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+/**
+ * ✅ CategoriaViewModel:
+ * - Gestiona la lógica para Categorías en modo híbrido (Room + Firestore).
+ * - Actualiza UI en tiempo real con Flow.
+ * - Maneja sincronización automática cuando hay conexión.
+ */
+class CategoriaViewModel(
+    private val repository: CategoriaRepository
+) : ViewModel() {
+
+    // ------------------- ESTADOS PRINCIPALES -------------------
+    private val _categorias = MutableStateFlow<List<CategoriaEntity>>(emptyList())
+    val categorias: StateFlow<List<CategoriaEntity>> get() = _categorias
+
+    val isLoading = MutableStateFlow(false)
+    val errorMessage = MutableStateFlow<String?>(null)
+
+    init {
+        // ✅ Observa la base local (Room) en tiempo real
+        viewModelScope.launch {
+            repository.getAllCategorias().collect { lista ->
+                _categorias.value = lista
+            }
+        }
+    }
+
+    // ------------------- CRUD -------------------
+
+    /**
+     * ✅ Insertar nueva categoría (Room + Firestore)
+     */
+    fun insertarCategoria(nombre: String, colorHex: String, orden: Int = 0) {
+        viewModelScope.launch {
+            try {
+                isLoading.value = true
+                val categoria = CategoriaEntity(nombre = nombre, colorHex = colorHex, orden = orden)
+                repository.insertCategoria(categoria)
+                errorMessage.value = null
+            } catch (e: Exception) {
+                errorMessage.value = "Error al insertar: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ Actualizar categoría existente
+     */
+    fun actualizarCategoria(categoria: CategoriaEntity) {
+        viewModelScope.launch {
+            try {
+                isLoading.value = true
+                repository.updateCategoria(categoria)
+                errorMessage.value = null
+            } catch (e: Exception) {
+                errorMessage.value = "Error al actualizar: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ Eliminar categoría
+     */
+    fun eliminarCategoria(categoria: CategoriaEntity) {
+        viewModelScope.launch {
+            try {
+                isLoading.value = true
+                repository.deleteCategoria(categoria)
+                errorMessage.value = null
+            } catch (e: Exception) {
+                errorMessage.value = "Error al eliminar: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    // ------------------- SINCRONIZACIÓN -------------------
+
+    /**
+     * ✅ Sincronizar pendientes (Room → Firestore)
+     */
+    fun sincronizar() {
+        viewModelScope.launch {
+            try {
+                isLoading.value = true
+                println(">>> [DEBUG] Sincronizando pendientes hacia Firestore...")
+                repository.sincronizarPendientes()
+                errorMessage.value = null
+            } catch (e: Exception) {
+                errorMessage.value = "Error al sincronizar: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * ✅ Descargar Firestore → Room
+     */
+    fun sincronizarDesdeFirestore() {
+        viewModelScope.launch {
+            try {
+                isLoading.value = true
+                println(">>> [DEBUG] Descargando categorías desde Firestore...")
+                repository.sincronizarDesdeFirestore()
+                errorMessage.value = null
+            } catch (e: Exception) {
+                errorMessage.value = "Error al sincronizar desde Firestore: ${e.message}"
+            } finally {
+                isLoading.value = false
+            }
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.nuskysoftware.cajamercadillos.data.local.entity.ConfiguracionEntity
+import es.nuskysoftware.cajamercadillos.data.repository.ConfiguracionRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
+
+class ConfiguracionViewModel(
+    private val repository: ConfiguracionRepository
+) : ViewModel() {
+
+    private val _configuracion = MutableStateFlow<ConfiguracionEntity?>(null)
+    val configuracion: StateFlow<ConfiguracionEntity?> get() = _configuracion
+
+    init {
+        viewModelScope.launch {
+            repository.getConfiguracion().collect { _configuracion.value = it }
+        }
+    }
+
+    fun guardarConfiguracion(config: ConfiguracionEntity) {
+        viewModelScope.launch {
+            repository.guardarConfiguracion(config)
+        }
+    }
+
+    fun marcarConfigurada() {
+        _configuracion.value?.let { actual ->
+            val actualizado = actual.copy(isConfigurated = true)
+            guardarConfiguracion(actualizado)
+        }
+    }
+
+    fun sincronizarDesdeFirestore() {
+        viewModelScope.launch {
+            repository.sincronizarDesdeFirestore()
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import es.nuskysoftware.cajamercadillos.data.repository.ConfiguracionRepository
+
+/**
+ * Factory para crear instancias de ConfiguracionViewModel
+ * con inyección del repositorio.
+ */
+class ConfiguracionViewModelFactory(
+    private val repository: ConfiguracionRepository
+) : ViewModelProvider.Factory {
+
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ConfiguracionViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ConfiguracionViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.utils
+
+
+data class Aviso(val mensaje: String, val tipo: TipoAviso)
+
+enum class TipoAviso {
+    MERCADILLO_ABIERTO,
+    ARQUEO_PENDIENTE
+}
+
+fun obtenerAvisosSimulados(): List<Aviso> {
+    return listOf(
+        Aviso("Tienes un mercadillo abierto sin cerrar.", TipoAviso.MERCADILLO_ABIERTO),
+        Aviso("Hay un arqueo pendiente del último mercadillo.", TipoAviso.ARQUEO_PENDIENTE)
+    )
+}
+
+package es.nuskysoftware.cajamercadillos.utils
+
+import androidx.compose.ui.graphics.Color
+import kotlin.random.Random
+
+fun generarColorAleatorioPastel(): Color {
+    val r = Random.nextInt(150, 256)
+    val g = Random.nextInt(150, 256)
+    val b = Random.nextInt(150, 256)
+    return Color(r, g, b)
+}
+
+package es.nuskysoftware.cajamercadillos.utils
+
+import androidx.compose.ui.graphics.Color
+
+/**
+ * EstadosMercadillo:
+ * ✅ Sistema centralizado para gestionar todos los estados de mercadillos
+ * ✅ Incluye colores, descripciones y lógica relacionada
+ * ✅ Fácil de modificar en el futuro sin tocar múltiples archivos
+ */
+object EstadosMercadillo {
+
+    /**
+     * Enum con todos los estados posibles de un mercadillo
+     */
+    enum class Estado(val codigo: Int, val descripcion: String) {
+        PROGRAMADO_PARCIAL(1, "Programado parcialmente"),
+        PROGRAMADO_TOTAL(2, "Programado totalmente"),
+        EN_CURSO(3, "En curso"),
+        PENDIENTE_ARQUEO(4, "Terminado (pendiente arqueo)"),
+        PENDIENTE_ASIGNAR_SALDO(5, "Arqueo realizado (pendiente asignar saldo)"),
+        CERRADO_COMPLETO(6, "Cerrado completamente"),
+        CANCELADO(7, "Cancelado");
+
+        companion object {
+            fun fromCodigo(codigo: Int): Estado? = values().find { it.codigo == codigo }
+        }
+    }
+
+    /**
+     * Obtiene el color asociado a cada estado
+     */
+    fun obtenerColor(estado: Estado): Color {
+        return when (estado) {
+            Estado.PROGRAMADO_PARCIAL -> Color(0xFF81C7E8)      // Azul claro
+            Estado.PROGRAMADO_TOTAL -> Color(0xFF1976D2)        // Azul oscuro
+            Estado.EN_CURSO -> Color(0xFF4CAF50)                // Verde
+            Estado.PENDIENTE_ARQUEO -> Color(0xFFFF9800)        // Naranja ⚠️
+            Estado.PENDIENTE_ASIGNAR_SALDO -> Color(0xFFF44336) // Rojo ⚠️
+            Estado.CERRADO_COMPLETO -> Color(0xFF2E7D32)        // Verde oscuro
+            Estado.CANCELADO -> Color(0xFF757575)               // Gris
+        }
+    }
+
+    /**
+     * Obtiene el color de texto más apropiado para cada fondo
+     */
+    fun obtenerColorTexto(estado: Estado): Color {
+        return when (estado) {
+            Estado.PROGRAMADO_PARCIAL -> Color.Black
+            Estado.PROGRAMADO_TOTAL -> Color.White
+            Estado.EN_CURSO -> Color.White
+            Estado.PENDIENTE_ARQUEO -> Color.Black
+            Estado.PENDIENTE_ASIGNAR_SALDO -> Color.White
+            Estado.CERRADO_COMPLETO -> Color.White
+            Estado.CANCELADO -> Color.White
+        }
+    }
+
+    /**
+     * Devuelve todos los estados para mostrar en la leyenda
+     */
+    fun obtenerTodosLosEstados(): List<Estado> {
+        return Estado.values().toList()
+    }
+
+    /**
+     * Obtiene el icono/emoji representativo de cada estado
+     */
+    fun obtenerIcono(estado: Estado): String {
+        return when (estado) {
+            Estado.PROGRAMADO_PARCIAL -> "📋"
+            Estado.PROGRAMADO_TOTAL -> "📅"
+            Estado.EN_CURSO -> "🟢"
+            Estado.PENDIENTE_ARQUEO -> "⚠️"
+            Estado.PENDIENTE_ASIGNAR_SALDO -> "🔴"
+            Estado.CERRADO_COMPLETO -> "✅"
+            Estado.CANCELADO -> "❌"
+        }
+    }
+
+    /**
+     * Indica si el estado requiere atención urgente
+     */
+    fun requiereAtencion(estado: Estado): Boolean {
+        return estado == Estado.PENDIENTE_ARQUEO || estado == Estado.PENDIENTE_ASIGNAR_SALDO
+    }
+
+    /**
+     * Obtiene el orden de prioridad para mostrar en calendario cuando hay múltiples mercadillos
+     */
+    fun obtenerPrioridad(estado: Estado): Int {
+        return when (estado) {
+            Estado.EN_CURSO -> 1                    // Máxima prioridad
+            Estado.PENDIENTE_ARQUEO -> 2            // Urgente
+            Estado.PENDIENTE_ASIGNAR_SALDO -> 3     // Urgente
+            Estado.PROGRAMADO_TOTAL -> 4
+            Estado.PROGRAMADO_PARCIAL -> 5
+            Estado.CERRADO_COMPLETO -> 6
+            Estado.CANCELADO -> 7                   // Mínima prioridad
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.utils
+
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun FooterMarca() {
+    Text(
+        text = "® La Nusky Software",
+        fontSize = 14.sp,
+        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    )
+}
+
+
+
+package es.nuskysoftware.cajamercadillos.utils
+
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * ✅ NetworkMonitor con StateFlow:
+ * Detecta cambios de red en tiempo real y expone un flujo reactivo.
+ */
+class NetworkMonitor(context: Context) {
+
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> get() = _isConnected
+
+    private val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            _isConnected.value = true
+        }
+
+        override fun onLost(network: Network) {
+            _isConnected.value = false
+        }
+    }
+
+    init {
+        connectivityManager.registerDefaultNetworkCallback(networkCallback)
+
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+        _isConnected.value =
+            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }
+}
+
+package es.nuskysoftware.cajamercadillos.work
+
+import android.content.Context
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.database.AppDatabase
+import kotlinx.coroutines.tasks.await
+
+/**
+ * CategoriaSyncWorker:
+ * ✅ Encargado de sincronizar categorías pendientes con Firestore.
+ * ✅ Corre en segundo plano (WorkManager) y se reintenta si no hay conexión.
+ *
+ * Flujo:
+ * 1. Consultar Room → obtener categorías con pendienteSincronizar = true.
+ * 2. Intentar subir cada una a Firestore.
+ * 3. Si sube bien → marcar como sincronizada en Room.
+ */
+class CategoriaSyncWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) { // CoroutineWorker = permite usar corrutinas
+
+    override suspend fun doWork(): Result {
+        try {
+            // 1️⃣ Instanciamos la base de datos local (Room)
+            val db = AppDatabase.getDatabase(applicationContext)
+            val categoriaDao = db.categoriaDao()
+
+            // 2️⃣ Instanciamos Firestore
+            val firestore = FirebaseFirestore.getInstance()
+
+            // 3️⃣ Obtenemos todas las categorías pendientes de sincronizar
+            val pendientes = categoriaDao.getCategoriasPendientes()
+
+            // 4️⃣ Recorremos y subimos cada categoría
+            for (categoria in pendientes) {
+                try {
+                    firestore.collection("categorias")
+                        .document(categoria.idCategoria)
+                        .set(categoria)
+                        .await() // ✅ Espera a que la subida termine
+
+                    // ✅ Si subió OK → marcar como sincronizada en Room
+                    categoriaDao.marcarComoSincronizada(categoria.idCategoria)
+                } catch (e: Exception) {
+                    // Si falla UNA, seguimos con las demás
+                }
+            }
+
+            // ✅ Todo bien → devolvemos SUCCESS
+            return Result.success()
+
+        } catch (e: Exception) {
+            // Si algo grande falla → reintentar después
+            return Result.retry()
+        }
+    }
+}
+
+package es.nuskysoftware.cajamercadillos
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
+import com.google.firebase.FirebaseApp
+import com.google.firebase.firestore.FirebaseFirestore
+import es.nuskysoftware.cajamercadillos.data.local.database.AppDatabase
+import es.nuskysoftware.cajamercadillos.data.repository.*
+import es.nuskysoftware.cajamercadillos.ui.pantallas.*
+import es.nuskysoftware.cajamercadillos.ui.theme.CajaMercadillosTheme
+import es.nuskysoftware.cajamercadillos.ui.viewmodel.*
+import es.nuskysoftware.cajamercadillos.utils.NetworkMonitor
+import androidx.compose.runtime.collectAsState
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // ✅ Inicializar Firebase
+        FirebaseApp.initializeApp(this)
+
+        // ✅ Instancia Room (BD local)
+        val db = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "caja_mercadillos_db"
+        ).fallbackToDestructiveMigration().build()
+
+        // ✅ Instancia Firestore (BD nube)
+        val firestore = FirebaseFirestore.getInstance()
+
+        // ✅ Repositorios
+        val categoriaRepository = CategoriaRepository(db.categoriaDao(), firestore)
+        val configuracionRepository = ConfiguracionRepository(db.configuracionDao(), firestore)
+        val avisoRepository = AvisoRepository(db.avisoDao(), firestore)
+        val articuloRepository = ArticuloRepository(db.articuloDao(), firestore) // ✅ NUEVO
+
+        // ✅ Monitor de red
+        val networkMonitor = NetworkMonitor(applicationContext)
+
+        setContent {
+            CajaMercadillosTheme {
+                val navController = rememberNavController()
+
+                // ✅ ViewModel Categorías
+                val categoriaViewModel: CategoriaViewModel = viewModel(
+                    factory = CategoriaViewModelFactory(categoriaRepository)
+                )
+
+                // ✅ ViewModel Configuración
+                val configuracionViewModel: ConfiguracionViewModel = viewModel(
+                    factory = ConfiguracionViewModelFactory(configuracionRepository)
+                )
+
+                // ✅ ViewModel Avisos
+                val avisoViewModel: AvisoViewModel = viewModel(
+                    factory = AvisoViewModelFactory(avisoRepository)
+                )
+
+                // ✅ ViewModel Artículos
+                val articuloViewModel: ArticuloViewModel = viewModel(
+                    factory = ArticuloViewModelFactory(articuloRepository)
+                )
+
+                // ✅ Estado con lista de categorías para el selector
+                val listaCategorias by categoriaViewModel.categorias.collectAsState(initial = emptyList())
+
+                // ✅ Estado de conexión
+                val isConnected by networkMonitor.isConnected.collectAsState(initial = false)
+
+                // ✅ Sincronización automática cuando hay conexión
+                LaunchedEffect(isConnected) {
+                    if (isConnected) {
+                        println(">>> [DEBUG] Conexión activa: sincronizando datos...")
+
+                        // Categorías
+                        categoriaViewModel.sincronizar()
+                        categoriaViewModel.sincronizarDesdeFirestore()
+
+                        // Configuración
+                        configuracionViewModel.sincronizarDesdeFirestore()
+
+                        // Avisos
+                        avisoViewModel.sincronizarPendientes()
+                        avisoViewModel.sincronizarDesdeFirestore()
+
+                        // ✅ AÑADIR ESTO - Artículos
+                        articuloViewModel.sincronizarDesdeFirestore()
+
+                        println(">>> [OK] Sincronización completa (categorías + configuración + avisos).")
+                    } else {
+                        println(">>> [DEBUG] Sin conexión, trabajando en modo offline...")
+                    }
+                }
+
+                // ✅ Navegación principal en MainActivity (sin AppNavigation)
+                NavHost(navController = navController, startDestination = "splash") {
+                    composable("splash") {
+                        PantallaSplash(
+                            navController = navController,
+                            configuracionViewModel = configuracionViewModel
+                        )
+                    }
+                    composable("home") {
+                        PantallaHome(navController, avisoViewModel)
+                    }
+                    composable("articulos_categorias") {
+                        PantallaArticulosCategorias(navController, avisoViewModel)
+                    }
+                    composable("categorias") {
+                        PantallaCategorias(navController, categoriaViewModel, avisoViewModel)
+                    }
+                    composable("configuracion") {
+                        PantallaConfiguracion(
+                            navController = navController,
+                            viewModel = configuracionViewModel
+                        )
+                    }
+                    // ✅ Nueva pantalla Artículos
+                    composable("articulos") {
+                        PantallaArticulos(
+                            navController = navController,
+                            articuloViewModel = articuloViewModel,
+                            avisoViewModel = avisoViewModel, // ✅ Añadido
+                            categoriaViewModel = categoriaViewModel,
+                            configuracionViewModel = configuracionViewModel,
+                            listaCategorias = listaCategorias.map { it.nombre }
+                        )
+                    }
+                    // ✅ AÑADIR ESTA LÍNEA
+                    composable("mercadillos") {
+                        PantallaMercadillos(navController, avisoViewModel)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ✅ Factory para ViewModel de Categorías
+class CategoriaViewModelFactory(
+    private val repository: CategoriaRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(CategoriaViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return CategoriaViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// ✅ Factory para ViewModel de Avisos
+class AvisoViewModelFactory(
+    private val repository: AvisoRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(AvisoViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AvisoViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+// ✅ Factory para ViewModel de Artículos
+class ArticuloViewModelFactory(
+    private val repository: ArticuloRepository
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ArticuloViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ArticuloViewModel(repository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}

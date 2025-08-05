@@ -1,0 +1,56 @@
+✅ CHECKLIST DE PROGRESO ACTUALIZADO
+🟩 DÍA 1 - FUNDAMENTOS COMPLETADO (100%)
+✅ 1.1 DAOs: RecibosDao y LineasVentaDao
+✅ 1.2 Entities: ReciboEntity y LineaVentaEntity con @Entity
+✅ 1.3 VentasRepository con Room + Firebase híbrido
+✅ 1.4 VentasViewModel con patrón MarketSales (sin Hilt)
+✅ 1.5 VentasViewModelFactory con Context injection
+✅ 1.6 AppDatabase V13 con entidades de ventas
+✅ 1.7 PantallaVentas con TabRow (Manual/Productos)
+✅ 1.8 TecladoNumerico composable completo con lógica TPV
+✅ 1.9 CampoImporte grande con formato "€" y lógica TPV real
+✅ 1.10 CampoDescripcion obligatorio con validaciones
+✅ 1.11 Botón "+" que añade línea y resetea campos
+✅ 1.12 Validación: descripción no vacía con estados visuales
+✅ 1.13 Lista básica de líneas del ticket (integrada en carrito)
+✅ 1.14 Barra inferior fija con total y botones carrito
+🟨 DÍA 2 - FEATURES AVANZADAS (0%)
+⏳ 2.1 Verificar plan usuario para mostrar pestaña Productos
+⏳ 2.2 Barra búsqueda con toggle lupa/campo texto
+⏳ 2.3 Dropdown filtro categorías ("Sin filtros" por defecto)
+⏳ 2.4 Grid LazyVerticalGrid con ProductCard
+⏳ 2.5 Badge contador en card cuando se añade al carrito
+⏳ 2.6 Lógica: sin filtro = alfabético, con filtro = solo categoría
+⏳ 2.7 Pantalla selección método pago (3 botones)
+⏳ 2.8 Para Efectivo: campo importe entregado + cálculo cambio
+⏳ 2.9 Para Bizum/Tarjeta: confirmación directa
+⏳ 2.10 Guardar recibo y líneas en Firebase
+⏳ 2.11 Intents nativos: WhatsApp, SMS, Email para enviar recibo
+⏳ 2.12 Navegación de vuelta tras completar venta
+🟥 DÍA 2.5 - REFINAMIENTO (0%)
+⏳ 3.1 BottomSheet para editar línea (cantidad, eliminar)
+⏳ 3.2 Recálculo automático total al editar
+⏳ 3.3 Implementación básica de abonos (línea con cantidad negativa)
+⏳ 3.4 Testing flujo completo venta manual
+⏳ 3.5 Testing flujo productos (si es Premium)
+⏳ 3.6 Testing todos los métodos de pago
+⏳ 3.7 Validación integración con mercadillos EN CURSO
+⏳ 3.8 Refinamiento UI y corrección bugs
+
+🎯 ESTADO ACTUAL: DÍA 1 COMPLETADO AL 100%
+✅ LOGROS DÍA 1:
+
+Fundamentos de datos: ✅ 100% COMPLETADO
+UI Venta Manual: ✅ 100% COMPLETADO
+Teclado TPV real: ✅ Lógica derecha-izquierda con 2 decimales fijos
+Validaciones: ✅ Descripción obligatoria + estados visuales
+Carrito funcional: ✅ Total automático + botones acción
+
+🚀 SIGUIENTE PASO:
+Punto 2.1 - Verificar plan usuario para mostrar pestaña Productos
+📊 PROGRESO TOTAL:
+
+DÍA 1: ✅ 14/14 tareas (100%)
+DÍA 2: ⏳ 0/12 tareas (0%)
+DÍA 2.5: ⏳ 0/8 tareas (0%)
+TOTAL: ✅ 14/34 tareas (41%)

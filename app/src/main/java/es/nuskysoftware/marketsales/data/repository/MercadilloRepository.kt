@@ -139,6 +139,13 @@ class MercadilloRepository(
         true
     }
 
+    suspend fun desactivarMercadillo(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
+        mercadilloDao.desactivarMercadillo(mercadilloId)
+        mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
+        true
+    }
+
+
     suspend fun getMercadilloById(id: String): MercadilloEntity? = withContext(Dispatchers.IO) {
         mercadilloDao.getMercadilloById(id)
     }
@@ -180,45 +187,7 @@ class MercadilloRepository(
     }
 
     // ===== AUTOESTADOS =====
-//    suspend fun actualizarEstadosAutomaticos(userId: String) = withContext(Dispatchers.IO) {
-//        try {
-//            val lista = mercadilloDao.getMercadillosByUser(userId).first()
-//            val now = System.currentTimeMillis()
-//            val hoyStr = dateFormat.format(Date(now))
-//            var cambios = 0
-//
-//            for (m in lista) {
-//                if (m.estado == EstadosMercadillo.Estado.CERRADO_COMPLETO.codigo ||
-//                    m.estado == EstadosMercadillo.Estado.CANCELADO.codigo) continue
-//
-//                val fechaStart = parseFechaStartOfDay(m.fecha) ?: continue
-//                val ventanaInicio = fechaStart                 // 00:00 local
-//                val ventanaFin = endOfWindowMillis(fechaStart) // 05:00 día siguiente
-//
-//                when {
-//                    // Hoy o dentro de ventana: 1/2 → 3
-//                    m.fecha == hoyStr && (m.estado == 1 || m.estado == 2) -> {
-//                        mercadilloDao.actualizarEstado(m.idMercadillo, EstadosMercadillo.Estado.EN_CURSO.codigo)
-//                        cambios++; mercadilloDao.getMercadilloById(m.idMercadillo)?.let { sincronizarMercadilloConFirebase(it) }
-//                    }
-//                    now in ventanaInicio until ventanaFin && (m.estado == 1 || m.estado == 2) -> {
-//                        mercadilloDao.actualizarEstado(m.idMercadillo, EstadosMercadillo.Estado.EN_CURSO.codigo)
-//                        cambios++; mercadilloDao.getMercadilloById(m.idMercadillo)?.let { sincronizarMercadilloConFirebase(it) }
-//                    }
-//                    // Fin de ventana: si hay ventas → 4 (pendienteArqueo), si no → 7 (cancelado)
-//                    now >= ventanaFin -> {
-//                        val ventas = lineasVentaDao.contarLineasPorMercadillo(m.idMercadillo)
-//                        if (ventas > 0) mercadilloDao.marcarPendienteArqueo(m.idMercadillo)
-//                        else mercadilloDao.cancelarMercadillo(m.idMercadillo) // NO tocar "activo"
-//                        cambios++; mercadilloDao.getMercadilloById(m.idMercadillo)?.let { sincronizarMercadilloConFirebase(it) }
-//                    }
-//                }
-//            }
-//            if (cambios > 0) Log.d(TAG, "🔁 Autoestados aplicados: $cambios cambios")
-//        } catch (e: Exception) {
-//            Log.e(TAG, "❌ Autoestados", e)
-//        }
-//    }
+
     suspend fun actualizarEstadosAutomaticos(userId: String) = withContext(Dispatchers.IO) {
         try {
             val lista = mercadilloDao.getMercadillosByUser(userId).first()

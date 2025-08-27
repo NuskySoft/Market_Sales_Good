@@ -202,16 +202,19 @@ fun PantallaAltaMercadillo(
                     }
                 }
 
-                if (esEdicion && mercadilloParaEditar != null) {
+                if (esEdicion && mercadilloParaEditar != null
+                    &&  (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2))
+
+
+                {
                     item {
                         Spacer(Modifier.height(8.dp))
-                        HorizontalDivider(color = Color.Red.copy(alpha = 0.3f), thickness = 2.dp)
-                        Spacer(Modifier.height(16.dp))
-                        CampoEstadoDebug(
-                            estadoActual = mercadilloParaEditar!!.estado,
-                            onEstadoChange = { nuevo -> estadoDebugSeleccionado = nuevo },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        OutlinedButton(
+                            onClick = { mercadilloId?.let { mercadilloViewModel.borrarMercadillo(it) } },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                        ) { Text("Borrar mercadillo") }
                     }
                 }
 

@@ -271,6 +271,26 @@ class MercadilloViewModel(
 
     fun limpiarMercadilloParaEditar() { _mercadilloParaEditar.value = null }
 
+
+    fun borrarMercadillo(mercadilloId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            try {
+                val ok = repository.desactivarMercadillo(mercadilloId)
+                if (ok) {
+                    _uiState.value = _uiState.value.copy(loading = false, message = "Mercadillo eliminado", error = null)
+                    _mercadilloParaEditar.value = null
+                    manager.refreshNow()
+                    Log.d(TAG, "🗑️ Mercadillo desactivado: $mercadilloId")
+                } else {
+                    fail("Error eliminando mercadillo")
+                }
+            } catch (e: Exception) {
+                fail("Error eliminando mercadillo: ${e.message}", e)
+            }
+        }
+    }
+
     // ===== MERCADILLO ACTIVO =====
     fun seleccionarMercadilloActivo(mercadillo: MercadilloEntity) {
         _mercadilloActivoSeleccionado.value = mercadillo

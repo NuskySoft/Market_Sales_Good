@@ -48,6 +48,11 @@ interface MercadilloDao {
     @Delete
     suspend fun deleteMercadillo(mercadillo: MercadilloEntity)
 
+
+    @Query("UPDATE mercadillos SET activo = 0, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
+    suspend fun desactivarMercadillo(id: String, timestamp: Long = System.currentTimeMillis())
+
+
     // ========== CONSULTAS FILTRADAS POR USUARIO ==========
     @Query("SELECT * FROM mercadillos WHERE userId = :userId AND fecha = :fecha AND activo = 1")
     suspend fun getMercadillosByUserAndFecha(userId: String, fecha: String): List<MercadilloEntity>

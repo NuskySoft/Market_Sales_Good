@@ -20,9 +20,10 @@ import es.nuskysoftware.marketsales.data.local.entity.*
         ReciboEntity::class,
         LineaVentaEntity::class,
         LineaGastoEntity::class,
-        SaldoGuardadoEntity::class, // ✅ añadida
+        SaldoGuardadoEntity::class, // v12
+        EmpresaEntity::class        // v14
     ],
-    version = 12,                 // ✅ subimos a 12 (tabla saldos_guardados)
+    version = 14,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -35,21 +36,22 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun recibosDao(): RecibosDao
     abstract fun lineasVentaDao(): LineasVentaDao
     abstract fun lineasGastosDao(): LineasGastosDao
-    abstract fun saldoGuardadoDao(): SaldoGuardadoDao // ✅ faltaba
+    abstract fun saldoGuardadoDao(): SaldoGuardadoDao
+    abstract fun empresaDao(): EmpresaDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
 
+        // 10 -> 11: añade formaPago a lineas_gastos
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // formaPago en gastos (ya lo tenías)
                 db.execSQL(
                     "ALTER TABLE lineas_gastos ADD COLUMN formaPago TEXT NOT NULL DEFAULT 'efectivo'"
                 )
             }
         }
 
-        // ✅ Nueva tabla saldos_guardados
+        // 11 -> 12: crea saldos_guardados
         private val MIGRATION_11_12 = object : Migration(11, 12) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
@@ -74,6 +76,52 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // 12 -> 13: no-op (sin cambios)
+        private val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) { /* no-op */ }
+        }
+
+        // 13 -> 14: introduce tabla 'empresa' (o renombra 'empresas' -> 'empresa' si existiera)
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val hasEmpresa = tableExists(db, "empresa")
+                val hasEmpresas = tableExists(db, "empresas")
+
+                // Si existe 'empresas' (plural) y NO existe 'empresa', la renombramos
+                if (!hasEmpresa && hasEmpresas) {
+                    db.execSQL("ALTER TABLE empresas RENAME TO empresa")
+                }
+
+                // Asegurar esquema exacto que espera Room para 'empresa'
+                // (id PK INTEGER, y resto de columnas TEXT/INTEGER NOT NULL, sin 'telefono')
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS empresa(
+                        id INTEGER NOT NULL PRIMARY KEY,
+                        razonSocial TEXT NOT NULL,
+                        nombre TEXT NOT NULL,
+                        nif TEXT NOT NULL,
+                        direccion TEXT NOT NULL,
+                        poblacion TEXT NOT NULL,
+                        provincia TEXT NOT NULL,
+                        pais TEXT NOT NULL,
+                        codigoPostal TEXT NOT NULL,
+                        version INTEGER NOT NULL,
+                        lastModified INTEGER NOT NULL,
+                        sincronizadoFirebase INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
+        private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean {
+            db.query(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                arrayOf(table)
+            ).use { c -> return c.moveToFirst() }
+        }
+
         fun getDatabase(context: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 Room.databaseBuilder(
@@ -83,7 +131,9 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     .addMigrations(
                         MIGRATION_10_11,
-                        MIGRATION_11_12
+                        MIGRATION_11_12,
+                        MIGRATION_12_13,
+                        MIGRATION_13_14 // <- **registrada**
                     )
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
@@ -91,8 +141,6 @@ abstract class AppDatabase : RoomDatabase() {
             }
     }
 }
-
-
 
 
 //// app/src/main/java/es/nuskysoftware/marketsales/data/local/database/AppDatabase.kt

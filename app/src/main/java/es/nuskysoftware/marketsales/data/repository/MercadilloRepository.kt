@@ -251,27 +251,6 @@ class MercadilloRepository(
         true
     }
 
-    // ✅ Añadir dentro de la clase MercadilloRepository (no borrar nada existente)
-//    suspend fun confirmarArqueoCaja(
-//        mercadilloId: String,
-//        arqueoFinal: Double,
-//        nuevoEstado: Int
-//    ): Boolean = withContext(Dispatchers.IO) {
-//        // 1) Guardar arqueoCaja y saldoFinal siempre
-//        val m = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
-//
-//        // Esto fija: arqueoCaja = arqueoFinal, saldoFinal = arqueoFinal,
-//        // pendienteArqueo = 0, pendienteAsignarSaldo = 1, estado = 5 (pendiente asignar)
-//        mercadilloDao.realizarArqueoCaja(mercadilloId, arqueoFinal, arqueoFinal)
-//        mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
-//
-//        // 2) Si NO es premium (nuevoEstado == 6), cerramos directamente
-//        if (nuevoEstado == 6) {
-//            mercadilloDao.marcarSaldoAsignado(mercadilloId) // estado = 6, pendienteAsignarSaldo = 0
-//            mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
-//        }
-//        true
-//    }
 
 
     // ===== Consultas específicas / híbrido =====

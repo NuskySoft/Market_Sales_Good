@@ -39,6 +39,9 @@ import es.nuskysoftware.marketsales.ui.pantallas.PantallaVentas
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaVentasCarrito
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaSplash
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaLogoutSplash
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaUtilidades
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaSaldosPendientes
+import es.nuskysoftware.marketsales.ui.pantallas.PantallaDatosEmpresa
 import es.nuskysoftware.marketsales.ui.theme.MarketSalesTheme
 import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModelFactory
@@ -127,6 +130,18 @@ fun NavigationSystem(
             composable("listados") {
                 es.nuskysoftware.marketsales.ui.pantallas.PantallaListados(navController)
             }
+
+
+            composable("utilidades") {
+                PantallaUtilidades(navController)
+            }
+            composable("saldos_pendientes") {
+                PantallaSaldosPendientes(navController)
+            }
+            composable("datos_empresa") {
+                PantallaDatosEmpresa(navController)
+            }
+
 
             composable("alta_mercadillo") { PantallaAltaMercadillo(navController = navController) }
 

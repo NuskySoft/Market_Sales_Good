@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+import android.R.attr.delay
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +22,11 @@ import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import es.nuskysoftware.marketsales.utils.ui.alta.*
 import kotlinx.coroutines.launch
 import es.nuskysoftware.marketsales.work.AutoEstadoScheduler   // ✅ IMPORTACIÓN
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.time.delay
+
+import java.time.Duration
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +64,7 @@ fun PantallaAltaMercadillo(
     var mostrarTimePickerInicio by remember { mutableStateOf(false) }
     var mostrarTimePickerFin by remember { mutableStateOf(false) }
     var mostrarConfirmCambioSaldo by remember { mutableStateOf(false) }
+    var mostrarDialogoBorrado by remember { mutableStateOf(false) }
 
     // Cargar si edición
     LaunchedEffect(mercadilloId) { if (mercadilloId != null) mercadilloViewModel.cargarMercadillo(mercadilloId) }
@@ -77,6 +85,7 @@ fun PantallaAltaMercadillo(
     }
 
     // Mensajes
+
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
             snackbarHostState.showSnackbar(it)
@@ -87,9 +96,11 @@ fun PantallaAltaMercadillo(
             navController.popBackStack()
         }
     }
+
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+            //snackbarHostState.showSnackbar(it)
+            scope.launch { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short) }
             mercadilloViewModel.limpiarError()
         }
     }
@@ -203,14 +214,12 @@ fun PantallaAltaMercadillo(
                 }
 
                 if (esEdicion && mercadilloParaEditar != null
-                    &&  (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2))
-
-
-                {
+                    &&  (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2)
+                    ) {
                     item {
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(
-                            onClick = { mercadilloId?.let { mercadilloViewModel.borrarMercadillo(it) } },
+                            onClick = { mostrarDialogoBorrado = true },
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
@@ -284,6 +293,23 @@ fun PantallaAltaMercadillo(
                 dismissButton = { TextButton(onClick = { mostrarConfirmCambioSaldo = false }) { Text("Cancelar") } }
             )
         }
+        if (mostrarDialogoBorrado) {
+            AlertDialog(
+                onDismissRequest = { mostrarDialogoBorrado = false },
+                title = { Text("Confirmar borrado") },
+                text = { Text("¿Estás seguro de querer borrar el mercadillo?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mostrarDialogoBorrado = false
+                        mercadilloId?.let { mercadilloViewModel.borrarMercadillo(it) }
+                    }) { Text("Borrar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarDialogoBorrado = false }) { Text("Cancelar") }
+                }
+            )
+        }
+
     }
 }
 

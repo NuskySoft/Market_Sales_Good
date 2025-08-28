@@ -156,6 +156,17 @@ fun MenuHamburguesa(
             }
 
             item {
+                MenuOption(
+                    iconRes = R.drawable.ic_utilidades,
+                    title = StringResourceManager.getString("utilidades", currentLanguage),
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        navController.navigate("utilidades")
+                    }
+                )
+            }
+
+            item {
                 HorizontalDivider(
                     modifier = Modifier.padding(vertical = 8.dp),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)

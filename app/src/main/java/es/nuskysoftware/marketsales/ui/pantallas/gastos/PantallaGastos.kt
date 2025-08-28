@@ -66,13 +66,13 @@ fun PantallaGastos(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Gasto Manual") }
+                    text = { Text("Ingresar Gasto") }
                 )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text("Automáticos") }
-                )
+//                Tab(
+//                    selected = selectedTab == 1,
+//                    onClick = { selectedTab = 1 },
+//                    text = { Text("Automáticos") }
+//                )
             }
 
             when (selectedTab) {

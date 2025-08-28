@@ -271,7 +271,6 @@ class MercadilloViewModel(
 
     fun limpiarMercadilloParaEditar() { _mercadilloParaEditar.value = null }
 
-
     fun borrarMercadillo(mercadilloId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)

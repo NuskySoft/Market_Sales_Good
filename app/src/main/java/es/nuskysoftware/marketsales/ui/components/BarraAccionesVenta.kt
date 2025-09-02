@@ -1,14 +1,19 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/componentsBarraAccionesVenta.kt
 package es.nuskysoftware.marketsales.ui.components
 
+import android.R.attr.contentDescription
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
 fun BarraAccionesVenta(
@@ -17,6 +22,8 @@ fun BarraAccionesVenta(
     badgeCount: Int,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -28,7 +35,7 @@ fun BarraAccionesVenta(
         ) {
             //Icon(painter = painterResource(id = R.drawable.ic_checkout), contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Realizar cargo")
+            Text(StringResourceManager.getString("realizar_cargo", currentLanguage))
         }
 
         Box(modifier = Modifier.weight(1f)) {
@@ -36,9 +43,9 @@ fun BarraAccionesVenta(
                 onClick = onAbrirCarrito,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(painter = painterResource(id = R.drawable.ic_shopping_cart_24), contentDescription = null)
+                Icon(painter = painterResource(id = R.drawable.ic_shopping_cart_24), contentDescription =  StringResourceManager.getString("carrito", currentLanguage))
                 Spacer(Modifier.width(8.dp))
-                Text("Carrito")
+                Text(StringResourceManager.getString("carrito", currentLanguage))
             }
             if (badgeCount > 0) {
                 Badge(

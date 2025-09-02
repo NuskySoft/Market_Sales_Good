@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaListados.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
 import androidx.compose.foundation.layout.*
@@ -10,21 +11,28 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
 import androidx.compose.ui.res.painterResource
+import es.nuskysoftware.marketsales.utils.safePopBackStack
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import androidx.compose.runtime.collectAsState
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaListados(
     navController: NavController? = null
 ) {
+    val currentLanguage = ConfigurationManager.idioma.collectAsState().value
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Listados", fontWeight = FontWeight.Bold) },
+                title = { Text(StringResourceManager.getString("listados", currentLanguage), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
-                            contentDescription = "Atrás"
+                            contentDescription = "Atrás" // accesibilidad; no visible en UI
                         )
                     }
                 },
@@ -46,16 +54,23 @@ fun PantallaListados(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("📋", style = MaterialTheme.typography.displayMedium)
                 Spacer(Modifier.height(8.dp))
-                Text("Pendiente de desarrollo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                Text(
+                    StringResourceManager.getString("pendiente_desarrollo", currentLanguage),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Aquí vivirán los listados e informes.",
+                    StringResourceManager.getString("aqui_listados_informes", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(24.dp))
-                OutlinedButton(onClick = { navController?.popBackStack() }) { Text("Volver") }
+                OutlinedButton(onClick = { navController?.safePopBackStack() }) {
+                    Text(StringResourceManager.getString("volver", currentLanguage))
+                }
             }
         }
     }
+    AdsBottomBar()
 }

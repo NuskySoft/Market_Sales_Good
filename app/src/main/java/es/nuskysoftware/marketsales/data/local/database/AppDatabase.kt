@@ -23,7 +23,7 @@ import es.nuskysoftware.marketsales.data.local.entity.*
         SaldoGuardadoEntity::class, // v12
         EmpresaEntity::class        // v14
     ],
-    version = 14,
+    version = 16,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -42,11 +42,11 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
 
-        // 10 -> 11: añade formaPago a lineas_gastos
+        // 10 -> 11: añade formaPago a LineasGastos
         private val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
-                    "ALTER TABLE lineas_gastos ADD COLUMN formaPago TEXT NOT NULL DEFAULT 'efectivo'"
+                    "ALTER TABLE LineasGastos ADD COLUMN formaPago TEXT NOT NULL DEFAULT 'efectivo'"
                 )
             }
         }
@@ -81,19 +81,16 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) { /* no-op */ }
         }
 
-        // 13 -> 14: introduce tabla 'empresa' (o renombra 'empresas' -> 'empresa' si existiera)
+        // 13 -> 14: introduce tabla 'empresa'
         private val MIGRATION_13_14 = object : Migration(13, 14) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 val hasEmpresa = tableExists(db, "empresa")
                 val hasEmpresas = tableExists(db, "empresas")
 
-                // Si existe 'empresas' (plural) y NO existe 'empresa', la renombramos
                 if (!hasEmpresa && hasEmpresas) {
                     db.execSQL("ALTER TABLE empresas RENAME TO empresa")
                 }
 
-                // Asegurar esquema exacto que espera Room para 'empresa'
-                // (id PK INTEGER, y resto de columnas TEXT/INTEGER NOT NULL, sin 'telefono')
                 db.execSQL(
                     """
                     CREATE TABLE IF NOT EXISTS empresa(
@@ -115,6 +112,32 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // 14 -> 15: añade campos de sincronización a recibos, lineas_venta y LineasGastos
+        private val MIGRATION_14_15 = object : Migration(14, 15) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recibos ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE recibos ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE recibos ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+
+                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+
+                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // 15 -> 16: añade columna 'activo' a recibos, lineas_venta y LineasGastos
+        private val MIGRATION_15_16 = object : Migration(15, 16) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE recibos ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean {
             db.query(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
@@ -133,7 +156,9 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_10_11,
                         MIGRATION_11_12,
                         MIGRATION_12_13,
-                        MIGRATION_13_14 // <- **registrada**
+                        MIGRATION_13_14,
+                        MIGRATION_14_15,
+                        MIGRATION_15_16
                     )
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
@@ -141,6 +166,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
     }
 }
+
 
 
 //// app/src/main/java/es/nuskysoftware/marketsales/data/local/database/AppDatabase.kt
@@ -152,24 +178,8 @@ abstract class AppDatabase : RoomDatabase() {
 //import androidx.room.RoomDatabase
 //import androidx.room.migration.Migration
 //import androidx.sqlite.db.SupportSQLiteDatabase
-//import com.google.firebase.BuildConfig
-//
-//import es.nuskysoftware.marketsales.data.local.dao.ArticuloDao
-//import es.nuskysoftware.marketsales.data.local.dao.CategoriaDao
-//import es.nuskysoftware.marketsales.data.local.dao.ConfiguracionDao
-//import es.nuskysoftware.marketsales.data.local.dao.LineasVentaDao
-//import es.nuskysoftware.marketsales.data.local.dao.MercadilloDao
-//import es.nuskysoftware.marketsales.data.local.dao.RecibosDao
-//import es.nuskysoftware.marketsales.data.local.dao.UserDao
-//import es.nuskysoftware.marketsales.data.local.entity.ArticuloEntity
-//import es.nuskysoftware.marketsales.data.local.entity.CategoriaEntity
-//import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
-//import es.nuskysoftware.marketsales.data.local.entity.LineaGastoEntity
-//import es.nuskysoftware.marketsales.data.local.entity.LineaVentaEntity
-//
-//import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
-//import es.nuskysoftware.marketsales.data.local.entity.ReciboEntity
-//import es.nuskysoftware.marketsales.data.local.entity.UserEntity
+//import es.nuskysoftware.marketsales.data.local.dao.*
+//import es.nuskysoftware.marketsales.data.local.entity.*
 //
 //@Database(
 //    entities = [
@@ -180,9 +190,11 @@ abstract class AppDatabase : RoomDatabase() {
 //        ArticuloEntity::class,
 //        ReciboEntity::class,
 //        LineaVentaEntity::class,
-//        LineaGastoEntity::class
+//        LineaGastoEntity::class,
+//        SaldoGuardadoEntity::class, // v12
+//        EmpresaEntity::class        // v14
 //    ],
-//    version = 11, // ⬆️ subimos a 11 para añadir formaPago a LineasGastos
+//    version = 16,
 //    exportSchema = false
 //)
 //abstract class AppDatabase : RoomDatabase() {
@@ -194,87 +206,138 @@ abstract class AppDatabase : RoomDatabase() {
 //    abstract fun articuloDao(): ArticuloDao
 //    abstract fun recibosDao(): RecibosDao
 //    abstract fun lineasVentaDao(): LineasVentaDao
-//
-//    abstract fun lineasGastosDao(): es.nuskysoftware.marketsales.data.local.dao.LineasGastosDao
+//    abstract fun lineasGastosDao(): LineasGastosDao
+//    abstract fun saldoGuardadoDao(): SaldoGuardadoDao
+//    abstract fun empresaDao(): EmpresaDao
 //
 //    companion object {
-//        @Volatile
-//        private var INSTANCE: AppDatabase? = null
+//        @Volatile private var INSTANCE: AppDatabase? = null
 //
-//        // ➕ Migración NO-OP de 7 → 8 (ajusta aquí si realmente cambiaste esquema)
-//        private val MIGRATION_7_8 = object : Migration(7, 8) {
+//        // 10 -> 11: añade formaPago a lineas_gastos
+//        private val MIGRATION_10_11 = object : Migration(10, 11) {
 //            override fun migrate(db: SupportSQLiteDatabase) {
-//                // No-op: si entre 7 y 8 no hubo cambios de esquema efectivos.
-//                // Si añadiste columnas/tablas de verdad, pon aquí tus ALTER TABLE … ADD COLUMN … DEFAULT …
-//                // Ejemplo (coméntalo/ajústalo si aplica):
-//                // db.execSQL("ALTER TABLE configuracion ADD COLUMN usuarioLogueado TEXT NOT NULL DEFAULT 'usuario_default'")
+//                db.execSQL(
+//                    "ALTER TABLE lineas_gastos ADD COLUMN formaPago TEXT NOT NULL DEFAULT 'efectivo'"
+//                )
 //            }
 //        }
-//        // 8 -> 9 (si no hubo cambios de esquema reales entre 8 y 9, es NO-OP)
-//        val M8_TO_M9 = object : Migration(8, 9) {
+//
+//        // 11 -> 12: crea saldos_guardados
+//        private val MIGRATION_11_12 = object : Migration(11, 12) {
 //            override fun migrate(db: SupportSQLiteDatabase) {
-//                // No-Op. Si en tu proyecto real hubo cambios en v9, añádelos aquí (ALTER TABLE ...).
-//            }
-//        }
-//        val M9_TO_M10 = object : androidx.room.migration.Migration(9, 10) {
-//            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
 //                db.execSQL(
 //                    """
-//            CREATE TABLE IF NOT EXISTS LineasGastos (
-//                idMercadillo TEXT NOT NULL,
-//                numeroLinea TEXT NOT NULL,
-//                idUsuario TEXT NOT NULL,
-//                descripcion TEXT NOT NULL,
-//                importe REAL NOT NULL,
-//                fechaHora INTEGER NOT NULL,
-//                PRIMARY KEY(idMercadillo, numeroLinea)
-//            )
-//            """.trimIndent()
-//                )
-//                db.execSQL("CREATE INDEX IF NOT EXISTS idx_gastos_mercadillo ON LineasGastos(idMercadillo)")
-//                db.execSQL("CREATE INDEX IF NOT EXISTS idx_gastos_usuario ON LineasGastos(idUsuario)")
-//            }
-//        }
-//
-//        val M10_TO_M11 = object : androidx.room.migration.Migration(10, 11) {
-//            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-//                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN formaPago TEXT NOT NULL DEFAULT 'efectivo'")
-//            }
-//        }
-//
-//        fun getDatabase(context: Context): AppDatabase {
-//            return INSTANCE ?: synchronized(this) {
-//
-//                val builder = Room.databaseBuilder(
-//                    context.applicationContext,
-//                    AppDatabase::class.java,
-//                    "marketsales_database_v10"
-//                )
-//                    // ✅ Registra tus migraciones conocidas
-//                    .addMigrations(
-//                        Migrations.M6_TO_M7,       // si la tienes
-//                        MIGRATION_7_8,             // tu 7->8 no-op
-//                        M8_TO_M9,       // <- NUEVA/asegurar que esté
-//                        M9_TO_M10,       // <- NUEVA (crea LineasGastos)
-//                        M10_TO_M11   // <- registra la nueva
-////                        Migrations.M6_TO_M7, // la que ya usabas
-////                        MIGRATION_7_8 ,       // nueva para evitar el crash 8→7
-////                        M9_TO_M10,
+//                    CREATE TABLE IF NOT EXISTS saldos_guardados(
+//                        idRegistro TEXT NOT NULL PRIMARY KEY,
+//                        idUsuario TEXT NOT NULL,
+//                        idMercadilloOrigen TEXT NOT NULL,
+//                        fechaMercadillo TEXT NOT NULL,
+//                        lugarMercadillo TEXT NOT NULL,
+//                        organizadorMercadillo TEXT NOT NULL,
+//                        horaInicioMercadillo TEXT NOT NULL,
+//                        saldoInicialGuardado REAL NOT NULL,
+//                        consumido INTEGER NOT NULL DEFAULT 0,
+//                        version INTEGER NOT NULL DEFAULT 1,
+//                        lastModified INTEGER NOT NULL,
+//                        sincronizadoFirebase INTEGER NOT NULL DEFAULT 0,
+//                        notas TEXT
 //                    )
+//                    """.trimIndent()
+//                )
+//            }
+//        }
 //
-//                // 🔧 Solo en DEBUG: si por error instalas un APK más viejo (downgrade), evita el crash
-//                if (BuildConfig.DEBUG) {
-//                    builder.fallbackToDestructiveMigrationOnDowngrade()
+//        // 12 -> 13: no-op (sin cambios)
+//        private val MIGRATION_12_13 = object : Migration(12, 13) {
+//            override fun migrate(db: SupportSQLiteDatabase) { /* no-op */ }
+//        }
+//
+//        // 13 -> 14: introduce tabla 'empresa' (o renombra 'empresas' -> 'empresa' si existiera)
+//        private val MIGRATION_13_14 = object : Migration(13, 14) {
+//            override fun migrate(db: SupportSQLiteDatabase) {
+//                val hasEmpresa = tableExists(db, "empresa")
+//                val hasEmpresas = tableExists(db, "empresas")
+//
+//                // Si existe 'empresas' (plural) y NO existe 'empresa', la renombramos
+//                if (!hasEmpresa && hasEmpresas) {
+//                    db.execSQL("ALTER TABLE empresas RENAME TO empresa")
 //                }
 //
-//                val instance = builder.build()
-//                INSTANCE = instance
-//                instance
+//                // Asegurar esquema exacto que espera Room para 'empresa'
+//                // (id PK INTEGER, y resto de columnas TEXT/INTEGER NOT NULL, sin 'telefono')
+//                db.execSQL(
+//                    """
+//                    CREATE TABLE IF NOT EXISTS empresa(
+//                        id INTEGER NOT NULL PRIMARY KEY,
+//                        razonSocial TEXT NOT NULL,
+//                        nombre TEXT NOT NULL,
+//                        nif TEXT NOT NULL,
+//                        direccion TEXT NOT NULL,
+//                        poblacion TEXT NOT NULL,
+//                        provincia TEXT NOT NULL,
+//                        pais TEXT NOT NULL,
+//                        codigoPostal TEXT NOT NULL,
+//                        version INTEGER NOT NULL,
+//                        lastModified INTEGER NOT NULL,
+//                        sincronizadoFirebase INTEGER NOT NULL
+//                    )
+//                    """.trimIndent()
+//                )
 //            }
 //        }
 //
-//        fun clearInstance() {
-//            INSTANCE = null
+//        // 14 -> 15: añade campos de sincronización a recibos, lineas_venta y LineasGastos
+//        private val MIGRATION_14_15 = object : Migration(14, 15) {
+//            override fun migrate(db: SupportSQLiteDatabase) {
+//                db.execSQL("ALTER TABLE recibos ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+//                db.execSQL("ALTER TABLE recibos ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+//                db.execSQL("ALTER TABLE recibos ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+//
+//                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+//                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+//                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+//
+//                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN version INTEGER NOT NULL DEFAULT 1")
+//                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN lastModified INTEGER NOT NULL DEFAULT 0")
+//                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN sincronizadoFirebase INTEGER NOT NULL DEFAULT 0")
+//            }
 //        }
+//
+//        // 14 -> 15: añade columna 'activo' a recibos, lineas_venta y LineasGastos
+//        private val Migration_15_16 = object : Migration(14, 15) {
+//            override fun migrate(db: SupportSQLiteDatabase) {
+//                db.execSQL("ALTER TABLE recibos ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+//                db.execSQL("ALTER TABLE lineas_venta ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+//                db.execSQL("ALTER TABLE LineasGastos ADD COLUMN activo INTEGER NOT NULL DEFAULT 1")
+//            }
+//        }
+//
+//        private fun tableExists(db: SupportSQLiteDatabase, table: String): Boolean {
+//            db.query(
+//                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+//                arrayOf(table)
+//            ).use { c -> return c.moveToFirst() }
+//        }
+//
+//        fun getDatabase(context: Context): AppDatabase =
+//            INSTANCE ?: synchronized(this) {
+//                Room.databaseBuilder(
+//                    context.applicationContext,
+//                    AppDatabase::class.java,
+//                    "marketsales.db"
+//                )
+//                    .addMigrations(
+//                        MIGRATION_10_11,
+//                        MIGRATION_11_12,
+//                        MIGRATION_12_13,
+//                        MIGRATION_13_14, // <- **registrada**
+//                        MIGRATION_14_15,
+//                        Migration_15_16
+//                    )
+//                    .fallbackToDestructiveMigrationOnDowngrade()
+//                    .build()
+//                    .also { INSTANCE = it }
+//            }
 //    }
 //}
+//

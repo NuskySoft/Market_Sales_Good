@@ -5,10 +5,34 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
     // deja kapt si lo necesitas realmente:
-    id("kotlin-kapt")
+    //id("kotlin-kapt")
+
+    id("androidx.baselineprofile")
+
 }
 
 android {
+
+    signingConfigs {
+        create("release") {
+            storeFile =
+                file("C:\\Users\\cuent\\Documents\\Proyectos Buenos\\Market Sales\\keystore\\release.jks")
+            storePassword = "Chachi1967"
+            keyAlias = "marketsales"
+            keyPassword = "Chachi1967"
+        }
+    }
+    buildTypes {
+        debug {
+            // App ID de PRUEBA oficial de Google (para desarrollar sin líos)
+            manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-3940256099942544~3347511713"
+        }
+        release {
+            // TU App ID REAL (con ~)
+            manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-9343856188038526~1418564772"
+            isMinifyEnabled = false
+        }
+    }
     namespace = "es.nuskysoftware.marketsales"
     compileSdk = 36
 
@@ -23,11 +47,13 @@ android {
 
     buildTypes {
         release {
+            manifestPlaceholders += mapOf()
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug { }
     }
@@ -42,6 +68,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -57,6 +84,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.foundation)
     implementation(libs.androidx.room.ktx)
+    //  implementation(libs.androidx.benchmark.baseline.profile.gradle.plugin)
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
@@ -101,10 +129,19 @@ dependencies {
 
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
+    implementation("com.google.android.gms:play-services-ads:24.5.0")
+    // UMP (User Messaging Platform) para consentimiento
+    implementation("com.google.android.ump:user-messaging-platform:3.2.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+
     // Tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+
 }
 
 

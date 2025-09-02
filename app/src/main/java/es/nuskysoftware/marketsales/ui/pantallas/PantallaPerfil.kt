@@ -32,12 +32,15 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.launch
 import android.util.Log
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.data.repository.AuthState
 import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.FooterMarca
 import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.findActivity
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -232,7 +235,7 @@ fun PantallaPerfil(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
                             contentDescription = StringResourceManager.getString("volver", currentLanguage)
@@ -596,10 +599,29 @@ fun PantallaPerfil(
                         }
                     }
                 }
+                BotonOpcionesPrivacidad(modifier = Modifier.padding(16.dp))
             }
-
+            AdsBottomBar()
             // Footer
             FooterMarca()
         }
+    }
+}
+
+@Composable
+fun BotonOpcionesPrivacidad(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    Button(
+        onClick = {
+            val activity = context.findActivity()
+            if (activity != null) {
+                es.nuskysoftware.marketsales.ads.AdsConsentManager.showPrivacyOptions(activity)
+            }
+        },
+        modifier = modifier
+    ) {
+
+        Text(StringResourceManager.getString("opciones_de_privacidad", currentLanguage)) // si prefieres i18n, usa tu StringResourceManager aquí
     }
 }

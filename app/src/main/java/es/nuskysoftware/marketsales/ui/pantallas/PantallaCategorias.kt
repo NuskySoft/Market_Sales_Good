@@ -30,6 +30,7 @@ import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.data.local.entity.CategoriaEntity
 import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModelFactory
@@ -37,6 +38,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.FooterMarca
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 import es.nuskysoftware.marketsales.utils.generarColorAleatorioPastel
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,7 +99,7 @@ fun PantallaCategorias(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
                             contentDescription = StringResourceManager.getString("volver", currentLanguage)
@@ -336,6 +338,7 @@ fun PantallaCategorias(
                     }
                 }
             }
+            AdsBottomBar()
 
             // ========== FOOTER ==========
             FooterMarca()
@@ -408,6 +411,8 @@ private fun CategoriaCard(
     onEditar: () -> Unit,
     onEliminar: () -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -453,7 +458,7 @@ private fun CategoriaCard(
                 IconButton(onClick = onEditar) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_edit),
-                        contentDescription = "Editar",
+                        contentDescription = StringResourceManager.getString("editar", currentLanguage),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -461,7 +466,7 @@ private fun CategoriaCard(
                 IconButton(onClick = onEliminar) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = "Eliminar",
+                        contentDescription = StringResourceManager.getString("eliminar", currentLanguage),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -476,10 +481,11 @@ fun ColorPickerDialog(
     onCancelar: () -> Unit
 ) {
     val controller = rememberColorPickerController()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     AlertDialog(
         onDismissRequest = onCancelar,
-        title = { Text("Seleccionar color") },
+        title = { Text(StringResourceManager.getString("seleccionar_un_color", currentLanguage)) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Selector principal
@@ -513,12 +519,18 @@ fun ColorPickerDialog(
             TextButton(onClick = {
                 onColorElegido(controller.selectedColor.value)
             }) {
-                Text("Aceptar", color = Color.Black) // ✅ NEGRO como solicitaste
+                Text(
+                    StringResourceManager.getString("aceptar", currentLanguage),
+                    color = Color.Black // ✅ NEGRO como solicitaste
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onCancelar) {
-                Text("Cancelar", color = Color.Black) // ✅ NEGRO como solicitaste
+                Text(
+                    StringResourceManager.getString("cancelar", currentLanguage),
+                    color = Color.Black // ✅ NEGRO como solicitaste
+                )
             }
         }
     )

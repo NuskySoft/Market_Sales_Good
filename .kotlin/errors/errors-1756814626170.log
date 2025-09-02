@@ -1,0 +1,5842 @@
+kotlin version: 2.0.21
+error message: org.jetbrains.kotlin.codegen.CompilationException: Back-end (JVM) Internal error: Couldn't transform method node:
+get (Ljava/lang/String;)Ljava/lang/String;:
+  @Lorg/jetbrains/annotations/NotNull;() // invisible
+    // annotable parameter count: 1 (visible)
+    // annotable parameter count: 1 (invisible)
+    @Lorg/jetbrains/annotations/NotNull;() // invisible, parameter 0
+   L0
+    ALOAD 1
+    LDC "key"
+    INVOKESTATIC kotlin/jvm/internal/Intrinsics.checkNotNullParameter (Ljava/lang/Object;Ljava/lang/String;)V
+   L1
+    LINENUMBER 12 L1
+    ALOAD 1
+    ASTORE 2
+    ALOAD 2
+    INVOKEVIRTUAL java/lang/String.hashCode ()I
+    LOOKUPSWITCH
+      -2142866731: L2
+      -2133956423: L3
+      -2128983078: L4
+      -2124638431: L5
+      -2122407040: L6
+      -2121769985: L7
+      -2113387680: L8
+      -2102889478: L9
+      -2090892772: L10
+      -2089893753: L11
+      -2072957903: L12
+      -2066396372: L13
+      -2064126284: L14
+      -2061842370: L15
+      -2046572367: L16
+      -2037647846: L17
+      -1994368561: L18
+      -1988014311: L19
+      -1987413723: L20
+      -1976581229: L21
+      -1957001132: L22
+      -1939100349: L23
+      -1938890879: L24
+      -1933689225: L25
+      -1928256557: L26
+      -1916401713: L27
+      -1909428925: L28
+      -1901497305: L29
+      -1896497387: L30
+      -1893807709: L31
+      -1877211128: L32
+      -1871549014: L33
+      -1865743672: L34
+      -1862160540: L35
+      -1855851137: L36
+      -1839970718: L37
+      -1835616207: L38
+      -1835298251: L39
+      -1830845733: L40
+      -1823847087: L41
+      -1823846849: L42
+      -1792321132: L43
+      -1784156213: L44
+      -1779218433: L45
+      -1767074913: L46
+      -1761974253: L47
+      -1758767892: L48
+      -1744196284: L49
+      -1730309906: L50
+      -1725052499: L51
+      -1719203132: L52
+      -1715453846: L53
+      -1710566124: L54
+      -1710398382: L55
+      -1710398381: L56
+      -1705567298: L57
+      -1705188436: L58
+      -1697953979: L59
+      -1682389767: L60
+      -1677283428: L61
+      -1671614502: L62
+      -1656625095: L63
+      -1622893940: L64
+      -1609651799: L65
+      -1594237972: L66
+      -1582732908: L67
+      -1564408150: L68
+      -1538187763: L69
+      -1535462738: L70
+      -1526300607: L71
+      -1524101854: L72
+      -1513912966: L73
+      -1504839920: L74
+      -1495531321: L75
+      -1488090220: L76
+      -1485704727: L77
+      -1481170649: L78
+      -1476395059: L79
+      -1455975469: L80
+      -1452623028: L81
+      -1440177633: L82
+      -1439696155: L83
+      -1435844644: L84
+      -1424018959: L85
+      -1422150937: L86
+      -1416714243: L87
+      -1413363143: L88
+      -1409176193: L89
+      -1408981924: L90
+      -1407298986: L91
+      -1383290818: L92
+      -1381883502: L93
+      -1377734316: L94
+      -1367755047: L95
+      -1363896877: L96
+      -1360340166: L97
+      -1331054550: L98
+      -1323136250: L99
+      -1309066954: L100
+      -1308128083: L101
+      -1307828293: L102
+      -1283943511: L103
+      -1282107866: L104
+      -1268229546: L105
+      -1267060346: L106
+      -1264108234: L107
+      -1263623639: L108
+      -1262291167: L109
+      -1261164794: L110
+      -1253042209: L111
+      -1246546765: L112
+      -1243186761: L113
+      -1241456490: L114
+      -1217468409: L115
+      -1193316139: L116
+      -1184143624: L117
+      -1183205099: L118
+      -1179508421: L119
+      -1175443400: L120
+      -1172773000: L121
+      -1170678718: L122
+      -1166651448: L123
+      -1156541547: L124
+      -1150475315: L125
+      -1150430172: L126
+      -1149308373: L127
+      -1149099798: L128
+      -1141628910: L129
+      -1139165140: L130
+      -1097329270: L131
+      -1089477552: L132
+      -1081297404: L133
+      -1080862661: L134
+      -1068501738: L135
+      -1060266865: L136
+      -1054663467: L137
+      -1051829485: L138
+      -1047187091: L139
+      -1040657202: L140
+      -1039904823: L141
+      -1037445200: L142
+      -1002341372: L143
+      -991729204: L144
+      -988644194: L145
+      -983732283: L146
+      -980113594: L147
+      -941852767: L148
+      -941304296: L149
+      -934915098: L150
+      -929499718: L151
+      -925703355: L152
+      -910017448: L153
+      -906880771: L154
+      -902295583: L155
+      -901870406: L156
+      -896992644: L157
+      -881709280: L158
+      -881402040: L159
+      -861239132: L160
+      -836604189: L161
+      -831608662: L162
+      -820978936: L163
+      -820060249: L164
+      -810882576: L165
+      -804109583: L166
+      -793269432: L167
+      -785005648: L168
+      -768699985: L169
+      -766428206: L170
+      -728139139: L171
+      -721755582: L172
+      -707132210: L173
+      -701293833: L174
+      -699213757: L175
+      -696394046: L176
+      -695048579: L177
+      -640893752: L178
+      -639315238: L179
+      -630620196: L180
+      -626485214: L181
+      -609769360: L182
+      -594232333: L183
+      -592115682: L184
+      -565712687: L185
+      -537492837: L186
+      -509530039: L187
+      -499270659: L188
+      -497290173: L189
+      -482435472: L190
+      -479868850: L191
+      -460697554: L192
+      -440031355: L193
+      -436176178: L194
+      -433409602: L195
+      -417554577: L196
+      -414754320: L197
+      -399635918: L198
+      -398499761: L199
+      -394091697: L200
+      -383563109: L201
+      -372924044: L202
+      -363310133: L203
+      -362098965: L204
+      -361895872: L205
+      -355811478: L206
+      -346421822: L207
+      -345852719: L208
+      -344576227: L209
+      -343309864: L210
+      -332719304: L211
+      -322668869: L212
+      -318452137: L213
+      -318229240: L214
+      -302872353: L215
+      -274712184: L216
+      -272059580: L217
+      -217493221: L218
+      -214889727: L219
+      -212413657: L220
+      -206200765: L221
+      -190597443: L222
+      -190177670: L223
+      -186780916: L224
+      -186251875: L225
+      -170428149: L226
+      -166620590: L227
+      -150356040: L228
+      -143071158: L229
+      -140514384: L230
+      -138968106: L231
+      -132844754: L232
+      -125297429: L233
+      -123495655: L234
+      -123173845: L235
+      -113244450: L236
+      -107362526: L237
+      -102893197: L238
+      -93664962: L239
+      -89372513: L240
+      -85564954: L241
+      -76076380: L242
+      -70601798: L243
+      -70060280: L244
+      -45784958: L245
+      -25457926: L246
+      -20447428: L247
+      -19871983: L248
+      -11977771: L249
+      111: L250
+      3521: L251
+      3555: L252
+      3670: L253
+      119522: L254
+      628183: L255
+      3108362: L256
+      3124973: L257
+      3151468: L258
+      3208415: L259
+      3347807: L260
+      3556293: L261
+      13992698: L262
+      16435463: L263
+      23417159: L264
+      30967138: L265
+      31356389: L266
+      52990817: L267
+      61868125: L268
+      70940898: L269
+      92611469: L270
+      93754091: L271
+      94849592: L272
+      94924935: L273
+      95765810: L274
+      96619420: L275
+      97306493: L276
+      102966132: L277
+      102982545: L278
+      103327919: L279
+      103334771: L280
+      106295969: L281
+      106471596: L282
+      109201799: L283
+      109770518: L284
+      110534459: L285
+      110549828: L286
+      113970340: L287
+      133194066: L288
+      144065764: L289
+      157070417: L290
+      169729738: L291
+      173272060: L292
+      185284846: L293
+      190406543: L294
+      206382457: L295
+      206949807: L296
+      208550360: L297
+      226047266: L298
+      226790970: L299
+      227386509: L300
+      231029020: L301
+      244751886: L302
+      247101774: L303
+      258493505: L304
+      261894225: L305
+      270457713: L306
+      275647498: L307
+      336650556: L308
+      336715814: L309
+      337067146: L310
+      345020601: L311
+      345818426: L312
+      354103556: L313
+      366286230: L314
+      367599254: L315
+      370094900: L316
+      383476453: L317
+      385961251: L318
+      400153094: L319
+      400691745: L320
+      421663228: L321
+      424556637: L322
+      433015912: L323
+      442905930: L324
+      454093564: L325
+      457202000: L326
+      461188953: L327
+      468537385: L328
+      469108915: L329
+      488897581: L330
+      493645815: L331
+      495212643: L332
+      505784411: L333
+      513844892: L334
+      515384291: L335
+      522200204: L336
+      543139377: L337
+      549266183: L338
+      554361030: L339
+      559785720: L340
+      567920361: L341
+      570544139: L342
+      577359392: L343
+      584304150: L344
+      594800518: L345
+      603029419: L346
+      610787939: L347
+      624701414: L348
+      644367694: L349
+      647208028: L350
+      651814759: L351
+      655102240: L352
+      697561013: L353
+      710091865: L354
+      723449481: L355
+      723449482: L356
+      723449483: L357
+      723449484: L358
+      723737248: L359
+      725883691: L360
+      726499658: L361
+      739681616: L362
+      745978112: L363
+      747037970: L364
+      757559701: L365
+      771394841: L366
+      778800386: L367
+      788432979: L368
+      794564837: L369
+      801132008: L370
+      804247530: L371
+      815738322: L372
+      817130250: L373
+      821766542: L374
+      827710836: L375
+      835733702: L376
+      839250871: L377
+      840459544: L378
+      856252193: L379
+      857150139: L380
+      880643364: L381
+      937325296: L382
+      938751987: L383
+      939913388: L384
+      952246222: L385
+      956780135: L386
+      957614506: L387
+      957614744: L388
+      975910451: L389
+      979435796: L390
+      982738589: L391
+      985853996: L392
+      993692947: L393
+      995993412: L394
+      1000463291: L395
+      1001429712: L396
+      1008443453: L397
+      1014747833: L398
+      1017696818: L399
+      1018184963: L400
+      1026079175: L401
+      1040957296: L402
+      1041547232: L403
+      1042657559: L404
+      1051762628: L405
+      1055084854: L406
+      1060478881: L407
+      1064985712: L408
+      1067200918: L409
+      1079856552: L410
+      1088375531: L411
+      1093398294: L412
+      1097547233: L413
+      1115333982: L414
+      1123214286: L415
+      1127186923: L416
+      1152833796: L417
+      1167648233: L418
+      1185569032: L419
+      1207474234: L420
+      1212547584: L421
+      1216985755: L422
+      1224761473: L423
+      1225970636: L424
+      1233099618: L425
+      1256755681: L426
+      1262204444: L427
+      1267952268: L428
+      1275240484: L429
+      1280334390: L430
+      1296516512: L431
+      1296818786: L432
+      1306251854: L433
+      1309316682: L434
+      1324042977: L435
+      1346031333: L436
+      1353611105: L437
+      1354674091: L438
+      1359089554: L439
+      1419392965: L440
+      1421809411: L441
+      1457992209: L442
+      1465384640: L443
+      1467008171: L444
+      1467996147: L445
+      1475662356: L446
+      1485626335: L447
+      1486714148: L448
+      1505535766: L449
+      1523815735: L450
+      1528500815: L451
+      1530954879: L452
+      1531223868: L453
+      1547742009: L454
+      1565843763: L455
+      1571589583: L456
+      1600862704: L457
+      1609313311: L458
+      1610664169: L459
+      1614227246: L460
+      1619021926: L461
+      1621986722: L462
+      1623905326: L463
+      1627306047: L464
+      1638756707: L465
+      1652840661: L466
+      1652935859: L467
+      1669574789: L468
+      1676787572: L469
+      1706212112: L470
+      1721197009: L471
+      1723001557: L472
+      1734723993: L473
+      1737788794: L474
+      1750013492: L475
+      1752771673: L476
+      1756975212: L477
+      1766243664: L478
+      1773287168: L479
+      1773791645: L480
+      1785508721: L481
+      1792232769: L482
+      1795554725: L483
+      1802243802: L484
+      1808262698: L485
+      1814381507: L486
+      1818189199: L487
+      1823383684: L488
+      1824255371: L489
+      1824959578: L490
+      1826252360: L491
+      1834193802: L492
+      1837791503: L493
+      1861657267: L494
+      1867142194: L495
+      1870746010: L496
+      1875178978: L497
+      1878795116: L498
+      1889937051: L499
+      1898184692: L500
+      1926037856: L501
+      1932245671: L502
+      1941128145: L503
+      1943616111: L504
+      1949658430: L505
+      1957241194: L506
+      1962904805: L507
+      2000503667: L508
+      2001040283: L509
+      2003399532: L510
+      2024494841: L511
+      2045446702: L512
+      2050286065: L513
+      2062142640: L514
+      2080268623: L515
+      2084621155: L516
+      2096749990: L517
+      2108450445: L518
+      2121038305: L519
+      2128908815: L520
+      2136392645: L521
+      default: L522
+   L214
+    ALOAD 2
+    LDC "utilidades_premium_msg"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L523
+    GOTO L522
+   L40
+    ALOAD 2
+    LDC "importe_no_puede_ser_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L524
+    GOTO L522
+   L371
+    ALOAD 2
+    LDC "informacion_cuenta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L525
+    GOTO L522
+   L510
+    ALOAD 2
+    LDC "contrasena_muy_corta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L526
+    GOTO L522
+   L383
+    ALOAD 2
+    LDC "cerrar_sesion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L527
+    GOTO L522
+   L116
+    ALOAD 2
+    LDC "idioma"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L528
+    GOTO L522
+   L435
+    ALOAD 2
+    LDC "hora_inicio_debe_ser_anterior"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L529
+    GOTO L522
+   L72
+    ALOAD 2
+    LDC "selecciona_opcion_importe"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L530
+    GOTO L522
+   L391
+    ALOAD 2
+    LDC "informacion_actualizada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L531
+    GOTO L522
+   L160
+    ALOAD 2
+    LDC "entendido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L532
+    GOTO L522
+   L32
+    ALOAD 2
+    LDC "valid_saldo_final_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L533
+    GOTO L522
+   L478
+    ALOAD 2
+    LDC "formato_fecha_hint"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L534
+    GOTO L522
+   L163
+    ALOAD 2
+    LDC "confirmar_arqueo_aviso_guardado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L535
+    GOTO L522
+   L389
+    ALOAD 2
+    LDC "borrar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L536
+    GOTO L522
+   L394
+    ALOAD 2
+    LDC "error_crear_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L537
+    GOTO L522
+   L395
+    ALOAD 2
+    LDC "categoria_nombre_duplicado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L538
+    GOTO L522
+   L507
+    ALOAD 2
+    LDC "pulsa_crear_primer_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L539
+    GOTO L522
+   L36
+    ALOAD 2
+    LDC "google_auth_unavailable"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L540
+    GOTO L522
+   L313
+    ALOAD 2
+    LDC "ingresar_gasto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L541
+    GOTO L522
+   L476
+    ALOAD 2
+    LDC "estado_cancelado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L542
+    GOTO L522
+   L375
+    ALOAD 2
+    LDC "destino_con_saldo_pregunta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L543
+    GOTO L522
+   L264
+    ALOAD 2
+    LDC "peso_argentino"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L544
+    GOTO L522
+   L327
+    ALOAD 2
+    LDC "error_inesperado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L545
+    GOTO L522
+   L480
+    ALOAD 2
+    LDC "precio_demasiado_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L546
+    GOTO L522
+   L397
+    ALOAD 2
+    LDC "arqueo_realizado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L547
+    GOTO L522
+   L429
+    ALOAD 2
+    LDC "saldo_inicial_demasiado_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L548
+    GOTO L522
+   L379
+    ALOAD 2
+    LDC "valid_fecha_pasada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L549
+    GOTO L522
+   L311
+    ALOAD 2
+    LDC "eliminar_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L550
+    GOTO L522
+   L488
+    ALOAD 2
+    LDC "precio_venta_requerido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L551
+    GOTO L522
+   L230
+    ALOAD 2
+    LDC "formato_hora_inicio_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L552
+    GOTO L522
+   L219
+    ALOAD 2
+    LDC "asignar_automaticamente"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L553
+    GOTO L522
+   L93
+    ALOAD 2
+    LDC "error_cargando_proximos_mercadillos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L554
+    GOTO L522
+   L79
+    ALOAD 2
+    LDC "stock_demasiado_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L555
+    GOTO L522
+   L50
+    ALOAD 2
+    LDC "no_hay_lineas_vender"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L556
+    GOTO L522
+   L130
+    ALOAD 2
+    LDC "seleccionar_fecha"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L557
+    GOTO L522
+   L37
+    ALOAD 2
+    LDC "resultado_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L558
+    GOTO L522
+   L82
+    ALOAD 2
+    LDC "requiere_mesa"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L559
+    GOTO L522
+   L309
+    ALOAD 2
+    LDC "mercadillo_no_encontrado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L560
+    GOTO L522
+   L266
+    ALOAD 2
+    LDC "controlar_stock"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L561
+    GOTO L522
+   L334
+    ALOAD 2
+    LDC "nombre_min_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L562
+    GOTO L522
+   L67
+    ALOAD 2
+    LDC "fecha_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L563
+    GOTO L522
+   L317
+    ALOAD 2
+    LDC "finalizar_venta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L564
+    GOTO L522
+   L159
+    ALOAD 2
+    LDC "stock_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L565
+    GOTO L522
+   L12
+    ALOAD 2
+    LDC "register_benefits_title"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L566
+    GOTO L522
+   L434
+    ALOAD 2
+    LDC "crear_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L567
+    GOTO L522
+   L136
+    ALOAD 2
+    LDC "error_cargando_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L568
+    GOTO L522
+   L314
+    ALOAD 2
+    LDC "guardar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L569
+    GOTO L522
+   L227
+    ALOAD 2
+    LDC "logout_message"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L570
+    GOTO L522
+   L143
+    ALOAD 2
+    LDC "precio_venta_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L571
+    GOTO L522
+   L494
+    ALOAD 2
+    LDC "seleccionar_hora_fin"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L572
+    GOTO L522
+   L343
+    ALOAD 2
+    LDC "lugar_requerido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L573
+    GOTO L522
+   L267
+    ALOAD 2
+    LDC "sync_no_se_pudo_completar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L574
+    GOTO L522
+   L508
+    ALOAD 2
+    LDC "error_eliminando_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L575
+    GOTO L522
+   L113
+    ALOAD 2
+    LDC "hay_punto_luz"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L576
+    GOTO L522
+   L158
+    ALOAD 2
+    LDC "guion_largo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L577
+    GOTO L522
+   L90
+    ALOAD 2
+    LDC "confirmar_arqueo_pregunta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L578
+    GOTO L522
+   L346
+    ALOAD 2
+    LDC "ventas_en_efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L579
+    GOTO L522
+   L298
+    ALOAD 2
+    LDC "lugar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L580
+    GOTO L522
+   L231
+    ALOAD 2
+    LDC "importe_a_anadir"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L581
+    GOTO L522
+   L503
+    ALOAD 2
+    LDC "guardar_saldo_reemplazar_aviso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L582
+    GOTO L522
+   L233
+    ALOAD 2
+    LDC "ocultar_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L583
+    GOTO L522
+   L456
+    ALOAD 2
+    LDC "password_placeholder"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L584
+    GOTO L522
+   L307
+    ALOAD 2
+    LDC "correo_electronico"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L585
+    GOTO L522
+   L455
+    ALOAD 2
+    LDC "categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L586
+    GOTO L522
+   L472
+    ALOAD 2
+    LDC "saldo_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L587
+    GOTO L522
+   L68
+    ALOAD 2
+    LDC "contrasenas_no_coinciden"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L588
+    GOTO L522
+   L209
+    ALOAD 2
+    LDC "nueva_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L589
+    GOTO L522
+   L118
+    ALOAD 2
+    LDC "eliminar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L590
+    GOTO L522
+   L250
+    ALOAD 2
+    LDC "o"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L591
+    GOTO L522
+   L360
+    ALOAD 2
+    LDC "valid_fecha_vacia"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L592
+    GOTO L522
+   L199
+    ALOAD 2
+    LDC "resultado_arqueo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L593
+    GOTO L522
+   L243
+    ALOAD 2
+    LDC "error_creando_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L594
+    GOTO L522
+   L418
+    ALOAD 2
+    LDC "app_name"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L595
+    GOTO L522
+   L220
+    ALOAD 2
+    LDC "hora_fin_invalida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L596
+    GOTO L522
+   L289
+    ALOAD 2
+    LDC "saldo_asignado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L597
+    GOTO L522
+   L196
+    ALOAD 2
+    LDC "error_cancelar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L598
+    GOTO L522
+   L87
+    ALOAD 2
+    LDC "resumen_gastos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L599
+    GOTO L522
+   L3
+    ALOAD 2
+    LDC "es_gratis"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L600
+    GOTO L522
+   L453
+    ALOAD 2
+    LDC "nueva_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L601
+    GOTO L522
+   L148
+    ALOAD 2
+    LDC "error_crear_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L602
+    GOTO L522
+   L51
+    ALOAD 2
+    LDC "descripcion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L603
+    GOTO L522
+   L246
+    ALOAD 2
+    LDC "articulo_creado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L604
+    GOTO L522
+   L204
+    ALOAD 2
+    LDC "valid_lugar_vacio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L605
+    GOTO L522
+   L235
+    ALOAD 2
+    LDC "cancelar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L606
+    GOTO L522
+   L98
+    ALOAD 2
+    LDC "configuracion_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L607
+    GOTO L522
+   L124
+    ALOAD 2
+    LDC "sin_saldo_anterior"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L608
+    GOTO L522
+   L493
+    ALOAD 2
+    LDC "domingo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L609
+    GOTO L522
+   L469
+    ALOAD 2
+    LDC "confirmar_cambio_saldo_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L610
+    GOTO L522
+   L274
+    ALOAD 2
+    LDC "dolar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L611
+    GOTO L522
+   L119
+    ALOAD 2
+    LDC "error_actualizar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L612
+    GOTO L522
+   L413
+    ALOAD 2
+    LDC "resumen"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L613
+    GOTO L522
+   L445
+    ALOAD 2
+    LDC "descripcion_obligatoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L614
+    GOTO L522
+   L217
+    ALOAD 2
+    LDC "valid_formato_fecha_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L615
+    GOTO L522
+   L498
+    ALOAD 2
+    LDC "promocion_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L616
+    GOTO L522
+   L17
+    ALOAD 2
+    LDC "nuevo_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L617
+    GOTO L522
+   L521
+    ALOAD 2
+    LDC "mostrar_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L618
+    GOTO L522
+   L407
+    ALOAD 2
+    LDC "formato_fecha_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L619
+    GOTO L522
+   L302
+    ALOAD 2
+    LDC "formato_hora_fin_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L620
+    GOTO L522
+   L249
+    ALOAD 2
+    LDC "nombre_categoria_muy_largo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L621
+    GOTO L522
+   L490
+    ALOAD 2
+    LDC "metodo_pago"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L622
+    GOTO L522
+   L310
+    ALOAD 2
+    LDC "error_actualizar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L623
+    GOTO L522
+   L125
+    ALOAD 2
+    LDC "tema_oscuro"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L624
+    GOTO L522
+   L95
+    ALOAD 2
+    LDC "cambio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L625
+    GOTO L522
+   L192
+    ALOAD 2
+    LDC "nombre_categoria_requerido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L626
+    GOTO L522
+   L384
+    ALOAD 2
+    LDC "metodo_tarjeta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L627
+    GOTO L522
+   L184
+    ALOAD 2
+    LDC "cambiar_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L628
+    GOTO L522
+   L238
+    ALOAD 2
+    LDC "version_free"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L629
+    GOTO L522
+   L39
+    ALOAD 2
+    LDC "importe_mayor_cero"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L630
+    GOTO L522
+   L20
+    ALOAD 2
+    LDC "premium_features"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L631
+    GOTO L522
+   L202
+    ALOAD 2
+    LDC "precio_unitario"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L632
+    GOTO L522
+   L228
+    ALOAD 2
+    LDC "alta_titulo_nuevo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L633
+    GOTO L522
+   L365
+    ALOAD 2
+    LDC "informacion_basica"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L634
+    GOTO L522
+   L94
+    ALOAD 2
+    LDC "buscar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L635
+    GOTO L522
+   L73
+    ALOAD 2
+    LDC "organizador_maximo_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L636
+    GOTO L522
+   L164
+    ALOAD 2
+    LDC "ventas"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L637
+    GOTO L522
+   L265
+    ALOAD 2
+    LDC "informacion_personal"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L638
+    GOTO L522
+   L387
+    ALOAD 2
+    LDC "valid_organizador_max"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L639
+    GOTO L522
+   L176
+    ALOAD 2
+    LDC "sincronizacion_completada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L640
+    GOTO L522
+   L43
+    ALOAD 2
+    LDC "leyenda_estados"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L641
+    GOTO L522
+   L464
+    ALOAD 2
+    LDC "estado_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L642
+    GOTO L522
+   L161
+    ALOAD 2
+    LDC "placeholder_lugar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L643
+    GOTO L522
+   L174
+    ALOAD 2
+    LDC "solo_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L644
+    GOTO L522
+   L344
+    ALOAD 2
+    LDC "peso_mexicano"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L645
+    GOTO L522
+   L83
+    ALOAD 2
+    LDC "gastos_automaticos_proximamente"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L646
+    GOTO L522
+   L194
+    ALOAD 2
+    LDC "cambiando"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L647
+    GOTO L522
+   L465
+    ALOAD 2
+    LDC "nuevo_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L648
+    GOTO L522
+   L100
+    ALOAD 2
+    LDC "aqui_listados_informes"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L649
+    GOTO L522
+   L103
+    ALOAD 2
+    LDC "articulo_actualizado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L650
+    GOTO L522
+   L477
+    ALOAD 2
+    LDC "error_guardar_venta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L651
+    GOTO L522
+   L294
+    ALOAD 2
+    LDC "lugar_minimo_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L652
+    GOTO L522
+   L291
+    ALOAD 2
+    LDC "confirmar_nueva_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L653
+    GOTO L522
+   L269
+    ALOAD 2
+    LDC "ventas_por_metodo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L654
+    GOTO L522
+   L76
+    ALOAD 2
+    LDC "categoria_creada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L655
+    GOTO L522
+   L301
+    ALOAD 2
+    LDC "pulsa_crear_primer_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L656
+    GOTO L522
+   L244
+    ALOAD 2
+    LDC "buscar_placeholder"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L657
+    GOTO L522
+   L226
+    ALOAD 2
+    LDC "logout_confirm"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L658
+    GOTO L522
+   L321
+    ALOAD 2
+    LDC "procesando"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L659
+    GOTO L522
+   L509
+    ALOAD 2
+    LDC "error_actualizando_mercadillo_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L660
+    GOTO L522
+   L366
+    ALOAD 2
+    LDC "venta_manual"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L661
+    GOTO L522
+   L463
+    ALOAD 2
+    LDC "login_subtitle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L662
+    GOTO L522
+   L461
+    ALOAD 2
+    LDC "gastos_carrito"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L663
+    GOTO L522
+   L431
+    ALOAD 2
+    LDC "categorias"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L664
+    GOTO L522
+   L459
+    ALOAD 2
+    LDC "organizador_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L665
+    GOTO L522
+   L520
+    ALOAD 2
+    LDC "marcar_favorito"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L666
+    GOTO L522
+   L18
+    ALOAD 2
+    LDC "error_generico"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L667
+    GOTO L522
+   L259
+    ALOAD 2
+    LDC "home"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L668
+    GOTO L522
+   L401
+    ALOAD 2
+    LDC "lugar_muy_largo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L669
+    GOTO L522
+   L177
+    ALOAD 2
+    LDC "realizar_cargo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L670
+    GOTO L522
+   L281
+    ALOAD 2
+    LDC "eliminar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L671
+    GOTO L522
+   L157
+    ALOAD 2
+    LDC "placeholder_organizador"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L672
+    GOTO L522
+   L345
+    ALOAD 2
+    LDC "error_cambiando_estado_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L673
+    GOTO L522
+   L442
+    ALOAD 2
+    LDC "organizador_no_puede_estar_vacio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L674
+    GOTO L522
+   L139
+    ALOAD 2
+    LDC "efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L675
+    GOTO L522
+   L112
+    ALOAD 2
+    LDC "premium_user"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L676
+    GOTO L522
+   L300
+    ALOAD 2
+    LDC "importe_suscripcion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L677
+    GOTO L522
+   L178
+    ALOAD 2
+    LDC "login_button"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L678
+    GOTO L522
+   L505
+    ALOAD 2
+    LDC "importe_a_retirar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L679
+    GOTO L522
+   L290
+    ALOAD 2
+    LDC "estado_cerrado_completo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L680
+    GOTO L522
+   L330
+    ALOAD 2
+    LDC "horarios_invalidos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L681
+    GOTO L522
+   L462
+    ALOAD 2
+    LDC "confirmar_eliminar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L682
+    GOTO L522
+   L154
+    ALOAD 2
+    LDC "estado_mercadillo_no_valido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L683
+    GOTO L522
+   L322
+    ALOAD 2
+    LDC "mercadillo_activo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L684
+    GOTO L522
+   L173
+    ALOAD 2
+    LDC "guardar_igualmente"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L685
+    GOTO L522
+   L376
+    ALOAD 2
+    LDC "anadir_venta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L686
+    GOTO L522
+   L481
+    ALOAD 2
+    LDC "inventario"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L687
+    GOTO L522
+   L428
+    ALOAD 2
+    LDC "sin_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L688
+    GOTO L522
+   L151
+    ALOAD 2
+    LDC "usuario_no_autenticado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L689
+    GOTO L522
+   L15
+    ALOAD 2
+    LDC "importe_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L690
+    GOTO L522
+   L427
+    ALOAD 2
+    LDC "mercadillo_existe_fecha_hora"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L691
+    GOTO L522
+   L23
+    ALOAD 2
+    LDC "expandir"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L692
+    GOTO L522
+   L308
+    ALOAD 2
+    LDC "loading"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L693
+    GOTO L522
+   L215
+    ALOAD 2
+    LDC "editar_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L694
+    GOTO L522
+   L382
+    ALOAD 2
+    LDC "solo_premium_coste"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L695
+    GOTO L522
+   L144
+    ALOAD 2
+    LDC "perfil"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L696
+    GOTO L522
+   L273
+    ALOAD 2
+    LDC "crear"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L697
+    GOTO L522
+   L489
+    ALOAD 2
+    LDC "peso_colombiano"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L698
+    GOTO L522
+   L46
+    ALOAD 2
+    LDC "saldo_inicial"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L699
+    GOTO L522
+   L295
+    ALOAD 2
+    LDC "organizador_requerido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L700
+    GOTO L522
+   L140
+    ALOAD 2
+    LDC "actualizar_informacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L701
+    GOTO L522
+   L316
+    ALOAD 2
+    LDC "upgrade_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L702
+    GOTO L522
+   L415
+    ALOAD 2
+    LDC "error_en_sincronizacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L703
+    GOTO L522
+   L10
+    ALOAD 2
+    LDC "go_to_login"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L704
+    GOTO L522
+   L362
+    ALOAD 2
+    LDC "email_placeholder"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L705
+    GOTO L522
+   L71
+    ALOAD 2
+    LDC "usuario_invitado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L706
+    GOTO L522
+   L372
+    ALOAD 2
+    LDC "guardar_saldo_uso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L707
+    GOTO L522
+   L49
+    ALOAD 2
+    LDC "config_logistica"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L708
+    GOTO L522
+   L190
+    ALOAD 2
+    LDC "guardar_saldo_desc"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L709
+    GOTO L522
+   L9
+    ALOAD 2
+    LDC "si_abonar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L710
+    GOTO L522
+   L451
+    ALOAD 2
+    LDC "config_economica"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L711
+    GOTO L522
+   L127
+    ALOAD 2
+    LDC "confirmar_asignar_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L712
+    GOTO L522
+   L277
+    ALOAD 2
+    LDC "libra"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L713
+    GOTO L522
+   L135
+    ALOAD 2
+    LDC "moneda"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L714
+    GOTO L522
+   L381
+    ALOAD 2
+    LDC "confirmar_arqueo_aviso_unavez"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L715
+    GOTO L522
+   L280
+    ALOAD 2
+    LDC "lunes"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L716
+    GOTO L522
+   L335
+    ALOAD 2
+    LDC "gastos_en_efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L717
+    GOTO L522
+   L74
+    ALOAD 2
+    LDC "mercadillo_creado_con_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L718
+    GOTO L522
+   L517
+    ALOAD 2
+    LDC "estado_programado_total"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L719
+    GOTO L522
+   L396
+    ALOAD 2
+    LDC "error_actualizacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L720
+    GOTO L522
+   L121
+    ALOAD 2
+    LDC "selecciona_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L721
+    GOTO L522
+   L8
+    ALOAD 2
+    LDC "fecha_requerida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L722
+    GOTO L522
+   L260
+    ALOAD 2
+    LDC "menu"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L723
+    GOTO L522
+   L186
+    ALOAD 2
+    LDC "email_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L724
+    GOTO L522
+   L405
+    ALOAD 2
+    LDC "precio_coste_demasiado_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L725
+    GOTO L522
+   L374
+    ALOAD 2
+    LDC "anadir_gasto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L726
+    GOTO L522
+   L42
+    ALOAD 2
+    LDC "valid_lugar_min"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L727
+    GOTO L522
+   L363
+    ALOAD 2
+    LDC "guardar_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L728
+    GOTO L522
+   L63
+    ALOAD 2
+    LDC "operacion_no_se_puede_deshacer"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L729
+    GOTO L522
+   L225
+    ALOAD 2
+    LDC "guardando"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L730
+    GOTO L522
+   L402
+    ALOAD 2
+    LDC "free_limite_mercadillos_por_dia"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L731
+    GOTO L522
+   L89
+    ALOAD 2
+    LDC "arqueo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L732
+    GOTO L522
+   L423
+    ALOAD 2
+    LDC "favorito_estrella"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L733
+    GOTO L522
+   L359
+    ALOAD 2
+    LDC "saldo_final"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L734
+    GOTO L522
+   L170
+    ALOAD 2
+    LDC "preparando_datos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L735
+    GOTO L522
+   L133
+    ALOAD 2
+    LDC "martes"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L736
+    GOTO L522
+   L502
+    ALOAD 2
+    LDC "configuracion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L737
+    GOTO L522
+   L145
+    ALOAD 2
+    LDC "error_cargando_datos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L738
+    GOTO L522
+   L59
+    ALOAD 2
+    LDC "auth_provider_email"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L739
+    GOTO L522
+   L107
+    ALOAD 2
+    LDC "nueva_venta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L740
+    GOTO L522
+   L358
+    ALOAD 2
+    LDC "benefit_4"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L741
+    GOTO L522
+   L203
+    ALOAD 2
+    LDC "iniciar_sesion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L742
+    GOTO L522
+   L356
+    ALOAD 2
+    LDC "benefit_2"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L743
+    GOTO L522
+   L364
+    ALOAD 2
+    LDC "todos_los_productos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L744
+    GOTO L522
+   L357
+    ALOAD 2
+    LDC "benefit_3"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L745
+    GOTO L522
+   L443
+    ALOAD 2
+    LDC "pulsa_crear_primera_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L746
+    GOTO L522
+   L355
+    ALOAD 2
+    LDC "benefit_1"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L747
+    GOTO L522
+   L142
+    ALOAD 2
+    LDC "auth_provider_google"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L748
+    GOTO L522
+   L153
+    ALOAD 2
+    LDC "sabado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L749
+    GOTO L522
+   L284
+    ALOAD 2
+    LDC "stock"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L750
+    GOTO L522
+   L206
+    ALOAD 2
+    LDC "contrasena_actual_requerida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L751
+    GOTO L522
+   L312
+    ALOAD 2
+    LDC "total_gastos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L752
+    GOTO L522
+   L323
+    ALOAD 2
+    LDC "google_signin"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L753
+    GOTO L522
+   L65
+    ALOAD 2
+    LDC "valid_saldo_inicial_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L754
+    GOTO L522
+   L53
+    ALOAD 2
+    LDC "ver_leyenda"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L755
+    GOTO L522
+   L380
+    ALOAD 2
+    LDC "no_modificar_fecha_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L756
+    GOTO L522
+   L285
+    ALOAD 2
+    LDC "todas"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L757
+    GOTO L522
+   L292
+    ALOAD 2
+    LDC "muy_pronto_gestionar_stock"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L758
+    GOTO L522
+   L104
+    ALOAD 2
+    LDC "contrasena_actualizada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L759
+    GOTO L522
+   L377
+    ALOAD 2
+    LDC "markets"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L760
+    GOTO L522
+   L92
+    ALOAD 2
+    LDC "borrar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L761
+    GOTO L522
+   L278
+    ALOAD 2
+    LDC "listo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L762
+    GOTO L522
+   L417
+    ALOAD 2
+    LDC "valid_organizador_vacio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L763
+    GOTO L522
+   L400
+    ALOAD 2
+    LDC "lugar_muy_corto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L764
+    GOTO L522
+   L180
+    ALOAD 2
+    LDC "abono_chip"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L765
+    GOTO L522
+   L84
+    ALOAD 2
+    LDC "funcion_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L766
+    GOTO L522
+   L297
+    ALOAD 2
+    LDC "articulo_eliminado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L767
+    GOTO L522
+   L484
+    ALOAD 2
+    LDC "no_se_pudieron_cargar_datos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L768
+    GOTO L522
+   L504
+    ALOAD 2
+    LDC "valid_fecha_invalida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L769
+    GOTO L522
+   L102
+    ALOAD 2
+    LDC "editar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L770
+    GOTO L522
+   L448
+    ALOAD 2
+    LDC "comprobando_datos_locales"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L771
+    GOTO L522
+   L21
+    ALOAD 2
+    LDC "importe_muy_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L772
+    GOTO L522
+   L351
+    ALOAD 2
+    LDC "sin_categorias"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L773
+    GOTO L522
+   L123
+    ALOAD 2
+    LDC "sincronizando_articulos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L774
+    GOTO L522
+   L188
+    ALOAD 2
+    LDC "varios_mercadillos_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L775
+    GOTO L522
+   L248
+    ALOAD 2
+    LDC "nombre_categoria_muy_corto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L776
+    GOTO L522
+   L251
+    ALOAD 2
+    LDC "no"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L777
+    GOTO L522
+   L506
+    ALOAD 2
+    LDC "cerrar_busqueda"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L778
+    GOTO L522
+   L320
+    ALOAD 2
+    LDC "valid_importe_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L779
+    GOTO L522
+   L245
+    ALOAD 2
+    LDC "valid_saldo_inicial_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L780
+    GOTO L522
+   L120
+    ALOAD 2
+    LDC "aceptar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L781
+    GOTO L522
+   L64
+    ALOAD 2
+    LDC "seleccionar_mercadillo_activo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L782
+    GOTO L522
+   L339
+    ALOAD 2
+    LDC "carrito"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L783
+    GOTO L522
+   L141
+    ALOAD 2
+    LDC "nombre"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L784
+    GOTO L522
+   L487
+    ALOAD 2
+    LDC "nombre_min_2"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L785
+    GOTO L522
+   L97
+    ALOAD 2
+    LDC "gastos_cargados"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L786
+    GOTO L522
+   L286
+    ALOAD 2
+    LDC "total"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L787
+    GOTO L522
+   L242
+    ALOAD 2
+    LDC "cambiar_mercadillo_seleccionado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L788
+    GOTO L522
+   L33
+    ALOAD 2
+    LDC "gastos_por_metodo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L789
+    GOTO L522
+   L155
+    ALOAD 2
+    LDC "confirmar_abono"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L790
+    GOTO L522
+   L86
+    ALOAD 2
+    LDC "seleccionar_hora"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L791
+    GOTO L522
+   L255
+    ALOAD 2
+    LDC "version_invitado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L792
+    GOTO L522
+   L319
+    ALOAD 2
+    LDC "error_en_sincronizacion_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L793
+    GOTO L522
+   L30
+    ALOAD 2
+    LDC "add_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L794
+    GOTO L522
+   L446
+    ALOAD 2
+    LDC "confirmar_borrado_texto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L795
+    GOTO L522
+   L252
+    ALOAD 2
+    LDC "or"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L796
+    GOTO L522
+   L332
+    ALOAD 2
+    LDC "mercadillo_creado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L797
+    GOTO L522
+   L187
+    ALOAD 2
+    LDC "continuar_google"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L798
+    GOTO L522
+   L57
+    ALOAD 2
+    LDC "valid_hora_fin_formato"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L799
+    GOTO L522
+   L325
+    ALOAD 2
+    LDC "viernes"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L800
+    GOTO L522
+   L485
+    ALOAD 2
+    LDC "saldo_muy_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L801
+    GOTO L522
+   L58
+    ALOAD 2
+    LDC "requiere_carpa"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L802
+    GOTO L522
+   L403
+    ALOAD 2
+    LDC "mercadillo_actualizado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L803
+    GOTO L522
+   L410
+    ALOAD 2
+    LDC "categoria_actualizada_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L804
+    GOTO L522
+   L137
+    ALOAD 2
+    LDC "arqueo_caja"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L805
+    GOTO L522
+   L88
+    ALOAD 2
+    LDC "anadir"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L806
+    GOTO L522
+   L296
+    ALOAD 2
+    LDC "editar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L807
+    GOTO L522
+   L247
+    ALOAD 2
+    LDC "google_token_error"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L808
+    GOTO L522
+   L106
+    ALOAD 2
+    LDC "desbloquea_funciones"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L809
+    GOTO L522
+   L149
+    ALOAD 2
+    LDC "error_guardando_gastos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L810
+    GOTO L522
+   L263
+    ALOAD 2
+    LDC "controlar_coste"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L811
+    GOTO L522
+   L34
+    ALOAD 2
+    LDC "valid_importe_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L812
+    GOTO L522
+   L347
+    ALOAD 2
+    LDC "error_actualizando_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L813
+    GOTO L522
+   L361
+    ALOAD 2
+    LDC "metodo_bizum"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L814
+    GOTO L522
+   L270
+    ALOAD 2
+    LDC "about"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L815
+    GOTO L522
+   L27
+    ALOAD 2
+    LDC "mercadillo_eliminado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L816
+    GOTO L522
+   L409
+    ALOAD 2
+    LDC "categoria_requerida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L817
+    GOTO L522
+   L354
+    ALOAD 2
+    LDC "estado_pendiente_asignar_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L818
+    GOTO L522
+   L342
+    ALOAD 2
+    LDC "aviso_saldo_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L819
+    GOTO L522
+   L45
+    ALOAD 2
+    LDC "precio_coste"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L820
+    GOTO L522
+   L326
+    ALOAD 2
+    LDC "valid_horarios_invalidos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L821
+    GOTO L522
+   L175
+    ALOAD 2
+    LDC "importe_demasiado_alto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L822
+    GOTO L522
+   L422
+    ALOAD 2
+    LDC "password"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L823
+    GOTO L522
+   L218
+    ALOAD 2
+    LDC "hora_inicio_invalida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L824
+    GOTO L522
+   L189
+    ALOAD 2
+    LDC "entregado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L825
+    GOTO L522
+   L496
+    ALOAD 2
+    LDC "add_market"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L826
+    GOTO L522
+   L75
+    ALOAD 2
+    LDC "confirmar_borrado_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L827
+    GOTO L522
+   L41
+    ALOAD 2
+    LDC "valid_lugar_max"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L828
+    GOTO L522
+   L198
+    ALOAD 2
+    LDC "total_linea"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L829
+    GOTO L522
+   L425
+    ALOAD 2
+    LDC "welcome"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L830
+    GOTO L522
+   L222
+    ALOAD 2
+    LDC "seleccionar_hora_inicio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L831
+    GOTO L522
+   L318
+    ALOAD 2
+    LDC "confirmar_eliminar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L832
+    GOTO L522
+   L99
+    ALOAD 2
+    LDC "error_sincronizacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L833
+    GOTO L522
+   L256
+    ALOAD 2
+    LDC "edit"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L834
+    GOTO L522
+   L81
+    ALOAD 2
+    LDC "espanol"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L835
+    GOTO L522
+   L353
+    ALOAD 2
+    LDC "error_cambiar_contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L836
+    GOTO L522
+   L497
+    ALOAD 2
+    LDC "descripcion_label"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L837
+    GOTO L522
+   L370
+    ALOAD 2
+    LDC "organizador_minimo_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L838
+    GOTO L522
+   L216
+    ALOAD 2
+    LDC "confirmar_abono_pregunta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L839
+    GOTO L522
+   L393
+    ALOAD 2
+    LDC "articulo_nombre_duplicado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L840
+    GOTO L522
+   L352
+    ALOAD 2
+    LDC "organizador_muy_largo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L841
+    GOTO L522
+   L205
+    ALOAD 2
+    LDC "real_brasileno"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L842
+    GOTO L522
+   L262
+    ALOAD 2
+    LDC "cambiar_contrasena_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L843
+    GOTO L522
+   L240
+    ALOAD 2
+    LDC "exit_confirm"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L844
+    GOTO L522
+   L411
+    ALOAD 2
+    LDC "confirmar_eliminar_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L845
+    GOTO L522
+   L467
+    ALOAD 2
+    LDC "valid_error_disponibilidad_fecha"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L846
+    GOTO L522
+   L412
+    ALOAD 2
+    LDC "pendiente_desarrollo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L847
+    GOTO L522
+   L499
+    ALOAD 2
+    LDC "mercadillo_actualizado_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L848
+    GOTO L522
+   L105
+    ALOAD 2
+    LDC "sincronizacion_completada_sin_cambios"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L849
+    GOTO L522
+   L193
+    ALOAD 2
+    LDC "mercadillo_cancelado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L850
+    GOTO L522
+   L14
+    ALOAD 2
+    LDC "color_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L851
+    GOTO L522
+   L421
+    ALOAD 2
+    LDC "saldos_pendientes_asignar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L852
+    GOTO L522
+   L91
+    ALOAD 2
+    LDC "see_details"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L853
+    GOTO L522
+   L210
+    ALOAD 2
+    LDC "confirmar_cancelar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L854
+    GOTO L522
+   L466
+    ALOAD 2
+    LDC "proximos_mercadillos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L855
+    GOTO L522
+   L511
+    ALOAD 2
+    LDC "asignar_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L856
+    GOTO L522
+   L253
+    ALOAD 2
+    LDC "si"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L857
+    GOTO L522
+   L514
+    ALOAD 2
+    LDC "resumen_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L858
+    GOTO L522
+   L165
+    ALOAD 2
+    LDC "volver"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L859
+    GOTO L522
+   L258
+    ALOAD 2
+    LDC "free"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L860
+    GOTO L522
+   L69
+    ALOAD 2
+    LDC "tarjeta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L861
+    GOTO L522
+   L138
+    ALOAD 2
+    LDC "productos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L862
+    GOTO L522
+   L275
+    ALOAD 2
+    LDC "email"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L863
+    GOTO L522
+   L56
+    ALOAD 2
+    LDC "confirmar_cambio_saldo_linea2"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L864
+    GOTO L522
+   L55
+    ALOAD 2
+    LDC "confirmar_cambio_saldo_linea1"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L865
+    GOTO L522
+   L35
+    ALOAD 2
+    LDC "sync_error"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L866
+    GOTO L522
+   L430
+    ALOAD 2
+    LDC "no_hay_productos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L867
+    GOTO L522
+   L44
+    ALOAD 2
+    LDC "gestion_mercadillos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L868
+    GOTO L522
+   L337
+    ALOAD 2
+    LDC "precio_invalido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L869
+    GOTO L522
+   L287
+    ALOAD 2
+    LDC "valid_hora_inicio_formato"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L870
+    GOTO L522
+   L7
+    ALOAD 2
+    LDC "registrarse"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L871
+    GOTO L522
+   L122
+    ALOAD 2
+    LDC "error_actualizando_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L872
+    GOTO L522
+   L475
+    ALOAD 2
+    LDC "register_subtitle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L873
+    GOTO L522
+   L5
+    ALOAD 2
+    LDC "lugar_maximo_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L874
+    GOTO L522
+   L333
+    ALOAD 2
+    LDC "tema_claro"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L875
+    GOTO L522
+   L212
+    ALOAD 2
+    LDC "cambiar_contrasena_btn"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L876
+    GOTO L522
+   L156
+    ALOAD 2
+    LDC "app_version"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L877
+    GOTO L522
+   L168
+    ALOAD 2
+    LDC "actualizar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L878
+    GOTO L522
+   L108
+    ALOAD 2
+    LDC "fuente"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L879
+    GOTO L522
+   L279
+    ALOAD 2
+    LDC "lugar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L880
+    GOTO L522
+   L181
+    ALOAD 2
+    LDC "categoria_eliminada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L881
+    GOTO L522
+   L29
+    ALOAD 2
+    LDC "inicia_sesion_ver_productos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L882
+    GOTO L522
+   L111
+    ALOAD 2
+    LDC "gastos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L883
+    GOTO L522
+   L439
+    ALOAD 2
+    LDC "contrasenas_no_coinciden_dialogo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L884
+    GOTO L522
+   L78
+    ALOAD 2
+    LDC "confirmar_cambio_saldo_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L885
+    GOTO L522
+   L491
+    ALOAD 2
+    LDC "nombre_vacio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L886
+    GOTO L522
+   L2
+    ALOAD 2
+    LDC "acciones"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L887
+    GOTO L522
+   L185
+    ALOAD 2
+    LDC "opcional"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L888
+    GOTO L522
+   L114
+    ALOAD 2
+    LDC "sync_completada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L889
+    GOTO L522
+   L77
+    ALOAD 2
+    LDC "google_register"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L890
+    GOTO L522
+   L207
+    ALOAD 2
+    LDC "hora_fin"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L891
+    GOTO L522
+   L146
+    ALOAD 2
+    LDC "resumen_ventas"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L892
+    GOTO L522
+   L19
+    ALOAD 2
+    LDC "categoria_eliminada_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L893
+    GOTO L522
+   L399
+    ALOAD 2
+    LDC "articulo_actualizado_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L894
+    GOTO L522
+   L457
+    ALOAD 2
+    LDC "version_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L895
+    GOTO L522
+   L331
+    ALOAD 2
+    LDC "exit_title"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L896
+    GOTO L522
+   L483
+    ALOAD 2
+    LDC "mercadillo_estado_no_valido"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L897
+    GOTO L522
+   L470
+    ALOAD 2
+    LDC "go_to_register"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L898
+    GOTO L522
+   L288
+    ALOAD 2
+    LDC "error_eliminando_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L899
+    GOTO L522
+   L38
+    ALOAD 2
+    LDC "no_se_pudo_completar_sincronizacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L900
+    GOTO L522
+   L101
+    ALOAD 2
+    LDC "montserrat"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L901
+    GOTO L522
+   L449
+    ALOAD 2
+    LDC "confirmar_arqueo_aviso_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L902
+    GOTO L522
+   L368
+    ALOAD 2
+    LDC "password_invalid"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L903
+    GOTO L522
+   L515
+    ALOAD 2
+    LDC "automaticos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L904
+    GOTO L522
+   L276
+    ALOAD 2
+    LDC "fecha"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L905
+    GOTO L522
+   L16
+    ALOAD 2
+    LDC "proximo_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L906
+    GOTO L522
+   L479
+    ALOAD 2
+    LDC "reintentar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L907
+    GOTO L522
+   L197
+    ALOAD 2
+    LDC "add_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L908
+    GOTO L522
+   L172
+    ALOAD 2
+    LDC "error_eliminar_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L909
+    GOTO L522
+   L237
+    ALOAD 2
+    LDC "cantidad"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L910
+    GOTO L522
+   L31
+    ALOAD 2
+    LDC "articulo_eliminado_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L911
+    GOTO L522
+   L4
+    ALOAD 2
+    LDC "saldo_inicial_no_puede_ser_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L912
+    GOTO L522
+   L257
+    ALOAD 2
+    LDC "euro"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L913
+    GOTO L522
+   L398
+    ALOAD 2
+    LDC "add_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L914
+    GOTO L522
+   L26
+    ALOAD 2
+    LDC "error_eliminando_articulo_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L915
+    GOTO L522
+   L162
+    ALOAD 2
+    LDC "error_crear_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L916
+    GOTO L522
+   L416
+    ALOAD 2
+    LDC "estado_debug_aviso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L917
+    GOTO L522
+   L25
+    ALOAD 2
+    LDC "google_auth_error"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L918
+    GOTO L522
+   L350
+    ALOAD 2
+    LDC "organizador_muy_corto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L919
+    GOTO L522
+   L223
+    ALOAD 2
+    LDC "error_actualizando_categoria_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L920
+    GOTO L522
+   L147
+    ALOAD 2
+    LDC "precio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L921
+    GOTO L522
+   L70
+    ALOAD 2
+    LDC "metodo_efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L922
+    GOTO L522
+   L500
+    ALOAD 2
+    LDC "google_signin_failed"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L923
+    GOTO L522
+   L492
+    ALOAD 2
+    LDC "error_eliminando_mercadillo_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L924
+    GOTO L522
+   L348
+    ALOAD 2
+    LDC "contrasena"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L925
+    GOTO L522
+   L424
+    ALOAD 2
+    LDC "fecha_invalida"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L926
+    GOTO L522
+   L436
+    ALOAD 2
+    LDC "listados"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L927
+    GOTO L522
+   L254
+    ALOAD 2
+    LDC "yen"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L928
+    GOTO L522
+   L166
+    ALOAD 2
+    LDC "confirmar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L929
+    GOTO L522
+   L80
+    ALOAD 2
+    LDC "error_actualizar_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L930
+    GOTO L522
+   L171
+    ALOAD 2
+    LDC "saldo_guardado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L931
+    GOTO L522
+   L47
+    ALOAD 2
+    LDC "precio_venta"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L932
+    GOTO L522
+   L392
+    ALOAD 2
+    LDC "mercadillo_tiene_ventas"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L933
+    GOTO L522
+   L85
+    ALOAD 2
+    LDC "abonar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L934
+    GOTO L522
+   L474
+    ALOAD 2
+    LDC "mercadillo_gratuito"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L935
+    GOTO L522
+   L282
+    ALOAD 2
+    LDC "error_eliminar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L936
+    GOTO L522
+   L473
+    ALOAD 2
+    LDC "cargar_gasto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L937
+    GOTO L522
+   L6
+    ALOAD 2
+    LDC "exit_app"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L938
+    GOTO L522
+   L241
+    ALOAD 2
+    LDC "exit_message"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L939
+    GOTO L522
+   L378
+    ALOAD 2
+    LDC "precio_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L940
+    GOTO L522
+   L283
+    ALOAD 2
+    LDC "salir"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L941
+    GOTO L522
+   L468
+    ALOAD 2
+    LDC "miercoles"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L942
+    GOTO L522
+   L426
+    ALOAD 2
+    LDC "descripcion_placeholder"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L943
+    GOTO L522
+   L408
+    ALOAD 2
+    LDC "opcion_solo_premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L944
+    GOTO L522
+   L385
+    ALOAD 2
+    LDC "solo_premium_stock"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L945
+    GOTO L522
+   L22
+    ALOAD 2
+    LDC "email_invalid"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L946
+    GOTO L522
+   L131
+    ALOAD 2
+    LDC "logout"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L947
+    GOTO L522
+   L211
+    ALOAD 2
+    LDC "mercadillo_creado_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L948
+    GOTO L522
+   L438
+    ALOAD 2
+    LDC "color_seleccionado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L949
+    GOTO L522
+   L66
+    ALOAD 2
+    LDC "error_actualizando_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L950
+    GOTO L522
+   L460
+    ALOAD 2
+    LDC "seleccionar_un_color"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L951
+    GOTO L522
+   L54
+    ALOAD 2
+    LDC "importe_placeholder"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L952
+    GOTO L522
+   L518
+    ALOAD 2
+    LDC "confirmar_arqueo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L953
+    GOTO L522
+   L516
+    ALOAD 2
+    LDC "logout_title"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L954
+    GOTO L522
+   L414
+    ALOAD 2
+    LDC "estado_debug_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L955
+    GOTO L522
+   L349
+    ALOAD 2
+    LDC "hora_inicio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L956
+    GOTO L522
+   L432
+    ALOAD 2
+    LDC "seleccionar_categoria"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L957
+    GOTO L522
+   L304
+    ALOAD 2
+    LDC "available_markets"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L958
+    GOTO L522
+   L191
+    ALOAD 2
+    LDC "register_button"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L959
+    GOTO L522
+   L324
+    ALOAD 2
+    LDC "cargando_datos_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L960
+    GOTO L522
+   L341
+    ALOAD 2
+    LDC "descargando_firebase"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L961
+    GOTO L522
+   L229
+    ALOAD 2
+    LDC "nombre_max_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L962
+    GOTO L522
+   L404
+    ALOAD 2
+    LDC "mercadillo_no_inicializado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L963
+    GOTO L522
+   L232
+    ALOAD 2
+    LDC "usuario"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L964
+    GOTO L522
+   L179
+    ALOAD 2
+    LDC "alta_titulo_editar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L965
+    GOTO L522
+   L452
+    ALOAD 2
+    LDC "precio_coste_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L966
+    GOTO L522
+   L60
+    ALOAD 2
+    LDC "nombre_completo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L967
+    GOTO L522
+   L52
+    ALOAD 2
+    LDC "cargando_articulos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L968
+    GOTO L522
+   L329
+    ALOAD 2
+    LDC "anadir_efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L969
+    GOTO L522
+   L471
+    ALOAD 2
+    LDC "total_mayor_cero"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L970
+    GOTO L522
+   L126
+    ALOAD 2
+    LDC "error_actualizando_articulo_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L971
+    GOTO L522
+   L213
+    ALOAD 2
+    LDC "premium"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L972
+    GOTO L522
+   L447
+    ALOAD 2
+    LDC "cambio_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L973
+    GOTO L522
+   L239
+    ALOAD 2
+    LDC "error_sincronizacion_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L974
+    GOTO L522
+   L132
+    ALOAD 2
+    LDC "total_gastos_metodos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L975
+    GOTO L522
+   L440
+    ALOAD 2
+    LDC "saldo_pendiente_texto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L976
+    GOTO L522
+   L386
+    ALOAD 2
+    LDC "categoria_creada_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L977
+    GOTO L522
+   L183
+    ALOAD 2
+    LDC "categoria_actualizada"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L978
+    GOTO L522
+   L96
+    ALOAD 2
+    LDC "cerrar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L979
+    GOTO L522
+   L128
+    ALOAD 2
+    LDC "jueves"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L980
+    GOTO L522
+   L115
+    ALOAD 2
+    LDC "contrasena_actual"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L981
+    GOTO L522
+   L367
+    ALOAD 2
+    LDC "total_ventas"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L982
+    GOTO L522
+   L306
+    ALOAD 2
+    LDC "estado_cambiado_a"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L983
+    GOTO L522
+   L28
+    ALOAD 2
+    LDC "error_creando_categoria_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L984
+    GOTO L522
+   L390
+    ALOAD 2
+    LDC "estado_programado_parcial"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L985
+    GOTO L522
+   L495
+    ALOAD 2
+    LDC "confirmar_guardar_saldo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L986
+    GOTO L522
+   L454
+    ALOAD 2
+    LDC "error_eliminar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L987
+    GOTO L522
+   L271
+    ALOAD 2
+    LDC "bizum"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L988
+    GOTO L522
+   L315
+    ALOAD 2
+    LDC "editar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L989
+    GOTO L522
+   L169
+    ALOAD 2
+    LDC "asignar_saldo_inicial"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L990
+    GOTO L522
+   L62
+    ALOAD 2
+    LDC "saldo_inicial_ayuda"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L991
+    GOTO L522
+   L388
+    ALOAD 2
+    LDC "valid_organizador_min"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L992
+    GOTO L522
+   L519
+    ALOAD 2
+    LDC "no_hay_mercadillos_en_curso"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L993
+    GOTO L522
+   L482
+    ALOAD 2
+    LDC "articulo_creado_ok"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L994
+    GOTO L522
+   L117
+    ALOAD 2
+    LDC "ingles"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L995
+    GOTO L522
+   L195
+    ALOAD 2
+    LDC "free_user"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L996
+    GOTO L522
+   L433
+    ALOAD 2
+    LDC "logout_success"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L997
+    GOTO L522
+   L152
+    ALOAD 2
+    LDC "roboto"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L998
+    GOTO L522
+   L61
+    ALOAD 2
+    LDC "sync_error_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L999
+    GOTO L522
+   L236
+    ALOAD 2
+    LDC "realizar_arqueo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1000
+    GOTO L522
+   L272
+    ALOAD 2
+    LDC "coste"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1001
+    GOTO L522
+   L150
+    ALOAD 2
+    LDC "recibo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1002
+    GOTO L522
+   L419
+    ALOAD 2
+    LDC "modificar_informacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1003
+    GOTO L522
+   L340
+    ALOAD 2
+    LDC "articulos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1004
+    GOTO L522
+   L134
+    ALOAD 2
+    LDC "sol_peruano"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1005
+    GOTO L522
+   L336
+    ALOAD 2
+    LDC "nombre_max_50"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1006
+    GOTO L522
+   L501
+    ALOAD 2
+    LDC "importe"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1007
+    GOTO L522
+   L208
+    ALOAD 2
+    LDC "horarios"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1008
+    GOTO L522
+   L201
+    ALOAD 2
+    LDC "error_eliminando_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1009
+    GOTO L522
+   L369
+    ALOAD 2
+    LDC "error_actualizar_informacion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1010
+    GOTO L522
+   L338
+    ALOAD 2
+    LDC "cambiar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1011
+    GOTO L522
+   L234
+    ALOAD 2
+    LDC "no_modificar_estado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1012
+    GOTO L522
+   L441
+    ALOAD 2
+    LDC "error_creando_articulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1013
+    GOTO L522
+   L299
+    ALOAD 2
+    LDC "sin_mercadillos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1014
+    GOTO L522
+   L373
+    ALOAD 2
+    LDC "lugar_no_puede_estar_vacio"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1015
+    GOTO L522
+   L420
+    ALOAD 2
+    LDC "pu_label"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1016
+    GOTO L522
+   L328
+    ALOAD 2
+    LDC "guardar_saldo_limite"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1017
+    GOTO L522
+   L512
+    ALOAD 2
+    LDC "utilidades"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1018
+    GOTO L522
+   L513
+    ALOAD 2
+    LDC "retirar_efectivo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1019
+    GOTO L522
+   L48
+    ALOAD 2
+    LDC "suscripcion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1020
+    GOTO L522
+   L200
+    ALOAD 2
+    LDC "poppins"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1021
+    GOTO L522
+   L305
+    ALOAD 2
+    LDC "sin_articulos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1022
+    GOTO L522
+   L437
+    ALOAD 2
+    LDC "valid_saldo_final_negativo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1023
+    GOTO L522
+   L224
+    ALOAD 2
+    LDC "cambiar_contrasena_descripcion"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1024
+    GOTO L522
+   L110
+    ALOAD 2
+    LDC "contrasena_minimo_caracteres"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1025
+    GOTO L522
+   L406
+    ALOAD 2
+    LDC "saldo_pendiente_titulo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1026
+    GOTO L522
+   L182
+    ALOAD 2
+    LDC "peso_chileno"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1027
+    GOTO L522
+   L444
+    ALOAD 2
+    LDC "error_eliminando_categoria_detalle"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1028
+    GOTO L522
+   L109
+    ALOAD 2
+    LDC "mercadillos"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1029
+    GOTO L522
+   L450
+    ALOAD 2
+    LDC "actualizando"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1030
+    GOTO L522
+   L293
+    ALOAD 2
+    LDC "fecha_no_puede_estar_vacia"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1031
+    GOTO L522
+   L129
+    ALOAD 2
+    LDC "seleccionar_color"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1032
+    GOTO L522
+   L486
+    ALOAD 2
+    LDC "not_authenticated"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1033
+    GOTO L522
+   L11
+    ALOAD 2
+    LDC "premium_required"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1034
+    GOTO L522
+   L268
+    ALOAD 2
+    LDC "bolivar"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1035
+    GOTO L522
+   L24
+    ALOAD 2
+    LDC "actualizar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1036
+    GOTO L522
+   L261
+    ALOAD 2
+    LDC "tema"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1037
+    GOTO L522
+   L458
+    ALOAD 2
+    LDC "estado_pendiente_arqueo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1038
+    GOTO L522
+   L303
+    ALOAD 2
+    LDC "error_cambiando_estado"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1039
+    GOTO L522
+   L221
+    ALOAD 2
+    LDC "seleccionar_mercadillo"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1040
+    GOTO L522
+   L13
+    ALOAD 2
+    LDC "google_signin_success"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1041
+    GOTO L522
+   L167
+    ALOAD 2
+    LDC "organizador"
+    INVOKEVIRTUAL java/lang/String.equals (Ljava/lang/Object;)Z
+    IFNE L1042
+    GOTO L522
+   L595
+    LINENUMBER 14 L595
+    LDC "Market Sales"
+    GOTO L1043
+   L1029
+    LINENUMBER 15 L1029
+    LDC "Markets"
+    GOTO L1043
+   L737
+    LINENUMBER 16 L737
+    LDC "Settings"
+    GOTO L1043
+   L1004
+    LINENUMBER 17 L1004
+    LDC "Articles"
+    GOTO L1043
+   L664
+    LINENUMBER 18 L664
+    LDC "Categories"
+    GOTO L1043
+   L687
+    LINENUMBER 19 L687
+    LDC "Inventory"
+    GOTO L1043
+   L927
+    LINENUMBER 20 L927
+    LDC "Reports"
+    GOTO L1043
+   L742
+    LINENUMBER 21 L742
+    LDC "Login"
+    GOTO L1043
+   L527
+    LINENUMBER 22 L527
+    LDC "Logout"
+    GOTO L1043
+   L941
+    LINENUMBER 23 L941
+    LDC "Exit"
+    GOTO L1043
+   L696
+    LINENUMBER 24 L696
+    LDC "Profile"
+    GOTO L1043
+   L525
+    LINENUMBER 27 L525
+    LDC "Account Information"
+    GOTO L1043
+   L628
+    LINENUMBER 28 L628
+    LDC "Change Password"
+    GOTO L1043
+   L1037
+    LINENUMBER 29 L1037
+    LDC "Theme"
+    GOTO L1043
+   L879
+    LINENUMBER 30 L879
+    LDC "Font"
+    GOTO L1043
+   L528
+    LINENUMBER 31 L528
+    LDC "Language"
+    GOTO L1043
+   L714
+    LINENUMBER 32 L714
+    LDC "Currency"
+    GOTO L1043
+   L895
+    LINENUMBER 33 L895
+    LDC "PREMIUM"
+    GOTO L1043
+   L629
+    LINENUMBER 34 L629
+    LDC "FREE"
+    GOTO L1043
+   L616
+    LINENUMBER 35 L616
+    LDC "Upgrade to Premium!"
+    GOTO L1043
+   L809
+    LINENUMBER 36 L809
+    LDC "Unlock all features"
+    GOTO L1043
+   L875
+    LINENUMBER 39 L875
+    LDC "Light"
+    GOTO L1043
+   L624
+    LINENUMBER 40 L624
+    LDC "Dark"
+    GOTO L1043
+   L835
+    LINENUMBER 43 L835
+    LDC "Espa\u00f1ol"
+    GOTO L1043
+   L995
+    LINENUMBER 44 L995
+    LDC "English"
+    GOTO L1043
+   L901
+    LINENUMBER 47 L901
+    LDC "Montserrat"
+    GOTO L1043
+   L1021
+    LINENUMBER 48 L1021
+    LDC "Poppins"
+    GOTO L1043
+   L998
+    LINENUMBER 49 L998
+    LDC "Roboto"
+    GOTO L1043
+   L913
+    LINENUMBER 52 L913
+    LDC "\u20ac Euro"
+    GOTO L1043
+   L611
+    LINENUMBER 53 L611
+    LDC "$ Dollar"
+    GOTO L1043
+   L713
+    LINENUMBER 54 L713
+    LDC "\u00a3 Pound"
+    GOTO L1043
+   L928
+    LINENUMBER 55 L928
+    LDC "\u00a5 Yen"
+    GOTO L1043
+   L1003
+    LINENUMBER 58 L1003
+    LDC "Change your personal information"
+    GOTO L1043
+   L638
+    LINENUMBER 59 L638
+    LDC "Personal Information"
+    GOTO L1043
+   L967
+    LINENUMBER 60 L967
+    LDC "Full name"
+    GOTO L1043
+   L585
+    LINENUMBER 61 L585
+    LDC "Email address"
+    GOTO L1043
+   L701
+    LINENUMBER 62 L701
+    LDC "Update Information"
+    GOTO L1043
+   L1030
+    LINENUMBER 63 L1030
+    LDC "Updating..."
+    GOTO L1043
+   L843
+    LINENUMBER 64 L843
+    LDC "Change Password"
+    GOTO L1043
+   L1024
+    LINENUMBER 65 L1024
+    LDC "Leave blank if you don't want to change the password"
+    GOTO L1043
+   L981
+    LINENUMBER 66 L981
+    LDC "Current password"
+    GOTO L1043
+   L601
+    LINENUMBER 67 L601
+    LDC "New password"
+    GOTO L1043
+   L653
+    LINENUMBER 68 L653
+    LDC "Confirm new password"
+    GOTO L1043
+   L647
+    LINENUMBER 69 L647
+    LDC "Changing..."
+    GOTO L1043
+   L876
+    LINENUMBER 70 L876
+    LDC "Change Password"
+    GOTO L1043
+   L886
+    LINENUMBER 73 L886
+    LDC "Name cannot be empty"
+    GOTO L1043
+   L724
+    LINENUMBER 74 L724
+    LDC "Invalid email"
+    GOTO L1043
+   L751
+    LINENUMBER 75 L751
+    LDC "Current password required"
+    GOTO L1043
+   L1025
+    LINENUMBER 76 L1025
+    LDC "Password must be at least 6 characters"
+    GOTO L1043
+   L588
+    LINENUMBER 77 L588
+    LDC "Passwords don't match"
+    GOTO L1043
+   L531
+    LINENUMBER 80 L531
+    LDC "\u2705 Information updated successfully"
+    GOTO L1043
+   L759
+    LINENUMBER 81 L759
+    LDC "\u2705 Password updated successfully"
+    GOTO L1043
+   L1010
+    LINENUMBER 82 L1010
+    LDC "\u274c Error updating information"
+    GOTO L1043
+   L836
+    LINENUMBER 83 L836
+    LDC "\u274c Error changing password"
+    GOTO L1043
+   L667
+    LINENUMBER 84 L667
+    LDC "\u274c Error: {0}"
+    GOTO L1043
+   L859
+    LINENUMBER 87 L859
+    LDC "Back"
+    GOTO L1043
+   L583
+    LINENUMBER 88 L583
+    LDC "Hide password"
+    GOTO L1043
+   L618
+    LINENUMBER 89 L618
+    LDC "Show password"
+    GOTO L1043
+   L1011
+    LINENUMBER 92 L1011
+    LDC "Change"
+    GOTO L1043
+   L606
+    LINENUMBER 93 L606
+    LDC "Cancel"
+    GOTO L1043
+   L569
+    LINENUMBER 94 L569
+    LDC "Save"
+    GOTO L1043
+   L781
+    LINENUMBER 95 L781
+    LDC "Accept"
+    GOTO L1043
+   L671
+    LINENUMBER 96 L671
+    LDC "Delete"
+    GOTO L1043
+   L884
+    LINENUMBER 97 L884
+    LDC "Passwords don't match"
+    GOTO L1043
+   L526
+    LINENUMBER 98 L526
+    LDC "Password must be at least 6 characters"
+    GOTO L1043
+   L766
+    LINENUMBER 101 L766
+    LDC "This feature is available only in Premium version"
+    GOTO L1043
+   L720
+    LINENUMBER 102 L720
+    LDC "Error updating configuration"
+    GOTO L1043
+   L794
+    LINENUMBER 105 L794
+    LDC "Add category"
+    GOTO L1043
+   L589
+    LINENUMBER 106 L589
+    LDC "New Category"
+    GOTO L1043
+   L807
+    LINENUMBER 107 L807
+    LDC "Edit Category"
+    GOTO L1043
+   L784
+    LINENUMBER 108 L784
+    LDC "Name"
+    GOTO L1043
+   L1032
+    LINENUMBER 109 L1032
+    LDC "Select color"
+    GOTO L1043
+   L746
+    LINENUMBER 110 L746
+    LDC "Tap + to create your first category"
+    GOTO L1043
+   L590
+    LINENUMBER 111 L590
+    LDC "Delete Category"
+    GOTO L1043
+   L832
+    LINENUMBER 112 L832
+    LDC "Are you sure you want to delete \"{nombre}\"?"
+    GOTO L1043
+   L655
+    LINENUMBER 113 L655
+    LDC "Category created successfully"
+    GOTO L1043
+   L978
+    LINENUMBER 114 L978
+    LDC "Category updated successfully"
+    GOTO L1043
+   L881
+    LINENUMBER 115 L881
+    LDC "Category deleted successfully"
+    GOTO L1043
+   L537
+    LINENUMBER 116 L537
+    LDC "Error creating category"
+    GOTO L1043
+   L612
+    LINENUMBER 117 L612
+    LDC "Error updating category"
+    GOTO L1043
+   L936
+    LINENUMBER 118 L936
+    LDC "Error deleting category"
+    GOTO L1043
+   L626
+    LINENUMBER 119 L626
+    LDC "Category name is required"
+    GOTO L1043
+   L776
+    LINENUMBER 120 L776
+    LDC "Name must be at least 2 characters"
+    GOTO L1043
+   L621
+    LINENUMBER 121 L621
+    LDC "Name cannot be more than 50 characters"
+    GOTO L1043
+   L538
+    LINENUMBER 122 L538
+    LDC "A category with that name already exists"
+    GOTO L1043
+   L851
+    LINENUMBER 123 L851
+    LDC "Invalid color"
+    GOTO L1043
+   L640
+    LINENUMBER 124 L640
+    LDC "Synchronization completed"
+    GOTO L1043
+   L833
+    LINENUMBER 125 L833
+    LDC "Synchronization error"
+    GOTO L1043
+   L914
+    LINENUMBER 129 L914
+    LDC "Add article"
+    GOTO L1043
+   L648
+    LINENUMBER 130 L648
+    LDC "New Article"
+    GOTO L1043
+   L694
+    LINENUMBER 131 L694
+    LDC "Edit Article"
+    GOTO L1043
+   L539
+    LINENUMBER 132 L539
+    LDC "Tap + to create your first article"
+    GOTO L1043
+   L550
+    LINENUMBER 133 L550
+    LDC "Delete Article"
+    GOTO L1043
+   L845
+    LINENUMBER 134 L845
+    LDC "Are you sure you want to delete \"{nombre}\"?"
+    GOTO L1043
+   L932
+    LINENUMBER 137 L932
+    LDC "Sale price"
+    GOTO L1043
+   L820
+    LINENUMBER 138 L820
+    LDC "Cost price"
+    GOTO L1043
+   L750
+    LINENUMBER 139 L750
+    LDC "Stock"
+    GOTO L1043
+   L586
+    LINENUMBER 140 L586
+    LDC "Category"
+    GOTO L1043
+   L957
+    LINENUMBER 141 L957
+    LDC "Select category"
+    GOTO L1043
+   L773
+    LINENUMBER 142 L773
+    LDC "No categories available"
+    GOTO L1043
+   L811
+    LINENUMBER 145 L811
+    LDC "Control cost"
+    GOTO L1043
+   L561
+    LINENUMBER 146 L561
+    LDC "Control stock"
+    GOTO L1043
+   L666
+    LINENUMBER 147 L666
+    LDC "Mark as favorite"
+    GOTO L1043
+   L551
+    LINENUMBER 150 L551
+    LDC "Sale price is required"
+    GOTO L1043
+   L571
+    LINENUMBER 151 L571
+    LDC "Invalid sale price"
+    GOTO L1043
+   L817
+    LINENUMBER 152 L817
+    LDC "Select a category"
+    GOTO L1043
+   L604
+    LINENUMBER 153 L604
+    LDC "Article created successfully"
+    GOTO L1043
+   L650
+    LINENUMBER 154 L650
+    LDC "Article updated successfully"
+    GOTO L1043
+   L767
+    LINENUMBER 155 L767
+    LDC "Article deleted successfully"
+    GOTO L1043
+   L916
+    LINENUMBER 156 L916
+    LDC "Error creating article"
+    GOTO L1043
+   L930
+    LINENUMBER 157 L930
+    LDC "Error updating article"
+    GOTO L1043
+   L909
+    LINENUMBER 158 L909
+    LDC "Error deleting article"
+    GOTO L1043
+   L1022
+    LINENUMBER 161 L1022
+    LDC "You have no registered articles"
+    GOTO L1043
+   L968
+    LINENUMBER 162 L968
+    LDC "Loading articles..."
+    GOTO L1043
+   L774
+    LINENUMBER 163 L774
+    LDC "Syncing articles..."
+    GOTO L1043
+   L945
+    LINENUMBER 166 L945
+    LDC "Stock control available only in Premium"
+    GOTO L1043
+   L695
+    LINENUMBER 167 L695
+    LDC "Cost control available only in Premium"
+    GOTO L1043
+   L662
+    LINENUMBER 171 L662
+    LDC "Sign in to your account"
+    GOTO L1043
+   L873
+    LINENUMBER 172 L873
+    LDC "Create your new account"
+    GOTO L1043
+   L863
+    LINENUMBER 173 L863
+    LDC "Email"
+    GOTO L1043
+   L705
+    LINENUMBER 174 L705
+    LDC "your@email.com"
+    GOTO L1043
+   L946
+    LINENUMBER 175 L946
+    LDC "Invalid email"
+    GOTO L1043
+   L823
+    LINENUMBER 176 L823
+    LDC "Password"
+    GOTO L1043
+   L584
+    LINENUMBER 177 L584
+    LDC "Minimum 6 characters"
+    GOTO L1043
+   L903
+    LINENUMBER 178 L903
+    LDC "Minimum 6 characters required"
+    GOTO L1043
+   L678
+    LINENUMBER 179 L678
+    LDC "Sign In"
+    GOTO L1043
+   L959
+    LINENUMBER 180 L959
+    LDC "Create Account"
+    GOTO L1043
+   L693
+    LINENUMBER 181 L693
+    LDC "Loading..."
+    GOTO L1043
+   L796
+    LINENUMBER 182 L796
+    LDC "or"
+    GOTO L1043
+   L898
+    LINENUMBER 183 L898
+    LDC "Don't have an account? Create account"
+    GOTO L1043
+   L704
+    LINENUMBER 184 L704
+    LDC "Already have an account? Sign in"
+    GOTO L1043
+   L566
+    LINENUMBER 185 L566
+    LDC "\ud83d\ude80 Account benefits:"
+    GOTO L1043
+   L747
+    LINENUMBER 186 L747
+    LDC "\u2022 Automatic sync across all your devices"
+    GOTO L1043
+   L743
+    LINENUMBER 187 L743
+    LDC "\u2022 Personalized configuration saved"
+    GOTO L1043
+   L745
+    LINENUMBER 188 L745
+    LDC "\u2022 Access to Premium features"
+    GOTO L1043
+   L741
+    LINENUMBER 189 L741
+    LDC "\u2022 Secure data backup"
+    GOTO L1043
+   L830
+    LINENUMBER 190 L830
+    LDC "Welcome"
+    GOTO L1043
+   L676
+    LINENUMBER 191 L676
+    LDC "Premium User"
+    GOTO L1043
+   L996
+    LINENUMBER 192 L996
+    LDC "Free User"
+    GOTO L1043
+   L1033
+    LINENUMBER 193 L1033
+    LDC "Not authenticated"
+    GOTO L1043
+   L668
+    LINENUMBER 194 L668
+    LDC "Home"
+    GOTO L1043
+   L760
+    LINENUMBER 195 L760
+    LDC "Markets"
+    GOTO L1043
+   L826
+    LINENUMBER 196 L826
+    LDC "Add Market"
+    GOTO L1043
+   L631
+    LINENUMBER 197 L631
+    LDC "Premium Features"
+    GOTO L1043
+   L702
+    LINENUMBER 198 L702
+    LDC "Upgrade to Premium"
+    GOTO L1043
+   L815
+    LINENUMBER 199 L815
+    LDC "About"
+    GOTO L1043
+   L947
+    LINENUMBER 200 L947
+    LDC "Sign Out"
+    GOTO L1043
+   L938
+    LINENUMBER 201 L938
+    LDC "Exit App"
+    GOTO L1043
+   L954
+    LINENUMBER 202 L954
+    LDC "Sign Out"
+    GOTO L1043
+   L570
+    LINENUMBER 203 L570
+    LDC "Are you sure you want to sign out?"
+    GOTO L1043
+   L658
+    LINENUMBER 204 L658
+    LDC "Sign Out"
+    GOTO L1043
+   L896
+    LINENUMBER 205 L896
+    LDC "Exit App"
+    GOTO L1043
+   L939
+    LINENUMBER 206 L939
+    LDC "Are you sure you want to exit Market Sales?"
+    GOTO L1043
+   L844
+    LINENUMBER 207 L844
+    LDC "Exit"
+    GOTO L1043
+   L958
+    LINENUMBER 208 L958
+    LDC "Available Markets"
+    GOTO L1043
+   L1034
+    LINENUMBER 209 L1034
+    LDC "Requires Premium for full access"
+    GOTO L1043
+   L853
+    LINENUMBER 210 L853
+    LDC "See details"
+    GOTO L1043
+   L834
+    LINENUMBER 211 L834
+    LDC "Edit"
+    GOTO L1043
+   L723
+    LINENUMBER 212 L723
+    LDC "Menu"
+    GOTO L1043
+   L972
+    LINENUMBER 213 L972
+    LDC "Premium"
+    GOTO L1043
+   L860
+    LINENUMBER 214 L860
+    LDC "Free"
+    GOTO L1043
+   L753
+    LINENUMBER 217 L753
+    LDC "Continue with Google"
+    GOTO L1043
+   L890
+    LINENUMBER 218 L890
+    LDC "Sign up with Google"
+    GOTO L1043
+   L918
+    LINENUMBER 219 L918
+    LDC "Google authentication error"
+    GOTO L1043
+   L808
+    LINENUMBER 220 L808
+    LDC "Error getting Google token"
+    GOTO L1043
+   L748
+    LINENUMBER 221 L748
+    LDC "Google"
+    GOTO L1043
+   L739
+    LINENUMBER 222 L739
+    LDC "Email"
+    GOTO L1043
+   L1041
+    LINENUMBER 223 L1041
+    LDC "Google authentication successful"
+    GOTO L1043
+   L923
+    LINENUMBER 224 L923
+    LDC "Google authentication failed"
+    GOTO L1043
+   L908
+    LINENUMBER 227 L908
+    LDC "Add market"
+    GOTO L1043
+   L617
+    LINENUMBER 228 L617
+    LDC "New Market"
+    GOTO L1043
+   L989
+    LINENUMBER 229 L989
+    LDC "Edit Market"
+    GOTO L1043
+   L755
+    LINENUMBER 230 L755
+    LDC "View legend"
+    GOTO L1043
+   L641
+    LINENUMBER 231 L641
+    LDC "Status Legend"
+    GOTO L1043
+   L532
+    LINENUMBER 232 L532
+    LDC "Understood"
+    GOTO L1043
+   L906
+    LINENUMBER 233 L906
+    LDC "Next Market"
+    GOTO L1043
+   L1014
+    LINENUMBER 234 L1014
+    LDC "You have no registered markets"
+    GOTO L1043
+   L656
+    LINENUMBER 235 L656
+    LDC "Tap + to create your first market"
+    GOTO L1043
+   L985
+    LINENUMBER 238 L985
+    LDC "Partially scheduled"
+    GOTO L1043
+   L719
+    LINENUMBER 239 L719
+    LDC "Fully scheduled"
+    GOTO L1043
+   L642
+    LINENUMBER 240 L642
+    LDC "In progress"
+    GOTO L1043
+   L1038
+    LINENUMBER 241 L1038
+    LDC "Finished (pending cash count)"
+    GOTO L1043
+   L818
+    LINENUMBER 242 L818
+    LDC "Cash counted (pending balance assignment)"
+    GOTO L1043
+   L680
+    LINENUMBER 243 L680
+    LDC "Completely closed"
+    GOTO L1043
+   L542
+    LINENUMBER 244 L542
+    LDC "Cancelled"
+    GOTO L1043
+   L563
+    LINENUMBER 247 L563
+    LDC "Market date"
+    GOTO L1043
+   L580
+    LINENUMBER 248 L580
+    LDC "Location"
+    GOTO L1043
+   L665
+    LINENUMBER 249 L665
+    LDC "Organizer"
+    GOTO L1043
+   L956
+    LINENUMBER 250 L956
+    LDC "Start time"
+    GOTO L1043
+   L891
+    LINENUMBER 251 L891
+    LDC "End time"
+    GOTO L1043
+   L600
+    LINENUMBER 252 L600
+    LDC "Is free"
+    GOTO L1043
+   L677
+    LINENUMBER 253 L677
+    LDC "Subscription amount"
+    GOTO L1043
+   L559
+    LINENUMBER 254 L559
+    LDC "Requires table"
+    GOTO L1043
+   L802
+    LINENUMBER 255 L802
+    LDC "Requires tent"
+    GOTO L1043
+   L576
+    LINENUMBER 256 L576
+    LDC "Has power outlet"
+    GOTO L1043
+   L722
+    LINENUMBER 259 L722
+    LDC "Date is required"
+    GOTO L1043
+   L926
+    LINENUMBER 260 L926
+    LDC "Invalid date format (dd-MM-yyyy)"
+    GOTO L1043
+   L573
+    LINENUMBER 261 L573
+    LDC "Location is required"
+    GOTO L1043
+   L764
+    LINENUMBER 262 L764
+    LDC "Location must be at least 3 characters"
+    GOTO L1043
+   L669
+    LINENUMBER 263 L669
+    LDC "Location cannot be more than 100 characters"
+    GOTO L1043
+   L700
+    LINENUMBER 264 L700
+    LDC "Organizer is required"
+    GOTO L1043
+   L919
+    LINENUMBER 265 L919
+    LDC "Organizer must be at least 3 characters"
+    GOTO L1043
+   L841
+    LINENUMBER 266 L841
+    LDC "Organizer cannot be more than 100 characters"
+    GOTO L1043
+   L824
+    LINENUMBER 267 L824
+    LDC "Invalid start time format (HH:mm)"
+    GOTO L1043
+   L596
+    LINENUMBER 268 L596
+    LDC "Invalid end time format (HH:mm)"
+    GOTO L1043
+   L681
+    LINENUMBER 269 L681
+    LDC "Start time must be before end time"
+    GOTO L1043
+   L690
+    LINENUMBER 270 L690
+    LDC "Amount cannot be negative"
+    GOTO L1043
+   L772
+    LINENUMBER 271 L772
+    LDC "Amount is too high"
+    GOTO L1043
+   L691
+    LINENUMBER 272 L691
+    LDC "A market already exists at that date and time"
+    GOTO L1043
+   L797
+    LINENUMBER 275 L797
+    LDC "Market created successfully"
+    GOTO L1043
+   L803
+    LINENUMBER 276 L803
+    LDC "Market updated successfully"
+    GOTO L1043
+   L816
+    LINENUMBER 277 L816
+    LDC "Market deleted successfully"
+    GOTO L1043
+   L850
+    LINENUMBER 278 L850
+    LDC "Market cancelled successfully"
+    GOTO L1043
+   L602
+    LINENUMBER 279 L602
+    LDC "Error creating market"
+    GOTO L1043
+   L623
+    LINENUMBER 280 L623
+    LDC "Error updating market"
+    GOTO L1043
+   L987
+    LINENUMBER 281 L987
+    LDC "Error deleting market"
+    GOTO L1043
+   L598
+    LINENUMBER 282 L598
+    LDC "Error cancelling market"
+    GOTO L1043
+   L699
+    LINENUMBER 285 L699
+    LDC "Initial balance"
+    GOTO L1043
+   L734
+    LINENUMBER 286 L734
+    LDC "Final balance"
+    GOTO L1043
+   L990
+    LINENUMBER 287 L990
+    LDC "Assign initial balance"
+    GOTO L1043
+   L553
+    LINENUMBER 288 L553
+    LDC "Assign automatically"
+    GOTO L1043
+   L1000
+    LINENUMBER 289 L1000
+    LDC "Perform cash count"
+    GOTO L1043
+   L805
+    LINENUMBER 290 L805
+    LDC "Cash count"
+    GOTO L1043
+   L597
+    LINENUMBER 291 L597
+    LDC "Initial balance assigned"
+    GOTO L1043
+   L547
+    LINENUMBER 292 L547
+    LDC "Cash count completed successfully"
+    GOTO L1043
+   L608
+    LINENUMBER 293 L608
+    LDC "No previous markets with available balance"
+    GOTO L1043
+   L587
+    LINENUMBER 294 L587
+    LDC "Balance cannot be negative"
+    GOTO L1043
+   L801
+    LINENUMBER 295 L801
+    LDC "Balance is too high"
+    GOTO L1043
+   L682
+    LINENUMBER 298 L682
+    LDC "Are you sure you want to delete this market?"
+    GOTO L1043
+   L854
+    LINENUMBER 299 L854
+    LDC "Are you sure you want to cancel this market?"
+    GOTO L1043
+   L933
+    LINENUMBER 300 L933
+    LDC "Cannot cancel: market has sales"
+    GOTO L1043
+   L897
+    LINENUMBER 301 L897
+    LDC "Cannot cancel: invalid status"
+    GOTO L1043
+   L634
+    LINENUMBER 303 L634
+    LDC "Basic Information"
+    GOTO L1043
+   L1008
+    LINENUMBER 304 L1008
+    LDC "Schedule"
+    GOTO L1043
+   L607
+    LINENUMBER 305 L607
+    LDC "Market Configuration"
+    GOTO L1043
+   L567
+    LINENUMBER 306 L567
+    LDC "Create Market"
+    GOTO L1043
+   L1036
+    LINENUMBER 307 L1036
+    LDC "Update Market"
+    GOTO L1043
+   L730
+    LINENUMBER 308 L730
+    LDC "Saving..."
+    GOTO L1043
+   L991
+    LINENUMBER 309 L991
+    LDC "Money available at the start of the market"
+    GOTO L1043
+   L557
+    LINENUMBER 310 L557
+    LDC "Select date"
+    GOTO L1043
+   L831
+    LINENUMBER 311 L831
+    LDC "Select start time"
+    GOTO L1043
+   L572
+    LINENUMBER 312 L572
+    LDC "Select end time"
+    GOTO L1043
+   L1031
+    LINENUMBER 315 L1031
+    LDC "Date cannot be empty"
+    GOTO L1043
+   L1015
+    LINENUMBER 316 L1015
+    LDC "Location cannot be empty"
+    GOTO L1043
+   L674
+    LINENUMBER 317 L674
+    LDC "Organizer cannot be empty"
+    GOTO L1043
+   L619
+    LINENUMBER 318 L619
+    LDC "Invalid date format (dd-MM-yyyy)"
+    GOTO L1043
+   L552
+    LINENUMBER 319 L552
+    LDC "Invalid start time format (HH:mm)"
+    GOTO L1043
+   L620
+    LINENUMBER 320 L620
+    LDC "Invalid end time format (HH:mm)"
+    GOTO L1043
+   L529
+    LINENUMBER 321 L529
+    LDC "Start time must be before end time"
+    GOTO L1043
+   L652
+    LINENUMBER 322 L652
+    LDC "Location must have at least 3 characters"
+    GOTO L1043
+   L874
+    LINENUMBER 323 L874
+    LDC "Location cannot have more than 100 characters"
+    GOTO L1043
+   L838
+    LINENUMBER 324 L838
+    LDC "Organizer must have at least 3 characters"
+    GOTO L1043
+   L636
+    LINENUMBER 325 L636
+    LDC "Organizer cannot have more than 100 characters"
+    GOTO L1043
+   L524
+    LINENUMBER 326 L524
+    LDC "Amount cannot be negative"
+    GOTO L1043
+   L822
+    LINENUMBER 327 L822
+    LDC "Amount is too high"
+    GOTO L1043
+   L912
+    LINENUMBER 328 L912
+    LDC "Initial balance cannot be negative"
+    GOTO L1043
+   L548
+    LINENUMBER 329 L548
+    LDC "Initial balance is too high"
+    GOTO L1043
+   L523
+    LINENUMBER 330 L523
+    LDC "These options are available only for Premium users"
+    GOTO L1043
+   L791
+    LINENUMBER 332 L791
+    LDC "Select time"
+    GOTO L1043
+   L888
+    LINENUMBER 333 L888
+    LDC "(optional)"
+    GOTO L1043
+   L716
+    LINENUMBER 334 L716
+    LDC "M"
+    GOTO L1043
+   L736
+    LINENUMBER 335 L736
+    LDC "T"
+    GOTO L1043
+   L942
+    LINENUMBER 336 L942
+    LDC "W"
+    GOTO L1043
+   L980
+    LINENUMBER 337 L980
+    LDC "T"
+    GOTO L1043
+   L800
+    LINENUMBER 338 L800
+    LDC "F"
+    GOTO L1043
+   L749
+    LINENUMBER 339 L749
+    LDC "S"
+    GOTO L1043
+   L609
+    LINENUMBER 340 L609
+    LDC "S"
+    GOTO L1043
+   L1018
+    LINENUMBER 342 L1018
+    LDC "Utilities"
+    GOTO L1043
+   L964
+    LINENUMBER 343 L964
+    LDC "User"
+    GOTO L1043
+   L706
+    LINENUMBER 344 L706
+    LDC "Guest user"
+    GOTO L1043
+   L670
+    LINENUMBER 346 L670
+    LDC "Checkout"
+    GOTO L1043
+   L783
+    LINENUMBER 347 L783
+    LDC "Cart"
+    GOTO L1043
+   L788
+    LINENUMBER 350 L788
+    LDC "Change selected market"
+    GOTO L1043
+   L684
+    LINENUMBER 351 L684
+    LDC "Active market:"
+    GOTO L1043
+   L637
+    LINENUMBER 352 L637
+    LDC "Sales"
+    GOTO L1043
+   L883
+    LINENUMBER 353 L883
+    LDC "Expenses"
+    GOTO L1043
+   L613
+    LINENUMBER 354 L613
+    LDC "Summary"
+    GOTO L1043
+   L782
+    LINENUMBER 357 L782
+    LDC "Select active market"
+    GOTO L1043
+   L775
+    LINENUMBER 358 L775
+    LDC "There are multiple markets in progress. Choose one to continue:"
+    GOTO L1043
+   L951
+    LINENUMBER 361 L951
+    LDC "Select a color"
+    GOTO L1043
+   L949
+    LINENUMBER 362 L949
+    LDC "Selected color"
+    GOTO L1043
+   L659
+    LINENUMBER 365 L659
+    LDC "Processing\u2026"
+    GOTO L1043
+   L1040
+    LINENUMBER 368 L1040
+    LDC "Select market"
+    GOTO L1043
+   L937
+    LINENUMBER 371 L937
+    LDC "Add expense"
+    GOTO L1043
+   L855
+    LINENUMBER 374 L855
+    LDC "Upcoming markets"
+    GOTO L1043
+   L646
+    LINENUMBER 377 L646
+    LDC "Automatic expenses \u2014 coming soon"
+    GOTO L1043
+   L726
+    LINENUMBER 380 L726
+    LDC "Add expense"
+    GOTO L1043
+   L599
+    LINENUMBER 383 L599
+    LDC "Expense summary"
+    GOTO L1043
+   L752
+    LINENUMBER 384 L752
+    LDC "Total expenses"
+    GOTO L1043
+   L892
+    LINENUMBER 387 L892
+    LDC "Sales summary"
+    GOTO L1043
+   L982
+    LINENUMBER 388 L982
+    LDC "Total sales"
+    GOTO L1043
+   L790
+    LINENUMBER 389 L790
+    LDC "Confirm refund"
+    GOTO L1043
+   L839
+    LINENUMBER 390 L839
+    LDC "Are you sure you want to refund this line?"
+    GOTO L1043
+   L910
+    LINENUMBER 391 L910
+    LDC "Quantity"
+    GOTO L1043
+   L829
+    LINENUMBER 392 L829
+    LDC "Line total"
+    GOTO L1043
+   L710
+    LINENUMBER 393 L710
+    LDC "Yes, refund"
+    GOTO L1043
+   L632
+    LINENUMBER 394 L632
+    LDC "Unit price:"
+    GOTO L1043
+   L934
+    LINENUMBER 395 L934
+    LDC "Refund"
+    GOTO L1043
+   L765
+    LINENUMBER 396 L765
+    LDC "REFUND"
+    GOTO L1043
+   L837
+    LINENUMBER 399 L837
+    LDC "Description *"
+    GOTO L1043
+   L943
+    LINENUMBER 400 L943
+    LDC "Eg: Wooden Dolphin Keyring"
+    GOTO L1043
+   L614
+    LINENUMBER 401 L614
+    LDC "Description is required"
+    GOTO L1043
+   L1007
+    LINENUMBER 404 L1007
+    LDC "Amount"
+    GOTO L1043
+   L806
+    LINENUMBER 407 L806
+    LDC "Add"
+    GOTO L1043
+   L686
+    LINENUMBER 408 L686
+    LDC "Add sale"
+    GOTO L1043
+   L744
+    LINENUMBER 411 L744
+    LDC "All products"
+    GOTO L1043
+   L635
+    LINENUMBER 412 L635
+    LDC "Search"
+    GOTO L1043
+   L778
+    LINENUMBER 413 L778
+    LDC "Close search"
+    GOTO L1043
+   L657
+    LINENUMBER 414 L657
+    LDC "Search..."
+    GOTO L1043
+   L757
+    LINENUMBER 415 L757
+    LDC "All"
+    GOTO L1043
+   L882
+    LINENUMBER 416 L882
+    LDC "Log in to view products"
+    GOTO L1043
+   L867
+    LINENUMBER 417 L867
+    LDC "No products"
+    GOTO L1043
+   L761
+    LINENUMBER 420 L761
+    LDC "Delete"
+    GOTO L1043
+   L732
+    LINENUMBER 423 L732
+    LDC "Cash Count"
+    GOTO L1043
+   L960
+    LINENUMBER 424 L960
+    LDC "Loading market data\u2026"
+    GOTO L1043
+   L858
+    LINENUMBER 425 L858
+    LDC "Market summary"
+    GOTO L1043
+   L988
+    LINENUMBER 426 L988
+    LDC "Bizum"
+    GOTO L1043
+   L861
+    LINENUMBER 427 L861
+    LDC "Card"
+    GOTO L1043
+   L675
+    LINENUMBER 428 L675
+    LDC "Cash"
+    GOTO L1043
+   L787
+    LINENUMBER 429 L787
+    LDC "Total"
+    GOTO L1043
+   L887
+    LINENUMBER 430 L887
+    LDC "Actions"
+    GOTO L1043
+   L558
+    LINENUMBER 431 L558
+    LDC "Market result"
+    GOTO L1043
+   L856
+    LINENUMBER 432 L856
+    LDC "Assign balance"
+    GOTO L1043
+   L979
+    LINENUMBER 433 L979
+    LDC "Close"
+    GOTO L1043
+   L577
+    LINENUMBER 434 L577
+    LDC "\u2014"
+    GOTO L1043
+   L579
+    LINENUMBER 438 L579
+    LDC "Cash sales"
+    GOTO L1043
+   L717
+    LINENUMBER 439 L717
+    LDC "Cash expenses"
+    GOTO L1043
+   L593
+    LINENUMBER 440 L593
+    LDC "Cash count result"
+    GOTO L1043
+   L953
+    LINENUMBER 441 L953
+    LDC "Confirm cash count"
+    GOTO L1043
+   L929
+    LINENUMBER 442 L929
+    LDC "Confirm"
+    GOTO L1043
+   L715
+    LINENUMBER 443 L715
+    LDC "The cash count can only be confirmed once"
+    GOTO L1043
+   L535
+    LINENUMBER 444 L535
+    LDC "The result will be saved as the final cash balance"
+    GOTO L1043
+   L902
+    LINENUMBER 445 L902
+    LDC "Premium users can assign that balance to a new market or save it for later"
+    GOTO L1043
+   L578
+    LINENUMBER 446 L578
+    LDC "Are you sure you want to confirm the cash count?"
+    GOTO L1043
+   L944
+    LINENUMBER 450 L944
+    LDC "This option is only for Premium users."
+    GOTO L1043
+   L728
+    LINENUMBER 451 L728
+    LDC "Save balance"
+    GOTO L1043
+   L709
+    LINENUMBER 452 L709
+    LDC "Keep this balance to assign it when you create a market."
+    GOTO L1043
+   L1019
+    LINENUMBER 453 L1019
+    LDC "Withdraw cash"
+    GOTO L1043
+   L969
+    LINENUMBER 454 L969
+    LDC "Add cash"
+    GOTO L1043
+   L679
+    LINENUMBER 455 L679
+    LDC "Amount to withdraw"
+    GOTO L1043
+   L581
+    LINENUMBER 456 L581
+    LDC "Amount to add"
+    GOTO L1043
+   L530
+    LINENUMBER 457 L530
+    LDC "Select an option to enter an amount"
+    GOTO L1043
+   L654
+    LINENUMBER 462 L654
+    LDC "Sales by method"
+    GOTO L1043
+   L789
+    LINENUMBER 463 L789
+    LDC "Expenses by method"
+    GOTO L1043
+   L975
+    LINENUMBER 465 L975
+    LDC "Total expenses (methods)"
+    GOTO L1043
+   L1020
+    LINENUMBER 466 L1020
+    LDC "Subscription"
+    GOTO L1043
+   L541
+    LINENUMBER 472 L541
+    LDC "Enter expense"
+    GOTO L1043
+   L904
+    LINENUMBER 473 L904
+    LDC "Automatic"
+    GOTO L1043
+   L663
+    LINENUMBER 476 L663
+    LDC "Expense cart"
+    GOTO L1043
+   L603
+    LINENUMBER 478 L603
+    LDC "Description"
+    GOTO L1043
+   L925
+    LINENUMBER 488 L925
+    LDC "Password"
+    GOTO L1043
+   L871
+    LINENUMBER 490 L871
+    LDC "Sign up"
+    GOTO L1043
+   L591
+    LINENUMBER 491 L591
+    LDC "or"
+    GOTO L1043
+   L798
+    LINENUMBER 492 L798
+    LDC "Continue with Google"
+    GOTO L1043
+   L965
+    LINENUMBER 495 L965
+    LDC "Edit Market Day"
+    GOTO L1043
+   L633
+    LINENUMBER 496 L633
+    LDC "New Market Day"
+    GOTO L1043
+   L880
+    LINENUMBER 497 L880
+    LDC "Place"
+    GOTO L1043
+   L643
+    LINENUMBER 498 L643
+    LDC "e.g., Main Square"
+    GOTO L1043
+   L1042
+    LINENUMBER 499 L1042
+    LDC "Organizer"
+    GOTO L1043
+   L672
+    LINENUMBER 500 L672
+    LDC "e.g., City Council"
+    GOTO L1043
+   L819
+    LINENUMBER 501 L819
+    LDC "Warning: changing the initial cash of a market day IN PROGRESS may cause a mismatch."
+    GOTO L1043
+   L536
+    LINENUMBER 502 L536
+    LDC "Delete market day"
+    GOTO L1043
+   L878
+    LINENUMBER 504 L878
+    LDC "Update"
+    GOTO L1043
+   L697
+    LINENUMBER 505 L697
+    LDC "Create"
+    GOTO L1043
+   L1026
+    LINENUMBER 506 L1026
+    LDC "Pending balance"
+    GOTO L1043
+   L976
+    LINENUMBER 507 L976
+    LDC "You have a saved balance pending assignment. Do you want to assign it to this market day?"
+    GOTO L1043
+   L857
+    LINENUMBER 508 L857
+    LDC "Yes"
+    GOTO L1043
+   L777
+    LINENUMBER 509 L777
+    LDC "No"
+    GOTO L1043
+   L885
+    LINENUMBER 510 L885
+    LDC "Confirm cash change"
+    GOTO L1043
+   L865
+    LINENUMBER 511 L865
+    LDC "You changed the initial cash of a market day IN PROGRESS. This can cause a cash mismatch."
+    GOTO L1043
+   L864
+    LINENUMBER 512 L864
+    LDC "Do you want to save anyway?"
+    GOTO L1043
+   L685
+    LINENUMBER 513 L685
+    LDC "Save anyway"
+    GOTO L1043
+   L827
+    LINENUMBER 514 L827
+    LDC "Confirm deletion"
+    GOTO L1043
+   L795
+    LINENUMBER 515 L795
+    LDC "Are you sure you want to delete the market day?"
+    GOTO L1043
+   L869
+    LINENUMBER 519 L869
+    LDC "Invalid sale price"
+    GOTO L1043
+   L721
+    LINENUMBER 520 L721
+    LDC "Select a category"
+    GOTO L1043
+   L688
+    LINENUMBER 521 L688
+    LDC "No category"
+    GOTO L1043
+   L921
+    LINENUMBER 522 L921
+    LDC "Price"
+    GOTO L1043
+   L1001
+    LINENUMBER 523 L1001
+    LDC "Cost"
+    GOTO L1043
+   L733
+    LINENUMBER 524 L733
+    LDC "\u2b50 Favorite"
+    GOTO L1043
+   L770
+    LINENUMBER 525 L770
+    LDC "Edit"
+    GOTO L1043
+   L973
+    LINENUMBER 529 L973
+    LDC "Change"
+    GOTO L1043
+   L825
+    LINENUMBER 530 L825
+    LDC "Given"
+    GOTO L1043
+   L625
+    LINENUMBER 531 L625
+    LDC "Change due"
+    GOTO L1043
+   L644
+    LINENUMBER 534 L644
+    LDC "Premium only"
+    GOTO L1043
+   L692
+    LINENUMBER 535 L692
+    LDC "Expand"
+    GOTO L1043
+   L792
+    LINENUMBER 536 L792
+    LDC "GUEST"
+    GOTO L1043
+   L877
+    LINENUMBER 537 L877
+    LDC "App {version}"
+    GOTO L1043
+   L544
+    LINENUMBER 538 L544
+    LDC "$ Argentine Peso"
+    GOTO L1043
+   L645
+    LINENUMBER 539 L645
+    LDC "$ Mexican Peso"
+    GOTO L1043
+   L698
+    LINENUMBER 540 L698
+    LDC "$ Colombian Peso"
+    GOTO L1043
+   L1005
+    LINENUMBER 541 L1005
+    LDC "S/ Peruvian Sol"
+    GOTO L1043
+   L1027
+    LINENUMBER 542 L1027
+    LDC "$ Chilean Peso"
+    GOTO L1043
+   L1035
+    LINENUMBER 543 L1035
+    LDC "Bs Venezuelan Bol\u00edvar"
+    GOTO L1043
+   L842
+    LINENUMBER 544 L842
+    LDC "$ Brazilian Real"
+    GOTO L1043
+   L1002
+    LINENUMBER 547 L1002
+    LDC "Receipt"
+    GOTO L1043
+   L622
+    LINENUMBER 548 L622
+    LDC "Payment method: {metodo}"
+    GOTO L1043
+   L564
+    LINENUMBER 549 L564
+    LDC "Finalize sale"
+    GOTO L1043
+   L847
+    LINENUMBER 552 L847
+    LDC "Under development"
+    GOTO L1043
+   L758
+    LINENUMBER 553 L758
+    LDC "Soon you'll be able to manage inventory and stock."
+    GOTO L1043
+   L649
+    LINENUMBER 556 L649
+    LDC "Reports and listings will live here."
+    GOTO L1043
+   L997
+    LINENUMBER 559 L997
+    LDC "Signed out successfully"
+    GOTO L1043
+   L540
+    LINENUMBER 560 L540
+    LDC "Google Auth unavailable \u2014 Check your configuration"
+    GOTO L1043
+   L931
+    LINENUMBER 562 L931
+    LDC "Saved balance"
+    GOTO L1043
+   L852
+    LINENUMBER 563 L852
+    LDC "Pending balance to assign"
+    GOTO L1043
+   L735
+    LINENUMBER 565 L735
+    LDC "Preparing\u2026"
+    GOTO L1043
+   L771
+    LINENUMBER 566 L771
+    LDC "Checking local data\u2026"
+    GOTO L1043
+   L961
+    LINENUMBER 567 L961
+    LDC "Downloading data from Firebase\u2026"
+    GOTO L1043
+   L762
+    LINENUMBER 568 L762
+    LDC "Done."
+    GOTO L1043
+   L545
+    LINENUMBER 569 L545
+    LDC "Unexpected error"
+    GOTO L1043
+   L768
+    LINENUMBER 570 L768
+    LDC "Could not load data."
+    GOTO L1043
+   L907
+    LINENUMBER 571 L907
+    LDC "Retry"
+    GOTO L1043
+   L740
+    LINENUMBER 573 L740
+    LDC "New sale"
+    GOTO L1043
+   L661
+    LINENUMBER 574 L661
+    LDC "Manual sale"
+    GOTO L1043
+   L862
+    LINENUMBER 575 L862
+    LDC "Products"
+    GOTO L1043
+   L868
+    LINENUMBER 577 L868
+    LDC "Market management"
+    GOTO L1043
+   L560
+    LINENUMBER 579 L560
+    LDC "Market not found"
+    GOTO L1043
+   L738
+    LINENUMBER 580 L738
+    LDC "Error loading data: {0}"
+    GOTO L1043
+   L840
+    LINENUMBER 582 L840
+    LDC "An item with that name already exists"
+    GOTO L1043
+   L994
+    LINENUMBER 583 L994
+    LDC "Item created successfully"
+    GOTO L1043
+   L1013
+    LINENUMBER 584 L1013
+    LDC "Error creating item: {0}"
+    GOTO L1043
+   L894
+    LINENUMBER 585 L894
+    LDC "Item updated successfully"
+    GOTO L1043
+   L950
+    LINENUMBER 586 L950
+    LDC "Error updating item"
+    GOTO L1043
+   L971
+    LINENUMBER 587 L971
+    LDC "Error updating item: {0}"
+    GOTO L1043
+   L911
+    LINENUMBER 588 L911
+    LDC "Item deleted successfully"
+    GOTO L1043
+   L1009
+    LINENUMBER 589 L1009
+    LDC "Error deleting item"
+    GOTO L1043
+   L915
+    LINENUMBER 590 L915
+    LDC "Error deleting item: {0}"
+    GOTO L1043
+   L889
+    LINENUMBER 591 L889
+    LDC "Sync completed"
+    GOTO L1043
+   L866
+    LINENUMBER 592 L866
+    LDC "Sync error"
+    GOTO L1043
+   L574
+    LINENUMBER 593 L574
+    LDC "Could not complete synchronization"
+    GOTO L1043
+   L999
+    LINENUMBER 594 L999
+    LDC "Sync error: {0}"
+    GOTO L1043
+   L562
+    LINENUMBER 595 L562
+    LDC "Name must be at least 2 characters"
+    GOTO L1043
+   L962
+    LINENUMBER 596 L962
+    LDC "Name cannot exceed 100 characters"
+    GOTO L1043
+   L940
+    LINENUMBER 597 L940
+    LDC "Price cannot be negative"
+    GOTO L1043
+   L546
+    LINENUMBER 598 L546
+    LDC "Price is too high"
+    GOTO L1043
+   L966
+    LINENUMBER 599 L966
+    LDC "Cost price cannot be negative"
+    GOTO L1043
+   L725
+    LINENUMBER 600 L725
+    LDC "Cost price is too high"
+    GOTO L1043
+   L565
+    LINENUMBER 601 L565
+    LDC "Stock cannot be negative"
+    GOTO L1043
+   L555
+    LINENUMBER 602 L555
+    LDC "Stock is too high"
+    GOTO L1043
+   L986
+    LINENUMBER 605 L986
+    LDC "Are you sure you want to save the balance?"
+    GOTO L1043
+   L707
+    LINENUMBER 606 L707
+    LDC "It can be used as the opening balance when creating a new market."
+    GOTO L1043
+   L582
+    LINENUMBER 607 L582
+    LDC "An opening balance is already saved. Are you sure you want to replace it? This operation cannot be undone."
+    GOTO L1043
+   L1017
+    LINENUMBER 608 L1017
+    LDC "If you save it, you will only be able to assign it when creating a new market."
+    GOTO L1043
+   L712
+    LINENUMBER 610 L712
+    LDC "Are you sure you want to assign the opening balance to this market?"
+    GOTO L1043
+   L543
+    LINENUMBER 611 L543
+    LDC "The selected market already has an opening balance. Do you want to replace it?"
+    GOTO L1043
+   L729
+    LINENUMBER 612 L729
+    LDC "This operation cannot be undone."
+    GOTO L1043
+   L977
+    LINENUMBER 615 L977
+    LDC "Category created successfully"
+    GOTO L1043
+   L984
+    LINENUMBER 616 L984
+    LDC "Error creating category: {0}"
+    GOTO L1043
+   L804
+    LINENUMBER 617 L804
+    LDC "Category updated successfully"
+    GOTO L1043
+   L872
+    LINENUMBER 618 L872
+    LDC "Error updating category"
+    GOTO L1043
+   L920
+    LINENUMBER 619 L920
+    LDC "Error updating category: {0}"
+    GOTO L1043
+   L893
+    LINENUMBER 620 L893
+    LDC "Category deleted successfully"
+    GOTO L1043
+   L575
+    LINENUMBER 621 L575
+    LDC "Error deleting category"
+    GOTO L1043
+   L1028
+    LINENUMBER 622 L1028
+    LDC "Error deleting category: {0}"
+    GOTO L1043
+   L703
+    LINENUMBER 624 L703
+    LDC "Sync error"
+    GOTO L1043
+   L900
+    LINENUMBER 625 L900
+    LDC "Could not complete sync"
+    GOTO L1043
+   L793
+    LINENUMBER 626 L793
+    LDC "Sync error: {0}"
+    GOTO L1043
+   L785
+    LINENUMBER 628 L785
+    LDC "Name must be at least 2 characters"
+    GOTO L1043
+   L1006
+    LINENUMBER 629 L1006
+    LDC "Name cannot be longer than 50 characters"
+    GOTO L1043
+   L786
+    LINENUMBER 632 L786
+    LDC "Expenses saved"
+    GOTO L1043
+   L810
+    LINENUMBER 633 L810
+    LDC "Error saving expenses"
+    GOTO L1043
+   L718
+    LINENUMBER 636 L718
+    LDC "Market created with starting balance of {0}"
+    GOTO L1043
+   L948
+    LINENUMBER 637 L948
+    LDC "Market created successfully"
+    GOTO L1043
+   L594
+    LINENUMBER 638 L594
+    LDC "Error creating market: {0}"
+    GOTO L1043
+   L568
+    LINENUMBER 640 L568
+    LDC "Error loading market: {0}"
+    GOTO L1043
+   L610
+    LINENUMBER 641 L610
+    LDC "You are modifying the starting balance of a market in progress. This may cause a cash mismatch.\n\nDo you want to save anyway?"
+    GOTO L1043
+   L848
+    LINENUMBER 642 L848
+    LDC "Market updated successfully"
+    GOTO L1043
+   L813
+    LINENUMBER 643 L813
+    LDC "Error updating market"
+    GOTO L1043
+   L660
+    LINENUMBER 644 L660
+    LDC "Error updating market: {0}"
+    GOTO L1043
+   L899
+    LINENUMBER 646 L899
+    LDC "Error deleting market"
+    GOTO L1043
+   L924
+    LINENUMBER 647 L924
+    LDC "Error deleting market: {0}"
+    GOTO L1043
+   L993
+    LINENUMBER 648 L993
+    LDC "There are no markets in progress"
+    GOTO L1043
+   L849
+    LINENUMBER 650 L849
+    LDC "Sync completed (no automatic changes)"
+    GOTO L1043
+   L974
+    LINENUMBER 651 L974
+    LDC "Sync error: {0}"
+    GOTO L1043
+   L689
+    LINENUMBER 652 L689
+    LDC "User not authenticated"
+    GOTO L1043
+   L983
+    LINENUMBER 653 L983
+    LDC "State changed to: {0}"
+    GOTO L1043
+   L1039
+    LINENUMBER 654 L1039
+    LDC "Error changing state"
+    GOTO L1043
+   L673
+    LINENUMBER 655 L673
+    LDC "Error changing state: {0}"
+    GOTO L1043
+   L683
+    LINENUMBER 656 L683
+    LDC "Invalid market state"
+    GOTO L1043
+   L1012
+    LINENUMBER 657 L1012
+    LDC "You cannot modify a market in state: {0}"
+    GOTO L1043
+   L756
+    LINENUMBER 658 L756
+    LDC "You cannot change the date of a market in progress"
+    GOTO L1043
+   L592
+    LINENUMBER 659 L592
+    LDC "Date cannot be empty"
+    GOTO L1043
+   L615
+    LINENUMBER 660 L615
+    LDC "Invalid date format (dd-MM-yyyy)"
+    GOTO L1043
+   L769
+    LINENUMBER 661 L769
+    LDC "Invalid date"
+    GOTO L1043
+   L549
+    LINENUMBER 662 L549
+    LDC "You cannot create a market on a date earlier than today"
+    GOTO L1043
+   L846
+    LINENUMBER 663 L846
+    LDC "Error validating date availability"
+    GOTO L1043
+   L731
+    LINENUMBER 664 L731
+    LDC "FREE users can only create one market per day. Upgrade to Premium to create multiple markets."
+    GOTO L1043
+   L605
+    LINENUMBER 665 L605
+    LDC "Location cannot be empty"
+    GOTO L1043
+   L727
+    LINENUMBER 666 L727
+    LDC "Location must be at least 3 characters"
+    GOTO L1043
+   L828
+    LINENUMBER 667 L828
+    LDC "Location cannot be more than 100 characters"
+    GOTO L1043
+   L763
+    LINENUMBER 668 L763
+    LDC "Organizer cannot be empty"
+    GOTO L1043
+   L992
+    LINENUMBER 669 L992
+    LDC "Organizer must be at least 3 characters"
+    GOTO L1043
+   L639
+    LINENUMBER 670 L639
+    LDC "Organizer cannot be more than 100 characters"
+    GOTO L1043
+   L870
+    LINENUMBER 671 L870
+    LDC "Invalid start time format (HH:mm)"
+    GOTO L1043
+   L799
+    LINENUMBER 672 L799
+    LDC "Invalid end time format (HH:mm)"
+    GOTO L1043
+   L821
+    LINENUMBER 673 L821
+    LDC "Invalid times"
+    GOTO L1043
+   L779
+    LINENUMBER 674 L779
+    LDC "Amount cannot be negative"
+    GOTO L1043
+   L812
+    LINENUMBER 675 L812
+    LDC "Amount is too high"
+    GOTO L1043
+   L780
+    LINENUMBER 676 L780
+    LDC "Starting balance cannot be negative"
+    GOTO L1043
+   L754
+    LINENUMBER 677 L754
+    LDC "Starting balance is too high"
+    GOTO L1043
+   L1023
+    LINENUMBER 678 L1023
+    LDC "Final balance cannot be negative"
+    GOTO L1043
+   L533
+    LINENUMBER 679 L533
+    LDC "Final balance is too high"
+    GOTO L1043
+   L554
+    LINENUMBER 681 L554
+    LDC "Error loading upcoming markets: {0}"
+    GOTO L1043
+   L1016
+    LINENUMBER 683 L1016
+    LDC "Unit:"
+    GOTO L1043
+   L922
+    LINENUMBER 684 L922
+    LDC "Cash"
+    GOTO L1043
+   L814
+    LINENUMBER 685 L814
+    LDC "Bizum"
+    GOTO L1043
+   L627
+    LINENUMBER 686 L627
+    LDC "Card"
+    GOTO L1043
+   L630
+    LINENUMBER 690 L630
+    LDC "Amount must be greater than 0"
+    GOTO L1043
+   L556
+    LINENUMBER 691 L556
+    LDC "No line items to sell"
+    GOTO L1043
+   L970
+    LINENUMBER 692 L970
+    LDC "Total must be greater than 0"
+    GOTO L1043
+   L963
+    LINENUMBER 693 L963
+    LDC "Market not initialized"
+    GOTO L1043
+   L651
+    LINENUMBER 694 L651
+    LDC "Error saving sale: {0}"
+    GOTO L1043
+   L955
+    LINENUMBER 696 L955
+    LDC "\ud83d\udd27 State (DEBUG)"
+    GOTO L1043
+   L917
+    LINENUMBER 697 L917
+    LDC "\u26a0\ufe0f Debug only \u2014 Will be removed in production"
+    GOTO L1043
+   L905
+    LINENUMBER 698 L905
+    LDC "Date"
+    GOTO L1043
+   L534
+    LINENUMBER 699 L534
+    LDC "dd-MM-yyyy"
+    GOTO L1043
+   L711
+    LINENUMBER 700 L711
+    LDC "Financial settings"
+    GOTO L1043
+   L935
+    LINENUMBER 701 L935
+    LDC "Free market"
+    GOTO L1043
+   L952
+    LINENUMBER 703 L952
+    LDC "0.00"
+    GOTO L1043
+   L708
+    LINENUMBER 704 L708
+    LDC "Logistics settings"
+    GOTO L1043
+   L522
+    LINENUMBER 713 L522
+    ALOAD 1
+   L1043
+    LINENUMBER 714 L1043
+    ARETURN
+   L1044
+    LOCALVARIABLE this Les/nuskysoftware/marketsales/utils/EnglishStrings; L0 L1044 0
+    LOCALVARIABLE key Ljava/lang/String; L0 L1044 1
+    MAXSTACK = -1
+    MAXLOCALS = 3
+
+File is unknown
+The root cause java.lang.OutOfMemoryError was thrown at: java.base/java.util.LinkedList.linkLast(Unknown Source)
+	at org.jetbrains.kotlin.codegen.TransformationMethodVisitor.visitEnd(TransformationMethodVisitor.kt:89)
+	at org.jetbrains.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.jetbrains.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethod(ClassCodegen.kt:453)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:168)
+	at org.jetbrains.kotlin.backend.jvm.FileCodegen.lower(JvmPhases.kt:39)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt.createFilePhase$lambda$4(PhaseFactories.kt:71)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:69)
+	at org.jetbrains.kotlin.backend.common.phaser.SimpleNamedCompilerPhase.phaseBody(CompilerPhase.kt:226)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:62)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:52)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:38)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:27)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:14)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompilerPhaseKt.invokeToplevel(CompilerPhase.kt:62)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.invokeCodegen(JvmIrCodegenFactory.kt:371)
+	at org.jetbrains.kotlin.codegen.CodegenFactory.generateModule(CodegenFactory.kt:47)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.generateModuleInFrontendIRMode(JvmIrCodegenFactory.kt:433)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.generateCodeFromIr(jvmCompilerPipeline.kt:246)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.compileModulesUsingFrontendIrAndLightTree(jvmCompilerPipeline.kt:142)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:148)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:43)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:103)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:49)
+	at org.jetbrains.kotlin.cli.common.CLITool.exec(CLITool.kt:101)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:464)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:73)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.doCompile(IncrementalCompilerRunner.kt:506)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileImpl(IncrementalCompilerRunner.kt:423)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileNonIncrementally(IncrementalCompilerRunner.kt:301)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compile(IncrementalCompilerRunner.kt:129)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.execIncrementalCompiler(CompileServiceImpl.kt:675)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.access$execIncrementalCompiler(CompileServiceImpl.kt:92)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1660)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Caused by: java.lang.OutOfMemoryError: GC overhead limit exceeded
+	at java.base/java.util.LinkedList.linkLast(Unknown Source)
+	at java.base/java.util.LinkedList.add(Unknown Source)
+	at org.jetbrains.kotlin.codegen.inline.MaxStackFrameSizeAndLocalsCalculator$LabelWrapper.addSuccessor(MaxStackFrameSizeAndLocalsCalculator.java:431)
+	at org.jetbrains.kotlin.codegen.inline.MaxStackFrameSizeAndLocalsCalculator$LabelWrapper.access$600(MaxStackFrameSizeAndLocalsCalculator.java:416)
+	at org.jetbrains.kotlin.codegen.inline.MaxStackFrameSizeAndLocalsCalculator.addSuccessor(MaxStackFrameSizeAndLocalsCalculator.java:469)
+	at org.jetbrains.kotlin.codegen.inline.MaxStackFrameSizeAndLocalsCalculator.visitJumpInsn(MaxStackFrameSizeAndLocalsCalculator.java:223)
+	at org.jetbrains.org.objectweb.asm.tree.JumpInsnNode.accept(JumpInsnNode.java:79)
+	at org.jetbrains.org.objectweb.asm.tree.InsnList.accept(InsnList.java:144)
+	at org.jetbrains.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:751)
+	at org.jetbrains.kotlin.codegen.optimization.common.UtilKt.updateMaxStack(Util.kt:125)
+	at org.jetbrains.kotlin.codegen.optimization.common.UtilKt.prepareForEmitting(Util.kt:120)
+	at org.jetbrains.kotlin.codegen.optimization.OptimizationMethodVisitor.performTransformations(OptimizationMethodVisitor.kt:79)
+	at org.jetbrains.kotlin.codegen.TransformationMethodVisitor.visitEnd(TransformationMethodVisitor.kt:67)
+	at org.jetbrains.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.jetbrains.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethod(ClassCodegen.kt:453)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:168)
+	at org.jetbrains.kotlin.backend.jvm.FileCodegen.lower(JvmPhases.kt:39)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt.createFilePhase$lambda$4(PhaseFactories.kt:71)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt$$Lambda/0x00000001002265d0.invoke(Unknown Source)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:69)
+	at org.jetbrains.kotlin.backend.common.phaser.SimpleNamedCompilerPhase.phaseBody(CompilerPhase.kt:226)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:62)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:52)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:38)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:27)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:14)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+
+

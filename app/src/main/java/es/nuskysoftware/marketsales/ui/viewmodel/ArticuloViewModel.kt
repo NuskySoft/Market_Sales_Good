@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.nuskysoftware.marketsales.data.local.entity.ArticuloEntity
 import es.nuskysoftware.marketsales.data.repository.ArticuloRepository
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -57,25 +59,20 @@ class ArticuloViewModel(
         fotoUri: String? = null
     ) {
         viewModelScope.launch {
+            val lang = ConfigurationManager.idioma.value
             _uiState.value = _uiState.value.copy(loading = true, error = null)
 
             try {
                 // Validar datos básicos
                 val validacionNombre = validarNombreArticulo(nombre)
                 if (validacionNombre != null) {
-                    _uiState.value = _uiState.value.copy(
-                        loading = false,
-                        error = validacionNombre
-                    )
+                    _uiState.value = _uiState.value.copy(loading = false, error = validacionNombre)
                     return@launch
                 }
 
                 val validacionPrecio = validarPrecioVenta(precioVenta)
                 if (validacionPrecio != null) {
-                    _uiState.value = _uiState.value.copy(
-                        loading = false,
-                        error = validacionPrecio
-                    )
+                    _uiState.value = _uiState.value.copy(loading = false, error = validacionPrecio)
                     return@launch
                 }
 
@@ -83,7 +80,7 @@ class ArticuloViewModel(
                 if (repository.existeArticuloConNombre(nombre)) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Ya existe un artículo con ese nombre"
+                        error = StringResourceManager.getString("articulo_nombre_duplicado", lang)
                     )
                     return@launch
                 }
@@ -92,10 +89,7 @@ class ArticuloViewModel(
                 if (controlarCoste && precioCoste != null) {
                     val validacionCoste = validarPrecioCoste(precioCoste)
                     if (validacionCoste != null) {
-                        _uiState.value = _uiState.value.copy(
-                            loading = false,
-                            error = validacionCoste
-                        )
+                        _uiState.value = _uiState.value.copy(loading = false, error = validacionCoste)
                         return@launch
                     }
                 }
@@ -103,10 +97,7 @@ class ArticuloViewModel(
                 if (controlarStock && stock != null) {
                     val validacionStock = validarStock(stock)
                     if (validacionStock != null) {
-                        _uiState.value = _uiState.value.copy(
-                            loading = false,
-                            error = validacionStock
-                        )
+                        _uiState.value = _uiState.value.copy(loading = false, error = validacionStock)
                         return@launch
                     }
                 }
@@ -125,7 +116,7 @@ class ArticuloViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    message = "Artículo creado exitosamente",
+                    message = StringResourceManager.getString("articulo_creado_ok", lang),
                     error = null
                 )
 
@@ -134,7 +125,9 @@ class ArticuloViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error creando artículo: ${e.message}"
+                    error = StringResourceManager
+                        .getString("error_creando_articulo", lang)
+                        .replace("{0}", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error creando artículo", e)
             }
@@ -146,25 +139,20 @@ class ArticuloViewModel(
      */
     fun actualizarArticulo(articulo: ArticuloEntity) {
         viewModelScope.launch {
+            val lang = ConfigurationManager.idioma.value
             _uiState.value = _uiState.value.copy(loading = true, error = null)
 
             try {
                 // Validar datos básicos
                 val validacionNombre = validarNombreArticulo(articulo.nombre)
                 if (validacionNombre != null) {
-                    _uiState.value = _uiState.value.copy(
-                        loading = false,
-                        error = validacionNombre
-                    )
+                    _uiState.value = _uiState.value.copy(loading = false, error = validacionNombre)
                     return@launch
                 }
 
                 val validacionPrecio = validarPrecioVenta(articulo.precioVenta)
                 if (validacionPrecio != null) {
-                    _uiState.value = _uiState.value.copy(
-                        loading = false,
-                        error = validacionPrecio
-                    )
+                    _uiState.value = _uiState.value.copy(loading = false, error = validacionPrecio)
                     return@launch
                 }
 
@@ -172,7 +160,7 @@ class ArticuloViewModel(
                 if (repository.existeArticuloConNombre(articulo.nombre, articulo.idArticulo)) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Ya existe un artículo con ese nombre"
+                        error = StringResourceManager.getString("articulo_nombre_duplicado", lang)
                     )
                     return@launch
                 }
@@ -181,10 +169,7 @@ class ArticuloViewModel(
                 if (articulo.controlarCoste && articulo.precioCoste != null) {
                     val validacionCoste = validarPrecioCoste(articulo.precioCoste)
                     if (validacionCoste != null) {
-                        _uiState.value = _uiState.value.copy(
-                            loading = false,
-                            error = validacionCoste
-                        )
+                        _uiState.value = _uiState.value.copy(loading = false, error = validacionCoste)
                         return@launch
                     }
                 }
@@ -192,10 +177,7 @@ class ArticuloViewModel(
                 if (articulo.controlarStock && articulo.stock != null) {
                     val validacionStock = validarStock(articulo.stock)
                     if (validacionStock != null) {
-                        _uiState.value = _uiState.value.copy(
-                            loading = false,
-                            error = validacionStock
-                        )
+                        _uiState.value = _uiState.value.copy(loading = false, error = validacionStock)
                         return@launch
                     }
                 }
@@ -205,21 +187,23 @@ class ArticuloViewModel(
                 if (exito) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Artículo actualizado exitosamente",
+                        message = StringResourceManager.getString("articulo_actualizado_ok", lang),
                         error = null
                     )
                     Log.d(TAG, "✅ Artículo actualizado: ${articulo.nombre}")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Error actualizando artículo"
+                        error = StringResourceManager.getString("error_actualizando_articulo", lang)
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error actualizando artículo: ${e.message}"
+                    error = StringResourceManager
+                        .getString("error_actualizando_articulo_detalle", lang)
+                        .replace("{0}", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error actualizando artículo", e)
             }
@@ -231,6 +215,7 @@ class ArticuloViewModel(
      */
     fun eliminarArticulo(articulo: ArticuloEntity) {
         viewModelScope.launch {
+            val lang = ConfigurationManager.idioma.value
             _uiState.value = _uiState.value.copy(loading = true, error = null)
 
             try {
@@ -239,21 +224,23 @@ class ArticuloViewModel(
                 if (exito) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Artículo eliminado exitosamente",
+                        message = StringResourceManager.getString("articulo_eliminado_ok", lang),
                         error = null
                     )
                     Log.d(TAG, "✅ Artículo eliminado: ${articulo.nombre}")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Error eliminando artículo"
+                        error = StringResourceManager.getString("error_eliminando_articulo", lang)
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error eliminando artículo: ${e.message}"
+                    error = StringResourceManager
+                        .getString("error_eliminando_articulo_detalle", lang)
+                        .replace("{0}", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error eliminando artículo", e)
             }
@@ -293,6 +280,7 @@ class ArticuloViewModel(
      */
     fun forzarSincronizacion() {
         viewModelScope.launch {
+            val lang = ConfigurationManager.idioma.value
             _uiState.value = _uiState.value.copy(loading = true, error = null)
 
             try {
@@ -300,8 +288,13 @@ class ArticuloViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    message = if (exito) "Sincronización completada" else "Error en sincronización",
-                    error = if (!exito) "No se pudo completar la sincronización" else null
+                    message = if (exito)
+                        StringResourceManager.getString("sync_completada", lang)
+                    else
+                        StringResourceManager.getString("sync_error", lang),
+                    error = if (!exito)
+                        StringResourceManager.getString("sync_no_se_pudo_completar", lang)
+                    else null
                 )
 
                 Log.d(TAG, if (exito) "✅ Sincronización forzada exitosa" else "⚠️ Error en sincronización forzada")
@@ -309,7 +302,9 @@ class ArticuloViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error en sincronización: ${e.message}"
+                    error = StringResourceManager
+                        .getString("sync_error_detalle", lang)
+                        .replace("{0}", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error en sincronización forzada", e)
             }
@@ -318,103 +313,71 @@ class ArticuloViewModel(
 
     // ========== GESTIÓN DE UI ==========
 
-    /**
-     * Limpia mensajes de error o éxito
-     */
     fun limpiarMensajes() {
-        _uiState.value = _uiState.value.copy(
-            error = null,
-            message = null
-        )
+        _uiState.value = _uiState.value.copy(error = null, message = null)
     }
 
-    /**
-     * Limpia solo el mensaje de error
-     */
     fun limpiarError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    /**
-     * Limpia solo el mensaje de éxito
-     */
     fun limpiarMensaje() {
         _uiState.value = _uiState.value.copy(message = null)
     }
 
     // ========== VALIDACIONES ==========
 
-    /**
-     * Valida si un nombre de artículo es válido
-     */
     fun validarNombreArticulo(nombre: String): String? {
+        val lang = ConfigurationManager.idioma.value
         return when {
-            nombre.isBlank() -> "El nombre no puede estar vacío"
-            nombre.length < 2 -> "El nombre debe tener al menos 2 caracteres"
-            nombre.length > 100 -> "El nombre no puede tener más de 100 caracteres"
+            nombre.isBlank() -> StringResourceManager.getString("nombre_vacio", lang) // (ya existente)
+            nombre.length < 2 -> StringResourceManager.getString("nombre_min_caracteres", lang)
+            nombre.length > 100 -> StringResourceManager.getString("nombre_max_caracteres", lang)
             else -> null
         }
     }
 
-    /**
-     * Valida si un precio de venta es válido
-     */
     fun validarPrecioVenta(precio: Double): String? {
+        val lang = ConfigurationManager.idioma.value
         return when {
-            precio < 0 -> "El precio no puede ser negativo"
-            precio > 999999.99 -> "El precio es demasiado alto"
+            precio < 0 -> StringResourceManager.getString("precio_negativo", lang)
+            precio > 999999.99 -> StringResourceManager.getString("precio_demasiado_alto", lang)
             else -> null
         }
     }
 
-    /**
-     * Valida si un precio de coste es válido
-     */
     fun validarPrecioCoste(precio: Double): String? {
+        val lang = ConfigurationManager.idioma.value
         return when {
-            precio < 0 -> "El precio de coste no puede ser negativo"
-            precio > 999999.99 -> "El precio de coste es demasiado alto"
+            precio < 0 -> StringResourceManager.getString("precio_coste_negativo", lang)
+            precio > 999999.99 -> StringResourceManager.getString("precio_coste_demasiado_alto", lang)
             else -> null
         }
     }
 
-    /**
-     * Valida si un stock es válido
-     */
     fun validarStock(stock: Int): String? {
+        val lang = ConfigurationManager.idioma.value
         return when {
-            stock < 0 -> "El stock no puede ser negativo"
-            stock > 999999 -> "El stock es demasiado alto"
+            stock < 0 -> StringResourceManager.getString("stock_negativo", lang)
+            stock > 999999 -> StringResourceManager.getString("stock_demasiado_alto", lang)
             else -> null
         }
     }
 
     // ========== UTILIDADES ==========
 
-    /**
-     * Obtiene el número total de artículos del usuario
-     */
     val totalArticulos: StateFlow<Int> = articulos
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    /**
-     * Indica si hay artículos creados
-     */
     val tieneArticulos: StateFlow<Boolean> = articulos
         .map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    /**
-     * Artículos favoritos
-     */
     val articulosFavoritos: StateFlow<List<ArticuloEntity>> = articulos
         .map { lista -> lista.filter { it.favorito } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /**
-     * Artículos con stock bajo (menos de 5 unidades)
-     */
     val articulosStockBajo: StateFlow<List<ArticuloEntity>> = articulos
         .map { lista ->
             lista.filter { articulo ->

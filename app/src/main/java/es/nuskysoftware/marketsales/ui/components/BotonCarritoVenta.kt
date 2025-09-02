@@ -23,7 +23,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModel
-
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 /**
  * Botón de carrito (solo diseño):
  * - Icono grande 40.dp
@@ -38,6 +39,7 @@ fun BotonCarritoVentas(
 ) {
     val uiState by ventasViewModel.uiState.collectAsState()
     val numLineas = uiState.lineasTicket.size
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     Box(
         modifier = Modifier
@@ -54,7 +56,7 @@ fun BotonCarritoVentas(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_shopping_cart_24),
-                contentDescription = "Carrito",
+                contentDescription = StringResourceManager.getString("carrito", currentLanguage),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.size(34.dp) // Icono más grande
             )

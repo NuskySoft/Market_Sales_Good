@@ -15,6 +15,7 @@ import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.LineaGastoEntity
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.MonedaUtils
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
 fun PestanaResumenGastos(
@@ -27,12 +28,13 @@ fun PestanaResumenGastos(
     val gastos by remember(mercadilloId) { gastosDao.observarGastosPorMercadillo(mercadilloId) }
         .collectAsState(initial = emptyList())
     val moneda by ConfigurationManager.moneda.collectAsState()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val totalGastos = remember(gastos) { gastos.sumOf { it.importe } }
     val totalFmt = MonedaUtils.formatearImporte(totalGastos, moneda)
 
     Column(Modifier.fillMaxSize()) {
         Text(
-            text = "Resumen de Gastos",
+            text = StringResourceManager.getString("resumen_gastos", currentLanguage),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -72,8 +74,16 @@ fun PestanaResumenGastos(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Total de gastos", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            Text(text = totalFmt, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+            Text(
+                StringResourceManager.getString("total_gastos", currentLanguage),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = totalFmt,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }

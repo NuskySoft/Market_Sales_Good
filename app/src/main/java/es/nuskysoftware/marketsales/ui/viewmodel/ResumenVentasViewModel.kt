@@ -9,6 +9,8 @@ import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,11 +20,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.data.local.entity.LineaVentaEntity
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.MonedaUtils
-
-// ==== Reemplaza solo este composable y el de MetodoPagoIcon por los de abajo ====
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
 internal fun LineaVentaResumenCard(
@@ -30,6 +33,9 @@ internal fun LineaVentaResumenCard(
     metodoPago: String,
     moneda: String
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val puLabel = StringResourceManager.getString("pu_label", currentLanguage)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -40,10 +46,9 @@ internal fun LineaVentaResumenCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // LEADING RESERVADO (icono + chip cantidad)
+            // LEADING: icono método + chip cantidad
             Row(
-                modifier = Modifier
-                    .width(48.dp),
+                modifier = Modifier.width(48.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -72,9 +77,7 @@ internal fun LineaVentaResumenCard(
             Spacer(Modifier.width(10.dp))
 
             // Centro: descripción + PU
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = linea.descripcion,
                     style = MaterialTheme.typography.bodyMedium,
@@ -82,7 +85,7 @@ internal fun LineaVentaResumenCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "PU: " + MonedaUtils.formatearImporte(linea.precioUnitario, moneda),
+                    text = puLabel + " " + MonedaUtils.formatearImporte(linea.precioUnitario, moneda),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -101,9 +104,16 @@ internal fun LineaVentaResumenCard(
 @Composable
 private fun MetodoPagoIcon(
     metodoPago: String,
-    size: androidx.compose.ui.unit.Dp
+    size: Dp
 ) {
-    // 1) Intentar con drawables propios si existen
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val contentDesc = when (metodoPago.uppercase()) {
+        "EFECTIVO" -> StringResourceManager.getString("metodo_efectivo", currentLanguage)
+        "BIZUM"    -> StringResourceManager.getString("metodo_bizum", currentLanguage)
+        "TARJETA"  -> StringResourceManager.getString("metodo_tarjeta", currentLanguage)
+        else       -> metodoPago
+    }
+
     val drawableId = when (metodoPago.uppercase()) {
         "EFECTIVO" -> R.drawable.ic_cash
         "BIZUM"    -> R.drawable.ic_bizum
@@ -118,31 +128,25 @@ private fun MetodoPagoIcon(
         else       -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    when {
-        // a) Hay drawable en /res
-        drawableId != 0 -> {
-            Icon(
-                painter = painterResource(id = drawableId),
-                contentDescription = metodoPago,
-                tint = tint,
-                modifier = Modifier.size(size)
-            )
+    if (drawableId != 0) {
+        Icon(
+            painter = painterResource(id = drawableId),
+            contentDescription = contentDesc,
+            tint = tint,
+            modifier = Modifier.size(size)
+        )
+    } else {
+        val vec: ImageVector = when (metodoPago.uppercase()) {
+            "EFECTIVO" -> Icons.Filled.AttachMoney
+            "BIZUM"    -> Icons.Filled.Smartphone
+            "TARJETA"  -> Icons.Filled.CreditCard
+            else       -> Icons.Filled.AttachMoney
         }
-        // b) Usar Material Icons (si tienes material-icons-extended)
-        else -> {
-            val vec: ImageVector = when (metodoPago.uppercase()) {
-                "EFECTIVO" -> Icons.Filled.AttachMoney
-                "BIZUM"    -> Icons.Filled.Smartphone
-                "TARJETA"  -> Icons.Filled.CreditCard
-                else       -> Icons.Filled.AttachMoney
-            }
-            Icon(
-                imageVector = vec,
-                contentDescription = metodoPago,
-                tint = tint,
-                modifier = Modifier.size(size)
-            )
-        }
+        Icon(
+            imageVector = vec,
+            contentDescription = contentDesc,
+            tint = tint,
+            modifier = Modifier.size(size)
+        )
     }
 }
-

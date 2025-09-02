@@ -14,20 +14,36 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.ConnectivityObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class GastosRepository(context: Context) {
 
-    companion object { private const val TAG = "GastosRepository" }
+    companion object {
+        private const val TAG = "GastosRepository"
+    }
 
     private val db = AppDatabase.getDatabase(context)
     private val gastosDao: LineasGastosDao = db.lineasGastosDao()
     private val mercadilloDao: MercadilloDao = db.mercadilloDao()
     private val fs = FirebaseFirestore.getInstance()
     private val connectivity = ConnectivityObserver(context)
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        scope.launch {
+            connectivity.isConnected.collect { online ->
+                if (online) {
+                    runCatching { pushPendientes() }
+                        .onFailure { e -> Log.w(TAG, "Reintento de sync fallido", e) }
+                }
+            }
+        }
+    }
 
     fun observarGastos(idMercadillo: String) =
         gastosDao.observarGastosPorMercadillo(idMercadillo)
@@ -53,7 +69,9 @@ class GastosRepository(context: Context) {
                 descripcion = descripcion,
                 importe = importe,
                 fechaHora = now,
-                formaPago = formaPago
+                formaPago = formaPago,
+                lastModified = now,
+                sincronizadoFirebase = false
             )
 
             db.withTransaction {
@@ -91,9 +109,20 @@ class GastosRepository(context: Context) {
             "descripcion" to l.descripcion,
             "importe" to l.importe,
             "fechaHora" to l.fechaHora,
-            "formaPago" to l.formaPago
+            "formaPago" to l.formaPago,
+            "activo" to l.activo,
+            "version" to l.version,
+            "lastModified" to l.lastModified,
+            "fechaSync" to System.currentTimeMillis()
         )
-        fs.collection("LineasGastos").document(docId).set(data, SetOptions.merge())
+        fs.collection("LineasGastos").document(docId).set(data, SetOptions.merge()).await()
+        gastosDao.marcarSincronizado(l.idMercadillo, l.numeroLinea, System.currentTimeMillis())
+    }
+
+    private suspend fun pushPendientes() {
+        val userId = ConfigurationManager.getCurrentUserId() ?: return
+        val pendientes = gastosDao.getPendientesSync(userId)
+        pendientes.forEach { runCatching { pushUno(it) } }
     }
 }
 

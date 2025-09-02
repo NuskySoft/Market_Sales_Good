@@ -20,17 +20,19 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.MonedaUtils
 import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,10 +72,11 @@ fun PantallaGastosCarrito(
                             )
                         }
                     } else {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = { navController.safePopBackStack() }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_menu),
-                                contentDescription = null,
+                                painter = painterResource(id = R.drawable.ic_arrow_left),
+                                contentDescription = StringResourceManager.getString("volver", currentLanguage)
+                                    .ifBlank { "Volver" },
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
@@ -91,8 +94,8 @@ fun PantallaGastosCarrito(
                 total = ui.totalCarrito,
                 moneda = moneda,
                 currentLanguage = currentLanguage,
-                onCancelar = { navController.popBackStack() },
-                onAceptar = { navController.popBackStack() }
+                onCancelar = { navController.safePopBackStack() },
+                onAceptar = { navController.safePopBackStack() }
             )
         }
     ) { padding ->
@@ -118,8 +121,7 @@ fun PantallaGastosCarrito(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
-                // LISTA — cada gasto en UNA SOLA LÍNEA dentro de una Card estilizada
+                // Lista compacta editable
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -141,7 +143,7 @@ fun PantallaGastosCarrito(
                                     .padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Acento lateral sutil
+                                // Acento lateral
                                 Box(
                                     modifier = Modifier
                                         .width(6.dp)
@@ -151,12 +153,10 @@ fun PantallaGastosCarrito(
 
                                 Spacer(Modifier.width(10.dp))
 
-                                // Descripción (ocupa todo el espacio disponible)
+                                // Descripción
                                 OutlinedTextField(
                                     value = linea.descripcion,
-                                    onValueChange = {
-                                        gastosViewModel.editarDescripcionLinea(linea.id, it)
-                                    },
+                                    onValueChange = { gastosViewModel.editarDescripcionLinea(linea.id, it) },
                                     label = {
                                         Text(
                                             StringResourceManager.getString("descripcion", currentLanguage)
@@ -168,15 +168,13 @@ fun PantallaGastosCarrito(
                                         .weight(1f)
                                         .padding(end = 8.dp),
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                    keyboardActions = KeyboardActions(onNext = { /* pasa al importe */ })
+                                    keyboardActions = KeyboardActions(onNext = { /* foco al importe */ })
                                 )
 
-                                // Importe (campo MÁS PEQUEÑO)
+                                // Importe
                                 OutlinedTextField(
                                     value = gastosViewModel.formatearImporteEditable(linea.importe),
-                                    onValueChange = {
-                                        gastosViewModel.editarImporteLinea(linea.id, it)
-                                    },
+                                    onValueChange = { gastosViewModel.editarImporteLinea(linea.id, it) },
                                     label = {
                                         Text(
                                             StringResourceManager.getString("importe", currentLanguage)
@@ -197,8 +195,7 @@ fun PantallaGastosCarrito(
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     },
-                                    modifier = Modifier
-                                        .widthIn(min = 90.dp, max = 120.dp) // compacto
+                                    modifier = Modifier.widthIn(min = 90.dp, max = 120.dp)
                                 )
 
                                 // Eliminar
@@ -219,6 +216,7 @@ fun PantallaGastosCarrito(
                 }
             }
         }
+        AdsBottomBar()
     }
 }
 
@@ -231,10 +229,7 @@ private fun BottomSummaryBar(
     onAceptar: () -> Unit
 ) {
     val totalFmt = MonedaUtils.formatearImporte(total, moneda)
-    Surface(
-        tonalElevation = 4.dp,
-        shadowElevation = 6.dp
-    ) {
+    Surface(tonalElevation = 4.dp, shadowElevation = 6.dp) {
         Row(
             modifier = Modifier
                 .navigationBarsPadding()
@@ -245,126 +240,18 @@ private fun BottomSummaryBar(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = StringResourceManager.getString("total", currentLanguage)
-                        .ifBlank { "Total" },
+                    text = StringResourceManager.getString("total", currentLanguage).ifBlank { "Total" },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = totalFmt,
-                    style = MaterialTheme.typography.titleLarge
-                )
+                Text(text = totalFmt, style = MaterialTheme.typography.titleLarge)
             }
-
             OutlinedButton(onClick = onCancelar) {
-                Text(
-                    StringResourceManager.getString("cancelar", currentLanguage)
-                        .ifBlank { "Cancelar" }
-                )
+                Text(StringResourceManager.getString("cancelar", currentLanguage).ifBlank { "Cancelar" })
             }
-
             Button(onClick = onAceptar) {
-                Text(
-                    StringResourceManager.getString("aceptar", currentLanguage)
-                        .ifBlank { "Aceptar" }
-                )
+                Text(StringResourceManager.getString("aceptar", currentLanguage).ifBlank { "Aceptar" })
             }
         }
     }
 }
-
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/gastos/PantallaGastosCarrito.kt
-//package es.nuskysoftware.marketsales.ui.pantallas.gastos
-//
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.lazy.LazyColumn
-//import androidx.compose.foundation.lazy.items
-//import androidx.compose.foundation.text.KeyboardOptions
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Delete
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.text.input.KeyboardType
-//import androidx.compose.ui.unit.dp
-//import androidx.navigation.NavController
-//import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel
-//import es.nuskysoftware.marketsales.utils.ConfigurationManager
-//import es.nuskysoftware.marketsales.utils.MonedaUtils
-//
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun PantallaGastosCarrito(
-//    navController: NavController,
-//    gastosViewModel: GastosViewModel
-//) {
-//    val ui by gastosViewModel.uiState.collectAsState()
-//    val moneda by ConfigurationManager.moneda.collectAsState()
-//
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = { Text("Carrito de gastos") },
-//                navigationIcon = {
-//                    IconButton(onClick = { navController.popBackStack() }) {
-//                        Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.surface) // invisible, solo mantiene layout
-//                    }
-//                }
-//            )
-//        }
-//    ) { padding ->
-//        Column(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(padding)
-//                .padding(12.dp),
-//            verticalArrangement = Arrangement.spacedBy(12.dp)
-//        ) {
-//            // Lista editable
-//            LazyColumn(
-//                modifier = Modifier.weight(1f),
-//                verticalArrangement = Arrangement.spacedBy(8.dp)
-//            ) {
-//                items(ui.lineasCarrito, key = { it.id }) { linea ->
-//                    Card {
-//                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-//                            Row(verticalAlignment = Alignment.CenterVertically) {
-//                                OutlinedTextField(
-//                                    value = linea.descripcion,
-//                                    onValueChange = { gastosViewModel.editarDescripcionLinea(linea.id, it) },
-//                                    label = { Text("Descripción") },
-//                                    modifier = Modifier.weight(1f)
-//                                )
-//                                IconButton(
-//                                    onClick = { gastosViewModel.eliminarLinea(linea.id) },
-//                                    modifier = Modifier.padding(start = 8.dp)
-//                                ) { Icon(Icons.Default.Delete, contentDescription = "Eliminar") }
-//                            }
-//
-//                            OutlinedTextField(
-//                                value = gastosViewModel.formatearImporteEditable(linea.importe),
-//                                onValueChange = { gastosViewModel.editarImporteLinea(linea.id, it) },
-//                                label = { Text("Importe") },
-//                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-//                                singleLine = true
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // Total y acciones
-//            val totalFmt = MonedaUtils.formatearImporte(ui.totalCarrito, moneda)
-//            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-//                Text("Total: $totalFmt", style = MaterialTheme.typography.titleMedium)
-//                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-//                    OutlinedButton(onClick = { navController.popBackStack() }) { Text("Cancelar") }
-//                    Button(onClick = { navController.popBackStack() }) { Text("Aceptar") }
-//                }
-//            }
-//        }
-//    }
-//}

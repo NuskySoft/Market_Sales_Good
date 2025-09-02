@@ -19,6 +19,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.collectLatest
 
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
+
+
 
 class AuthViewModel(
     private val authRepository: AuthRepository,

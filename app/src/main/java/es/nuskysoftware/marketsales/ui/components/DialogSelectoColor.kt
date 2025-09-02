@@ -1,21 +1,13 @@
+// app/src/main/java/es/nuskysoftware/cajamercadillos/ui/components/DialogSelectorColor.kt
 package es.nuskysoftware.cajamercadillos.ui.components
 
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.Composable
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.unit.dp
-//import com.github.skydoves.colorpicker.compose.AlphaSlider
-//import com.github.skydoves.colorpicker.compose.BrightnessSlider
-//import com.github.skydoves.colorpicker.compose.HsvColorPicker
-//import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,7 +17,8 @@ import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.AlphaSlider
 import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 /**
  * DialogSelectorColor:
@@ -41,20 +34,27 @@ fun DialogSelectorColor(
     onCancelar: () -> Unit
 ) {
     val controller = rememberColorPickerController()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     AlertDialog(
         onDismissRequest = onCancelar,
         confirmButton = {
             TextButton(onClick = { onColorElegido(controller.selectedColor.value) }) {
-                Text("Aceptar", color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    StringResourceManager.getString("aceptar", currentLanguage),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onCancelar) {
-                Text("Cancelar", color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    StringResourceManager.getString("cancelar", currentLanguage),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         },
-        title = { Text("Selecciona un color") },
+        title = { Text(StringResourceManager.getString("seleccionar_un_color", currentLanguage)) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
@@ -77,7 +77,7 @@ fun DialogSelectorColor(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Color seleccionado")
+                    Text(StringResourceManager.getString("color_seleccionado", currentLanguage))
                     // Cuadro de muestra en vivo
                     Surface(
                         modifier = Modifier

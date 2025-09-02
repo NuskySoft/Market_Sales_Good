@@ -10,6 +10,7 @@ import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import es.nuskysoftware.marketsales.utils.MercadillosManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -88,6 +89,11 @@ class MercadilloViewModel(
 
     init { Log.d(TAG, "✅ MercadilloViewModel V16 inicializado") }
 
+    // Acceso rápido a idioma y strings
+    private val lang get() = ConfigurationManager.idioma.value
+    private fun tr(key: String) = StringResourceManager.getString(key, lang)
+    private fun tr1(key: String, arg0: String) = tr(key).replace("{0}", arg0)
+
     // ===== CRUD =====
     fun crearMercadillo(
         fecha: String,
@@ -118,15 +124,19 @@ class MercadilloViewModel(
                     requiereMesa, requiereCarpa, hayPuntoLuz, horaInicio, horaFin, saldoInicial
                 )
 
-                val msg = if (saldoInicial != null)
-                    "Mercadillo creado con saldo inicial de €${String.format("%.2f", saldoInicial)}"
-                else "Mercadillo creado exitosamente"
+                val simbolo = (ConfigurationManager.moneda.value.split(" ").firstOrNull() ?: "€")
+                val msg = if (saldoInicial != null) {
+                    val importeFmt = "$simbolo ${String.format("%.2f", saldoInicial)}"
+                    tr1("mercadillo_creado_con_saldo", importeFmt)
+                } else {
+                    tr("mercadillo_creado_ok")
+                }
 
                 _uiState.value = _uiState.value.copy(loading = false, message = msg, error = null)
                 Log.d(TAG, "✅ Mercadillo creado: $lugar - $fecha (ID: $mercadilloId)")
                 manager.refreshNow()
             } catch (e: Exception) {
-                fail("Error creando mercadillo: ${e.message}", e)
+                fail(tr1("error_creando_mercadillo", e.message ?: "—"), e)
             }
         }
     }
@@ -141,10 +151,10 @@ class MercadilloViewModel(
                     if (!puede.first) { fail(puede.second); return@launch }
                     _mercadilloParaEditar.value = m
                 } else {
-                    fail("Mercadillo no encontrado"); return@launch
+                    fail(tr("mercadillo_no_encontrado")); return@launch
                 }
             } catch (e: Exception) {
-                fail("Error cargando mercadillo: ${e.message}", e)
+                fail(tr1("error_cargando_mercadillo", e.message ?: "—"), e)
             } finally { _uiState.value = _uiState.value.copy(loading = false) }
         }
     }
@@ -167,7 +177,7 @@ class MercadilloViewModel(
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 val actual = repository.getMercadilloById(mercadilloId)
-                    ?: run { fail("Mercadillo no encontrado"); return@launch }
+                    ?: run { fail(tr("mercadillo_no_encontrado")); return@launch }
 
                 val puede = puedeEditarMercadillo(actual)
                 if (!puede.first) { fail(puede.second); return@launch }
@@ -207,8 +217,7 @@ class MercadilloViewModel(
                     _uiState.value = _uiState.value.copy(
                         loading = false,
                         pedirConfirmacionCambioSaldo = true,
-                        textoConfirmacionCambioSaldo = "Estás modificando el saldo inicial de un mercadillo en curso. " +
-                                "Esto puede provocar descuadre de caja.\n\n¿Quieres guardar igualmente?"
+                        textoConfirmacionCambioSaldo = tr("confirmar_cambio_saldo_en_curso")
                     )
                     return@launch
                 }
@@ -217,18 +226,18 @@ class MercadilloViewModel(
                 if (repository.actualizarMercadillo(actualizado)) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Mercadillo actualizado exitosamente",
+                        message = tr("mercadillo_actualizado_ok"),
                         error = null
                     )
                     _mercadilloParaEditar.value = null
                     Log.d(TAG, "✅ Mercadillo actualizado: $lugar - $fecha (ID: $mercadilloId)")
                     manager.refreshNow()
                 } else {
-                    fail("Error actualizando mercadillo")
+                    fail(tr("error_actualizando_mercadillo"))
                 }
 
             } catch (e: Exception) {
-                fail("Error actualizando mercadillo: ${e.message}", e)
+                fail(tr1("error_actualizando_mercadillo_detalle", e.message ?: "—"), e)
             }
         }
     }
@@ -252,17 +261,17 @@ class MercadilloViewModel(
                 if (ok) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Mercadillo actualizado exitosamente",
+                        message = tr("mercadillo_actualizado_ok"),
                         error = null
                     )
                     _mercadilloParaEditar.value = null
                     manager.refreshNow()
                     Log.d(TAG, "✅ Actualizado tras confirmación de saldo en curso")
                 } else {
-                    fail("Error actualizando mercadillo")
+                    fail(tr("error_actualizando_mercadillo"))
                 }
             } catch (e: Exception) {
-                fail("Error actualizando mercadillo: ${e.message}", e)
+                fail(tr1("error_actualizando_mercadillo_detalle", e.message ?: "—"), e)
             } finally {
                 pendingUpdate = null
             }
@@ -277,15 +286,15 @@ class MercadilloViewModel(
             try {
                 val ok = repository.desactivarMercadillo(mercadilloId)
                 if (ok) {
-                    _uiState.value = _uiState.value.copy(loading = false, message = "Mercadillo eliminado", error = null)
+                    _uiState.value = _uiState.value.copy(loading = false, message = tr("mercadillo_eliminado"), error = null)
                     _mercadilloParaEditar.value = null
                     manager.refreshNow()
                     Log.d(TAG, "🗑️ Mercadillo desactivado: $mercadilloId")
                 } else {
-                    fail("Error eliminando mercadillo")
+                    fail(tr("error_eliminando_mercadillo"))
                 }
             } catch (e: Exception) {
-                fail("Error eliminando mercadillo: ${e.message}", e)
+                fail(tr1("error_eliminando_mercadillo_detalle", e.message ?: "—"), e)
             }
         }
     }
@@ -303,7 +312,7 @@ class MercadilloViewModel(
         val enCurso = mercadillosEnCurso.value
         val activo = mercadilloActivoParaOperaciones.value
         return when {
-            enCurso.isEmpty() -> { _uiState.value = _uiState.value.copy(error = "No hay mercadillos en curso"); false to null }
+            enCurso.isEmpty() -> { _uiState.value = _uiState.value.copy(error = tr("no_hay_mercadillos_en_curso")); false to null }
             activo != null -> true to activo
             else -> false to null
         }
@@ -328,11 +337,11 @@ class MercadilloViewModel(
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 repository.sincronizarSinEstadosAutomaticos()
-                _uiState.value = _uiState.value.copy(loading = false, message = "Sincronización completada", error = null)
+                _uiState.value = _uiState.value.copy(loading = false, message = tr("sincronizacion_completada"), error = null)
                 Log.d(TAG, "✅ Sincronización suave completada")
                 manager.refreshNow()
             } catch (e: Exception) {
-                fail("Error en sincronización: ${e.message}", e)
+                fail(tr1("error_sincronizacion_detalle", e.message ?: "—"), e)
             }
         }
     }
@@ -346,16 +355,16 @@ class MercadilloViewModel(
                     repository.sincronizarSinEstadosAutomaticos()
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Sincronización completada (sin cambios automáticos)",
+                        message = tr("sincronizacion_completada_sin_cambios"),
                         error = null
                     )
                     Log.d(TAG, "✅ Sincronización desde Firebase sin estados automáticos")
                     manager.refreshNow()
                 } else {
-                    fail("Usuario no autenticado")
+                    fail(tr("usuario_no_autenticado"))
                 }
             } catch (e: Exception) {
-                fail("Error en sincronización: ${e.message}", e)
+                fail(tr1("error_sincronizacion_detalle", e.message ?: "—"), e)
             }
         }
     }
@@ -368,82 +377,82 @@ class MercadilloViewModel(
     // ===== VALIDACIONES =====
     fun validarFecha(fecha: String): String? =
         when {
-            fecha.isBlank() -> "La fecha no puede estar vacía"
-            !fecha.matches(Regex("\\d{2}-\\d{2}-\\d{4}")) -> "Formato de fecha inválido (dd-MM-yyyy)"
-            else -> try { dateFormat.parse(fecha); null } catch (_: Exception) { "Fecha inválida" }
+            fecha.isBlank() -> tr("valid_fecha_vacia")
+            !fecha.matches(Regex("\\d{2}-\\d{2}-\\d{4}")) -> tr("valid_formato_fecha_invalido")
+            else -> try { dateFormat.parse(fecha); null } catch (_: Exception) { tr("valid_fecha_invalida") }
         }
 
     fun validarFechaParaAlta(fecha: String): String? {
         validarFecha(fecha)?.let { return it }
         return try {
-            val fm = dateFormat.parse(fecha) ?: return "Fecha inválida"
+            val fm = dateFormat.parse(fecha) ?: return tr("valid_fecha_invalida")
             // ✅ Comparación SOLO por día (ignora horas): hoy permitido
             val hoyStr = dateFormat.format(Date())
             val hoyCero = dateFormat.parse(hoyStr)!!
-            if (fm.before(hoyCero)) "No se puede crear un mercadillo en una fecha anterior a hoy" else null
-        } catch (_: Exception) { "Fecha inválida" }
+            if (fm.before(hoyCero)) tr("valid_fecha_pasada") else null
+        } catch (_: Exception) { tr("valid_fecha_invalida") }
     }
 
     private suspend fun validarMultiplesMercadillosPorDia(fecha: String): String? {
         return try {
-            val userId = ConfigurationManager.getCurrentUserId() ?: return "Usuario no autenticado"
+            val userId = ConfigurationManager.getCurrentUserId() ?: return tr("usuario_no_autenticado")
             val esPremium = ConfigurationManager.getIsPremium()
             val existentes = repository.getMercadillosPorFecha(userId, fecha)
             if (existentes.isNotEmpty() && !esPremium)
-                "Los usuarios FREE solo pueden crear un mercadillo por día. Actualiza a Premium para crear múltiples mercadillos."
+                tr("free_limite_mercadillos_por_dia")
             else null
         } catch (e: Exception) {
             Log.e(TAG, "Error validando múltiples mercadillos", e)
-            "Error validando disponibilidad de fecha"
+            tr("valid_error_disponibilidad_fecha")
         }
     }
 
     fun validarLugar(lugar: String): String? =
         when {
-            lugar.isBlank() -> "El lugar no puede estar vacío"
-            lugar.length < 3 -> "El lugar debe tener al menos 3 caracteres"
-            lugar.length > 100 -> "El lugar no puede tener más de 100 caracteres"
+            lugar.isBlank() -> tr("valid_lugar_vacio")
+            lugar.length < 3 -> tr("valid_lugar_min")
+            lugar.length > 100 -> tr("valid_lugar_max")
             else -> null
         }
 
     fun validarOrganizador(organizador: String): String? =
         when {
-            organizador.isBlank() -> "El organizador no puede estar vacío"
-            organizador.length < 3 -> "El organizador debe tener al menos 3 caracteres"
-            organizador.length > 100 -> "El organizador no puede tener más de 100 caracteres"
+            organizador.isBlank() -> tr("valid_organizador_vacio")
+            organizador.length < 3 -> tr("valid_organizador_min")
+            organizador.length > 100 -> tr("valid_organizador_max")
             else -> null
         }
 
     /** Permite fin < inicio (horarios orientativos). */
     fun validarHorarios(horaInicio: String, horaFin: String): String? {
         return when {
-            !horaInicio.matches(Regex("\\d{2}:\\d{2}")) -> "Formato de hora de inicio inválido (HH:mm)"
-            !horaFin.matches(Regex("\\d{2}:\\d{2}")) -> "Formato de hora de fin inválido (HH:mm)"
+            !horaInicio.matches(Regex("\\d{2}:\\d{2}")) -> tr("valid_hora_inicio_formato")
+            !horaFin.matches(Regex("\\d{2}:\\d{2}")) -> tr("valid_hora_fin_formato")
             else -> {
                 try { timeFormat.parse(horaInicio); timeFormat.parse(horaFin); null }
-                catch (e: Exception) { "Horarios inválidos" }
+                catch (e: Exception) { tr("valid_horarios_invalidos") }
             }
         }
     }
 
     fun validarImporteSuscripcion(importe: Double): String? =
         when {
-            importe < 0 -> "El importe no puede ser negativo"
-            importe > 999_999.99 -> "El importe es demasiado alto"
+            importe < 0 -> tr("valid_importe_negativo")
+            importe > 999_999.99 -> tr("valid_importe_alto")
             else -> null
         }
 
     fun validarSaldoInicial(saldo: Double): String? =
         when {
-            saldo < 0 -> "El saldo inicial no puede ser negativo"
-            saldo > 999_999.99 -> "El saldo inicial es demasiado alto"
+            saldo < 0 -> tr("valid_saldo_inicial_negativo")
+            saldo > 999_999.99 -> tr("valid_saldo_inicial_alto")
             else -> null
         }
 
     fun validarSaldoFinal(saldo: Double): String? =
         when {
-            saldo < 0 -> "El saldo final no puede ser negativo"
-            saldo > 999_999.99 -> "El saldo final es demasiado alto"
+            saldo < 0 -> tr("valid_saldo_final_negativo")
+            saldo > 999_999.99 -> tr("valid_saldo_final_alto")
             else -> null
         }
 
@@ -505,12 +514,12 @@ class MercadilloViewModel(
                 )
                 val ok = repository.actualizarMercadillo(actualizado)
                 if (ok) {
-                    _uiState.value = _uiState.value.copy(message = "Estado cambiado a: ${nuevoEstado.descripcion}")
+                    _uiState.value = _uiState.value.copy(message = tr1("estado_cambiado_a", nuevoEstado.descripcion))
                     Log.d(TAG, "🔧 DEBUG: Estado cambiado -> ${nuevoEstado.descripcion}")
                     manager.refreshNow()
-                } else fail("Error cambiando estado")
+                } else fail(tr("error_cambiando_estado"))
             } catch (e: Exception) {
-                fail("Error cambiando estado: ${e.message}", e)
+                fail(tr1("error_cambiando_estado_detalle", e.message ?: "—"), e)
             }
         }
     }
@@ -518,7 +527,7 @@ class MercadilloViewModel(
     // ===== Internos =====
     private fun puedeEditarMercadillo(mercadillo: MercadilloEntity): Pair<Boolean, String> {
         val est = EstadosMercadillo.Estado.fromCodigo(mercadillo.estado)
-            ?: return false to "Estado de mercadillo no válido"
+            ?: return false to tr("estado_mercadillo_no_valido")
         return when (est) {
             EstadosMercadillo.Estado.PROGRAMADO_PARCIAL,
             EstadosMercadillo.Estado.PROGRAMADO_TOTAL -> true to ""
@@ -526,7 +535,7 @@ class MercadilloViewModel(
             EstadosMercadillo.Estado.PENDIENTE_ARQUEO,
             EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO,
             EstadosMercadillo.Estado.CERRADO_COMPLETO,
-            EstadosMercadillo.Estado.CANCELADO -> false to "No se puede modificar un mercadillo en estado: ${est.descripcion}"
+            EstadosMercadillo.Estado.CANCELADO -> false to tr1("no_modificar_estado", est.descripcion)
         }
     }
 
@@ -536,9 +545,9 @@ class MercadilloViewModel(
         nuevaFecha: String
     ): String? {
         val est = EstadosMercadillo.Estado.fromCodigo(mercadilloActual.estado)
-            ?: return "Estado de mercadillo no válido"
+            ?: return tr("estado_mercadillo_no_valido")
         if (est == EstadosMercadillo.Estado.EN_CURSO && nuevaFecha != mercadilloActual.fecha) {
-            return "No se puede modificar la fecha de un mercadillo en curso"
+            return tr("no_modificar_fecha_en_curso")
         }
         return null
     }
@@ -575,4 +584,3 @@ data class MercadilloUiState(
     val pedirConfirmacionCambioSaldo: Boolean = false,
     val textoConfirmacionCambioSaldo: String? = null
 )
-

@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaAsignarSaldo.kt
 package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
 import android.content.Context
@@ -23,12 +24,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
-
-
 import es.nuskysoftware.marketsales.ui.components.proximos.CardMercadillosProximos
 import es.nuskysoftware.marketsales.ui.composables.TecladoNumerico
 import es.nuskysoftware.marketsales.ui.viewmodel.*
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,6 +41,7 @@ fun PantallaAsignarSaldo(
     mercadilloIdOrigen: String
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     // VM EXTERNO (nuevo archivo)
     val vm: AsignarSaldoViewModel = viewModel(
@@ -52,10 +54,13 @@ fun PantallaAsignarSaldo(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Asignar saldo", fontWeight = FontWeight.Bold) },
+                title = { Text(StringResourceManager.getString("asignar_saldo", currentLanguage), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(painter = painterResource(id = R.drawable.ic_arrow_left), contentDescription = "Atrás")
+                    IconButton(onClick = { navController.safePopBackStack() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_arrow_left),
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -69,31 +74,51 @@ fun PantallaAsignarSaldo(
 
         if (!esPremium) {
             Column(
-                Modifier.padding(pad).fillMaxSize().padding(16.dp),
+                Modifier
+                    .padding(pad)
+                    .fillMaxSize()
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Esta opción es solo para usuarios Premium.", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    StringResourceManager.getString("opcion_solo_premium", currentLanguage),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = { navController.popBackStack() }) { Text("Cerrar") }
+                Button(onClick = { navController.safePopBackStack() }) {
+                    Text(StringResourceManager.getString("cerrar", currentLanguage))
+                }
             }
             return@Scaffold
         }
 
         Column(Modifier.padding(pad).fillMaxSize()) {
-            // Card "Guarda Saldo" con estética Próximos
+            // Card "Guardar saldo"
             Card(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clickable { vm.abrirIntermediaGuardar() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { vm.abrirIntermediaGuardar() },
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                 shape = MaterialTheme.shapes.medium
             ) {
-                Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Guarda Saldo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            StringResourceManager.getString("guardar_saldo", currentLanguage),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Conserva este saldo para asignarlo cuando crees un mercadillo.",
+                            StringResourceManager.getString("guardar_saldo_desc", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                             maxLines = 2,
@@ -105,7 +130,6 @@ fun PantallaAsignarSaldo(
             }
 
             // Próximos (estados 1 y 2)
-// Próximos (estados 1 y 2)
             val df = remember { SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()) }
 
             val proximos = remember(ui.mercadillos) {
@@ -130,9 +154,10 @@ fun PantallaAsignarSaldo(
             Dialog(onDismissRequest = { vm.cerrarIntermedia() }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
                     IntermediaContenido(
+                        currentLanguage = currentLanguage,
                         titulo = when (ui.dialogoIntermedio.modo) {
-                            IntermediaModo.GUARDAR -> "Guardar saldo"
-                            IntermediaModo.ASIGNAR -> "Asignar saldo"
+                            IntermediaModo.GUARDAR -> StringResourceManager.getString("guardar_saldo", currentLanguage)
+                            IntermediaModo.ASIGNAR -> StringResourceManager.getString("asignar_saldo", currentLanguage)
                             else -> ""
                         },
                         saldoFinalActualFmt = vm.saldoFinalActualFmt(),
@@ -144,12 +169,12 @@ fun PantallaAsignarSaldo(
                         onDoubleZero = { vm.onDoubleZero() },
                         onClear = { vm.onClear() },
                         onCancelar = { vm.cerrarIntermedia() },
-                        onAceptar = { vm.prepararConfirmacion() },         // solo abre el AlertDialog
-                        puedeAceptar = true,                               // SIEMPRE habilitado
+                        onAceptar = { vm.prepararConfirmacion() }, // abre el AlertDialog
+                        puedeAceptar = true,
                         leyendaImporte = when (ui.dialogoIntermedio.opcion) {
-                            IntermediaOpcion.RETIRAR -> "Importe a retirar"
-                            IntermediaOpcion.ANADIR -> "Importe a añadir"
-                            else -> "Selecciona una opción para introducir importe"
+                            IntermediaOpcion.RETIRAR -> StringResourceManager.getString("importe_a_retirar", currentLanguage)
+                            IntermediaOpcion.ANADIR -> StringResourceManager.getString("importe_a_anadir", currentLanguage)
+                            else -> StringResourceManager.getString("selecciona_opcion_importe", currentLanguage)
                         },
                         mostrarTeclado = ui.dialogoIntermedio.opcion != IntermediaOpcion.NINGUNA,
                         fmt = { vm.fmtMoneda(it) }
@@ -158,7 +183,7 @@ fun PantallaAsignarSaldo(
             }
         }
 
-        // Diálogo de confirmación (textos según caso)
+        // Diálogo de confirmación (texto generado por el VM)
         if (ui.confirm.visible) {
             val texto = remember(ui.confirm) { vm.textoConfirmacion() }
             AlertDialog(
@@ -166,13 +191,13 @@ fun PantallaAsignarSaldo(
                 confirmButton = {
                     TextButton(onClick = {
                         vm.cerrarConfirmacion()
-                        // 👉 Persistencia y navegación
                         vm.confirmarYPersistir(navController)
-                        // El propio VM navega a "mercadillos" y cierra diálogos.
-                    }) { Text("Aceptar") }
+                    }) { Text(StringResourceManager.getString("aceptar", currentLanguage)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { vm.cerrarConfirmacion() }) { Text("Cancelar") }
+                    TextButton(onClick = { vm.cerrarConfirmacion() }) {
+                        Text(StringResourceManager.getString("cancelar", currentLanguage))
+                    }
                 },
                 title = { Text(texto.titulo) },
                 text = {
@@ -202,6 +227,7 @@ fun PantallaAsignarSaldo(
 
 @Composable
 private fun IntermediaContenido(
+    currentLanguage: String,
     titulo: String,
     saldoFinalActualFmt: String,
     saldoFinalAjustadoFmt: String,
@@ -232,11 +258,15 @@ private fun IntermediaContenido(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Saldo final", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                StringResourceManager.getString("saldo_final", currentLanguage),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Text(saldoFinalActualFmt, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         }
 
-        // Display central (centrado): Saldo final AJUSTADO
+        // Display central: Saldo final AJUSTADO
         Column(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 saldoFinalAjustadoFmt,
@@ -244,7 +274,6 @@ private fun IntermediaContenido(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-            // Leyenda del importe tecleado con signo (si hay opción)
             if (opcion != IntermediaOpcion.NINGUNA) {
                 val impDouble = recordarImporteDesdeDigits(importeDigits)
                 if (impDouble > 0.0) {
@@ -259,25 +288,37 @@ private fun IntermediaContenido(
             }
         }
 
-        // Radios
+        // Opciones (radios)
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.RETIRAR) }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.RETIRAR) }
+            ) {
                 RadioButton(selected = opcion == IntermediaOpcion.RETIRAR, onClick = { onSeleccionOpcion(IntermediaOpcion.RETIRAR) })
                 Spacer(Modifier.width(8.dp))
-                Text("Retirar efectivo")
+                Text(StringResourceManager.getString("retirar_efectivo", currentLanguage))
             }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.ANADIR) }) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.ANADIR) }
+            ) {
                 RadioButton(selected = opcion == IntermediaOpcion.ANADIR, onClick = { onSeleccionOpcion(IntermediaOpcion.ANADIR) })
                 Spacer(Modifier.width(8.dp))
-                Text("Añadir efectivo")
+                Text(StringResourceManager.getString("anadir_efectivo", currentLanguage))
             }
         }
 
-        // Importe + Teclado (solo si hay opción elegida)
+        // Importe + Teclado (solo si hay opción)
         if (mostrarTeclado) {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(leyendaImporte, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                // Valor centrado (renderiza lo que se va tecleando)
+            Column(
+                Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    leyendaImporte,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 val impDouble = recordarImporteDesdeDigits(importeDigits)
                 Text(
                     NumberFormat.getCurrencyInstance(Locale("es", "ES")).format(impDouble),
@@ -285,10 +326,7 @@ private fun IntermediaContenido(
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center
                 )
-
                 Spacer(Modifier.height(8.dp))
-
-                // Tu teclado, sin inventar props
                 TecladoNumerico(
                     onDigitClick = onDigit,
                     onClearClick = onClear,
@@ -301,8 +339,12 @@ private fun IntermediaContenido(
 
         // Botones
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) { Text("Cancelar") }
-            Button(onClick = onAceptar, modifier = Modifier.weight(1f), enabled = puedeAceptar) { Text("Aceptar") }
+            OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) {
+                Text(StringResourceManager.getString("cancelar", currentLanguage))
+            }
+            Button(onClick = onAceptar, modifier = Modifier.weight(1f), enabled = puedeAceptar) {
+                Text(StringResourceManager.getString("aceptar", currentLanguage))
+            }
         }
     }
 }
@@ -319,6 +361,7 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaAsignarSaldo.kt
 //package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 //
+//import android.content.Context
 //import androidx.compose.foundation.clickable
 //import androidx.compose.foundation.layout.*
 //import androidx.compose.material3.*
@@ -338,17 +381,15 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //import androidx.lifecycle.ViewModel
 //import androidx.lifecycle.ViewModelProvider
 //import androidx.lifecycle.viewmodel.compose.viewModel
-//import androidx.lifecycle.viewModelScope
 //import androidx.navigation.NavController
 //import es.nuskysoftware.marketsales.R
-//import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 //import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 //import es.nuskysoftware.marketsales.ui.components.proximos.CardMercadillosProximos
 //import es.nuskysoftware.marketsales.ui.composables.TecladoNumerico
+//import es.nuskysoftware.marketsales.ui.viewmodel.*
 //import es.nuskysoftware.marketsales.utils.ConfigurationManager
-//import kotlinx.coroutines.Dispatchers
-//import kotlinx.coroutines.flow.first
-//import kotlinx.coroutines.launch
+//import es.nuskysoftware.marketsales.utils.StringResourceManager
+//import es.nuskysoftware.marketsales.utils.safePopBackStack
 //import java.text.NumberFormat
 //import java.text.SimpleDateFormat
 //import java.util.*
@@ -360,6 +401,9 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //    mercadilloIdOrigen: String
 //) {
 //    val context = androidx.compose.ui.platform.LocalContext.current
+//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+//
+//    // VM EXTERNO (nuevo archivo)
 //    val vm: AsignarSaldoViewModel = viewModel(
 //        factory = AsignarSaldoViewModel.factory(context, mercadilloIdOrigen)
 //    )
@@ -370,17 +414,12 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //    Scaffold(
 //        topBar = {
 //            TopAppBar(
-//                title = {
-//                    Text(
-//                        text = "Asignar saldo",
-//                        fontWeight = FontWeight.Bold
-//                    )
-//                },
+//                title = { Text(StringResourceManager.getString("asignar_saldo", currentLanguage), fontWeight = FontWeight.Bold) },
 //                navigationIcon = {
-//                    IconButton(onClick = { navController.popBackStack() }) {
+//                    IconButton(onClick = { navController.safePopBackStack() }) {
 //                        Icon(
 //                            painter = painterResource(id = R.drawable.ic_arrow_left),
-//                            contentDescription = "Atrás"
+//                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
 //                        )
 //                    }
 //                },
@@ -394,35 +433,26 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //    ) { pad ->
 //
 //        if (!esPremium) {
-//            // ===== Gate Premium =====
 //            Column(
-//                Modifier
-//                    .padding(pad)
-//                    .fillMaxSize()
-//                    .padding(16.dp),
+//                Modifier.padding(pad).fillMaxSize().padding(16.dp),
 //                verticalArrangement = Arrangement.Center,
 //                horizontalAlignment = Alignment.CenterHorizontally
 //            ) {
 //                Text(
-//                    "Esta opción es solo para usuarios Premium.",
+//                    StringResourceManager.getString("opcion_solo_premium", currentLanguage),
 //                    style = MaterialTheme.typography.titleMedium,
 //                    fontWeight = FontWeight.SemiBold
 //                )
 //                Spacer(Modifier.height(12.dp))
-//                Button(onClick = { navController.popBackStack() }) {
-//                    Text("Cerrar")
+//                Button(onClick = { navController.safePopBackStack() }) {
+//                    Text(StringResourceManager.getString("cerrar", currentLanguage))
 //                }
 //            }
 //            return@Scaffold
 //        }
 //
-//        // ===== UI Premium =====
-//        Column(
-//            modifier = Modifier
-//                .padding(pad)
-//                .fillMaxSize()
-//        ) {
-//            // Card "Guarda Saldo" (misma estética que Próximos)
+//        Column(Modifier.padding(pad).fillMaxSize()) {
+//            // Card "Guardar saldo"
 //            Card(
 //                modifier = Modifier
 //                    .fillMaxWidth()
@@ -433,75 +463,57 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //                shape = MaterialTheme.shapes.medium
 //            ) {
 //                Row(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(16.dp),
+//                    Modifier.fillMaxWidth().padding(16.dp),
 //                    horizontalArrangement = Arrangement.SpaceBetween,
 //                    verticalAlignment = Alignment.CenterVertically
 //                ) {
 //                    Column(Modifier.weight(1f)) {
 //                        Text(
-//                            "Guarda Saldo",
+//                            StringResourceManager.getString("guardar_saldo", currentLanguage),
 //                            style = MaterialTheme.typography.titleMedium,
 //                            fontWeight = FontWeight.Bold
 //                        )
 //                        Spacer(Modifier.height(4.dp))
 //                        Text(
-//                            "Conserva este saldo para asignarlo cuando crees un mercadillo.",
+//                            StringResourceManager.getString("guardar_saldo_desc", currentLanguage),
 //                            style = MaterialTheme.typography.bodySmall,
 //                            color = MaterialTheme.colorScheme.onPrimaryContainer,
 //                            maxLines = 2,
 //                            overflow = TextOverflow.Ellipsis
 //                        )
 //                    }
-//                    Text(
-//                        "→",
-//                        style = MaterialTheme.typography.titleMedium,
-//                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-//                        modifier = Modifier.padding(start = 8.dp)
-//                    )
+//                    Text("→", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
 //                }
 //            }
 //
-//            // Debajo: Próximos (estados 1 y 2)
-//            when {
-//                ui.loading -> {
-//                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-//                        CircularProgressIndicator()
-//                    }
-//                }
-//                ui.mercadillos.isEmpty() -> {
-//                    Text(
-//                        "No tienes mercadillos programados",
-//                        style = MaterialTheme.typography.bodyMedium,
-//                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                        modifier = Modifier
-//                            .padding(horizontal = 16.dp)
-//                            .padding(top = 4.dp)
+//            // Próximos (estados 1 y 2)
+//            val df = remember { SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()) }
+//
+//            val proximos = remember(ui.mercadillos) {
+//                ui.mercadillos.sortedWith(
+//                    compareBy<MercadilloEntity>(
+//                        { df.parse(it.fecha)?.time ?: Long.MAX_VALUE },
+//                        { it.horaInicio }
 //                    )
-//                }
-//                else -> {
-//                    CardMercadillosProximos(
-//                        mercadillosProximos = ui.mercadillos,
-//                        onMercadilloClick = { destino ->
-//                            vm.abrirIntermediaAsignar(destino)
-//                        }
-//                    )
-//                }
+//                )
+//            }
+//
+//            if (proximos.isNotEmpty()) {
+//                CardMercadillosProximos(
+//                    mercadillosProximos = proximos,
+//                    onMercadilloClick = { vm.abrirIntermediaAsignar(it) }
+//                )
 //            }
 //        }
 //
-//        // ===== Diálogo a pantalla completa (intermedia) =====
+//        // Diálogo intermedio
 //        if (ui.dialogoIntermedio.visible) {
-//            Dialog(
-//                onDismissRequest = { vm.cerrarIntermedia() },
-//                properties = DialogProperties(usePlatformDefaultWidth = false)
-//            ) {
-//                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+//            Dialog(onDismissRequest = { vm.cerrarIntermedia() }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+//                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
 //                    IntermediaContenido(
 //                        titulo = when (ui.dialogoIntermedio.modo) {
-//                            IntermediaModo.GUARDAR -> "Guardar saldo"
-//                            IntermediaModo.ASIGNAR -> "Asignar saldo"
+//                            IntermediaModo.GUARDAR -> StringResourceManager.getString("guardar_saldo", currentLanguage)
+//                            IntermediaModo.ASIGNAR -> StringResourceManager.getString("asignar_saldo", currentLanguage)
 //                            else -> ""
 //                        },
 //                        saldoFinalActualFmt = vm.saldoFinalActualFmt(),
@@ -513,16 +525,13 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //                        onDoubleZero = { vm.onDoubleZero() },
 //                        onClear = { vm.onClear() },
 //                        onCancelar = { vm.cerrarIntermedia() },
-//                        onAceptar = { vm.prepararConfirmacion() },
-//                        // ✅ Aceptar SIEMPRE habilitado
+//                        onAceptar = { vm.prepararConfirmacion() }, // abre el AlertDialog
 //                        puedeAceptar = true,
-//                        // Leyenda contextual del importe tecleado
 //                        leyendaImporte = when (ui.dialogoIntermedio.opcion) {
-//                            IntermediaOpcion.RETIRAR -> "Importe a retirar"
-//                            IntermediaOpcion.ANADIR -> "Importe a añadir"
-//                            else -> "Selecciona una opción para introducir importe"
+//                            IntermediaOpcion.RETIRAR -> StringResourceManager.getString("importe_a_retirar", currentLanguage)
+//                            IntermediaOpcion.ANADIR -> StringResourceManager.getString("importe_a_anadir", currentLanguage)
+//                            else -> StringResourceManager.getString("selecciona_opcion_importe", currentLanguage)
 //                        },
-//                        // ✅ Teclado solo si hay opción elegida
 //                        mostrarTeclado = ui.dialogoIntermedio.opcion != IntermediaOpcion.NINGUNA,
 //                        fmt = { vm.fmtMoneda(it) }
 //                    )
@@ -530,20 +539,21 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //            }
 //        }
 //
-//        // ===== Diálogo de confirmación (textos según caso) =====
+//        // Diálogo de confirmación (texto generado por el VM)
 //        if (ui.confirm.visible) {
 //            val texto = remember(ui.confirm) { vm.textoConfirmacion() }
 //            AlertDialog(
 //                onDismissRequest = { vm.cerrarConfirmacion() },
 //                confirmButton = {
 //                    TextButton(onClick = {
-//                        // Paso 3: persistencia (guardar o asignar) se implementará aquí.
 //                        vm.cerrarConfirmacion()
-//                        vm.cerrarIntermedia()
-//                    }) { Text("Aceptar") }
+//                        vm.confirmarYPersistir(navController)
+//                    }) { Text(StringResourceManager.getString("aceptar", currentLanguage)) }
 //                },
 //                dismissButton = {
-//                    TextButton(onClick = { vm.cerrarConfirmacion() }) { Text("Cancelar") }
+//                    TextButton(onClick = { vm.cerrarConfirmacion() }) {
+//                        Text(StringResourceManager.getString("cancelar", currentLanguage))
+//                    }
 //                },
 //                title = { Text(texto.titulo) },
 //                text = {
@@ -552,12 +562,9 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //                            if (line.esAvisoFinal) {
 //                                Text(
 //                                    buildAnnotatedString {
-//                                        withStyle(
-//                                            SpanStyle(
-//                                                color = MaterialTheme.colorScheme.error,
-//                                                fontWeight = FontWeight.Bold
-//                                            )
-//                                        ) { append(line.texto) }
+//                                        withStyle(SpanStyle(color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)) {
+//                                            append(line.texto)
+//                                        }
 //                                    }
 //                                )
 //                            } else {
@@ -593,9 +600,7 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //    fmt: (Double) -> String
 //) {
 //    Column(
-//        Modifier
-//            .fillMaxSize()
-//            .padding(16.dp),
+//        Modifier.fillMaxSize().padding(16.dp),
 //        verticalArrangement = Arrangement.spacedBy(16.dp)
 //    ) {
 //        // Encabezado
@@ -608,30 +613,28 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //            horizontalArrangement = Arrangement.SpaceBetween,
 //            verticalAlignment = Alignment.CenterVertically
 //        ) {
-//            Text("Saldo final", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+//            Text(
+//                StringResourceManager.getString("saldo_final", currentLanguage),
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
 //            Text(saldoFinalActualFmt, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 //        }
 //
-//        // ===== Display central (centrado): Saldo final AJUSTADO =====
-//        Column(
-//            Modifier
-//                .fillMaxWidth()
-//                .padding(top = 4.dp),
-//            horizontalAlignment = Alignment.CenterHorizontally
-//        ) {
+//        // Display central: Saldo final AJUSTADO
+//        Column(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
 //            Text(
 //                saldoFinalAjustadoFmt,
 //                style = MaterialTheme.typography.displaySmall,
 //                fontWeight = FontWeight.Bold,
 //                textAlign = TextAlign.Center
 //            )
-//            // Leyenda del importe tecleado con signo (si hay opción)
 //            if (opcion != IntermediaOpcion.NINGUNA) {
-//                val importeDouble = recordarImporteDesdeDigits(importeDigits)
-//                if (importeDouble > 0.0) {
+//                val impDouble = recordarImporteDesdeDigits(importeDigits)
+//                if (impDouble > 0.0) {
 //                    val signo = if (opcion == IntermediaOpcion.RETIRAR) "− " else "+ "
 //                    Text(
-//                        "$signo${fmt(importeDouble)}",
+//                        "$signo${fmt(impDouble)}",
 //                        style = MaterialTheme.typography.bodyMedium,
 //                        color = MaterialTheme.colorScheme.onSurfaceVariant,
 //                        textAlign = TextAlign.Center
@@ -640,36 +643,45 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //            }
 //        }
 //
-//        // Radios
+//        // Opciones (radios)
 //        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
 //            Row(
 //                verticalAlignment = Alignment.CenterVertically,
 //                modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.RETIRAR) }
 //            ) {
-//                RadioButton(
-//                    selected = opcion == IntermediaOpcion.RETIRAR,
-//                    onClick = { onSeleccionOpcion(IntermediaOpcion.RETIRAR) }
-//                )
+//                RadioButton(selected = opcion == IntermediaOpcion.RETIRAR, onClick = { onSeleccionOpcion(IntermediaOpcion.RETIRAR) })
 //                Spacer(Modifier.width(8.dp))
-//                Text("Retirar efectivo")
+//                Text(StringResourceManager.getString("retirar_efectivo", ConfigurationManager.idioma.value))
 //            }
 //            Row(
 //                verticalAlignment = Alignment.CenterVertically,
 //                modifier = Modifier.clickable { onSeleccionOpcion(IntermediaOpcion.ANADIR) }
 //            ) {
-//                RadioButton(
-//                    selected = opcion == IntermediaOpcion.ANADIR,
-//                    onClick = { onSeleccionOpcion(IntermediaOpcion.ANADIR) }
-//                )
+//                RadioButton(selected = opcion == IntermediaOpcion.ANADIR, onClick = { onSeleccionOpcion(IntermediaOpcion.ANADIR) })
 //                Spacer(Modifier.width(8.dp))
-//                Text("Añadir efectivo")
+//                Text(StringResourceManager.getString("anadir_efectivo", ConfigurationManager.idioma.value))
 //            }
 //        }
 //
-//        // Importe + Teclado (solo si hay opción elegida)
+//        // Importe + Teclado (solo si hay opción)
 //        if (mostrarTeclado) {
-//            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-//                Text(leyendaImporte, color = MaterialTheme.colorScheme.onSurfaceVariant)
+//            Column(
+//                Modifier.fillMaxWidth(),
+//                verticalArrangement = Arrangement.spacedBy(8.dp),
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                Text(
+//                    leyendaImporte,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                )
+//                val impDouble = recordarImporteDesdeDigits(importeDigits)
+//                Text(
+//                    NumberFormat.getCurrencyInstance(Locale("es", "ES")).format(impDouble),
+//                    style = MaterialTheme.typography.headlineLarge,
+//                    fontWeight = FontWeight.SemiBold,
+//                    textAlign = TextAlign.Center
+//                )
+//                Spacer(Modifier.height(8.dp))
 //                TecladoNumerico(
 //                    onDigitClick = onDigit,
 //                    onClearClick = onClear,
@@ -681,276 +693,20 @@ private fun recordarImporteDesdeDigits(digits: String): Double {
 //        Spacer(Modifier.weight(1f))
 //
 //        // Botones
-//        Row(
-//            Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.spacedBy(12.dp)
-//        ) {
-//            OutlinedButton(
-//                onClick = onCancelar,
-//                modifier = Modifier.weight(1f)
-//            ) { Text("Cancelar") }
-//            Button(
-//                onClick = onAceptar,
-//                modifier = Modifier.weight(1f),
-//                enabled = puedeAceptar // ✅ siempre true (según requisito)
-//            ) { Text("Aceptar") }
+//        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+//            OutlinedButton(onClick = onCancelar, modifier = Modifier.weight(1f)) {
+//                Text(StringResourceManager.getString("cancelar", ConfigurationManager.idioma.value))
+//            }
+//            Button(onClick = onAceptar, modifier = Modifier.weight(1f), enabled = puedeAceptar) {
+//                Text(StringResourceManager.getString("aceptar", ConfigurationManager.idioma.value))
+//            }
 //        }
 //    }
 //}
 //
 //@Composable
 //private fun recordarImporteDesdeDigits(digits: String): Double {
-//    // "1234" -> 12.34
 //    if (digits.isBlank()) return 0.0
 //    val n = digits.toLongOrNull() ?: return 0.0
 //    return n / 100.0
 //}
-//
-///* ================== ViewModel y estado (Paso 2: solo flujos UI) ================== */
-//
-//data class UIState(
-//    val loading: Boolean = true,
-//    val mercadillos: List<MercadilloEntity> = emptyList(),
-//    val mercadilloOrigen: MercadilloEntity? = null,
-//    val dialogoIntermedio: IntermediaState = IntermediaState(),
-//    val confirm: ConfirmState = ConfirmState()
-//)
-//
-//data class IntermediaState(
-//    val visible: Boolean = false,
-//    val modo: IntermediaModo? = null,
-//    val destino: MercadilloEntity? = null,
-//    val opcion: IntermediaOpcion = IntermediaOpcion.NINGUNA,
-//    val importeDigits: String = "" // se representa en centésimas
-//)
-//
-//enum class IntermediaModo { GUARDAR, ASIGNAR }
-//enum class IntermediaOpcion { NINGUNA, RETIRAR, ANADIR }
-//
-//data class ConfirmState(
-//    val visible: Boolean = false,
-//    val caso: ConfirmCaso? = null
-//)
-//
-//enum class ConfirmCaso {
-//    GUARDAR_SIN_PROX,
-//    GUARDAR_CON_PROX,
-//    ASIGNAR_SIN_SALDO_DEST,
-//    ASIGNAR_CON_SALDO_DEST
-//}
-//
-//data class TextoConfirm(
-//    val titulo: String,
-//    val lineas: List<LineaTexto>
-//)
-//
-//data class LineaTexto(
-//    val texto: String,
-//    val esAvisoFinal: Boolean = false
-//)
-//
-//class AsignarSaldoViewModel(
-//    private val appDb: AppDatabase,
-//    private val mercadilloIdOrigen: String
-//) : ViewModel() {
-//
-//    private val _ui = mutableStateOf(UIState())
-//    val ui: State<UIState> get() = _ui
-//
-//    private val df = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
-//
-//    init {
-//        cargarDatos()
-//    }
-//
-//    private fun cargarDatos() {
-//        _ui.value = _ui.value.copy(loading = true)
-//        viewModelScope.launch(Dispatchers.IO) {
-//            try {
-//                val dao = appDb.mercadilloDao()
-//                val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
-//
-//                val origen = dao.getMercadilloById(mercadilloIdOrigen)
-//                val e1 = dao.getMercadillosByUserAndEstado(userId, 1).first()
-//                val e2 = dao.getMercadillosByUserAndEstado(userId, 2).first()
-//
-//                val combinada = (e1 + e2)
-//                    .filter { it.idMercadillo != mercadilloIdOrigen } // no listar el origen
-//                    .sortedWith(
-//                        compareBy<MercadilloEntity> { safeParseDate(it.fecha) }
-//                            .thenBy { it.horaInicio }
-//                    )
-//
-//                _ui.value = UIState(
-//                    loading = false,
-//                    mercadillos = combinada,
-//                    mercadilloOrigen = origen
-//                )
-//            } catch (_: Exception) {
-//                _ui.value = UIState(loading = false)
-//            }
-//        }
-//    }
-//
-//    private fun safeParseDate(fecha: String): Long {
-//        return try { df.parse(fecha)?.time ?: Long.MAX_VALUE } catch (_: Exception) { Long.MAX_VALUE }
-//    }
-//
-//    /* ===== Formatos / cálculo ===== */
-//
-//    /** Saldo final actual (o arqueo si aún no hay saldoFinal persistido). */
-//    private fun saldoFinalActual(): Double {
-//        val m = _ui.value.mercadilloOrigen ?: return 0.0
-//        return (m.saldoFinal ?: m.arqueoCaja ?: 0.0).coerceAtLeast(0.0)
-//    }
-//
-//    fun saldoFinalActualFmt(): String = fmtMoneda(saldoFinalActual())
-//
-//    /** Saldo final ajustado en vivo según opción + importe TPV. */
-//    private fun saldoFinalAjustado(): Double {
-//        val base = saldoFinalActual()
-//        val imp = importeActual()
-//        return when (_ui.value.dialogoIntermedio.opcion) {
-//            IntermediaOpcion.RETIRAR -> (base - imp).coerceAtLeast(0.0)
-//            IntermediaOpcion.ANADIR -> (base + imp)
-//            IntermediaOpcion.NINGUNA -> base
-//        }
-//    }
-//
-//    fun saldoFinalAjustadoFmt(): String = fmtMoneda(saldoFinalAjustado())
-//
-//    fun fmtMoneda(valor: Double): String {
-//        val nf = NumberFormat.getNumberInstance(Locale("es", "ES")).apply {
-//            minimumFractionDigits = 2
-//            maximumFractionDigits = 2
-//        }
-//        return nf.format(valor)
-//    }
-//
-//    private fun importeActual(): Double {
-//        val digits = _ui.value.dialogoIntermedio.importeDigits
-//        if (digits.isBlank()) return 0.0
-//        val n = digits.toLongOrNull() ?: return 0.0
-//        return n / 100.0
-//    }
-//
-//    /* ===== Acciones UI ===== */
-//
-//    fun abrirIntermediaGuardar() {
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = IntermediaState(visible = true, modo = IntermediaModo.GUARDAR)
-//        )
-//    }
-//
-//    fun abrirIntermediaAsignar(destino: MercadilloEntity) {
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = IntermediaState(visible = true, modo = IntermediaModo.ASIGNAR, destino = destino)
-//        )
-//    }
-//
-//    fun cerrarIntermedia() {
-//        _ui.value = _ui.value.copy(dialogoIntermedio = IntermediaState()) // reset
-//    }
-//
-//    fun seleccionarOpcion(opcion: IntermediaOpcion) {
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = _ui.value.dialogoIntermedio.copy(opcion = opcion)
-//        )
-//    }
-//
-//    fun onDigit(d: String) {
-//        val cur = _ui.value.dialogoIntermedio.importeDigits
-//        val nuevoRaw = (cur + d)
-//        val nuevo = if (nuevoRaw.isEmpty()) "" else nuevoRaw.trimStart('0')
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = _ui.value.dialogoIntermedio.copy(importeDigits = nuevo)
-//        )
-//    }
-//
-//    fun onDoubleZero() {
-//        val cur = _ui.value.dialogoIntermedio.importeDigits
-//        val nuevoRaw = cur + "00"
-//        val nuevo = if (nuevoRaw.isEmpty()) "" else nuevoRaw.trimStart('0')
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = _ui.value.dialogoIntermedio.copy(importeDigits = nuevo)
-//        )
-//    }
-//
-//    fun onClear() {
-//        val cur = _ui.value.dialogoIntermedio.importeDigits
-//        val nuevo = if (cur.isNotEmpty()) cur.dropLast(1) else ""
-//        _ui.value = _ui.value.copy(
-//            dialogoIntermedio = _ui.value.dialogoIntermedio.copy(importeDigits = nuevo)
-//        )
-//    }
-//
-//    fun prepararConfirmacion() {
-//        val d = _ui.value.dialogoIntermedio
-//        val hayProximos = _ui.value.mercadillos.isNotEmpty()
-//
-//        val caso = when (d.modo) {
-//            IntermediaModo.GUARDAR -> if (hayProximos) ConfirmCaso.GUARDAR_CON_PROX else ConfirmCaso.GUARDAR_SIN_PROX
-//            IntermediaModo.ASIGNAR -> {
-//                val saldoIni = d.destino?.saldoInicial ?: 0.0
-//                if (saldoIni == 0.0) ConfirmCaso.ASIGNAR_SIN_SALDO_DEST else ConfirmCaso.ASIGNAR_CON_SALDO_DEST
-//            }
-//            else -> return
-//        }
-//
-//        _ui.value = _ui.value.copy(confirm = ConfirmState(visible = true, caso = caso))
-//    }
-//
-//    fun cerrarConfirmacion() {
-//        _ui.value = _ui.value.copy(confirm = ConfirmState())
-//    }
-//
-//    fun textoConfirmacion(): TextoConfirm {
-//        return when (_ui.value.confirm.caso) {
-//            ConfirmCaso.GUARDAR_SIN_PROX -> TextoConfirm(
-//                titulo = "Guardar saldo",
-//                lineas = listOf(
-//                    LineaTexto("¿Estás seguro de querer guardar el saldo?"),
-//                    LineaTexto("Se podrá utilizar como saldo inicial al dar de alta un mercadillo.")
-//                    // Paso 3: si existe saldo guardado previo, aquí añadiremos el segundo aviso.
-//                )
-//            )
-//            ConfirmCaso.GUARDAR_CON_PROX -> TextoConfirm(
-//                titulo = "Guardar saldo",
-//                lineas = listOf(
-//                    LineaTexto("¿Estás seguro de querer guardar el saldo?"),
-//                    LineaTexto("Si lo guardas, solo podrás asignarlo al crear un mercadillo nuevo.")
-//                    // Paso 3: si existe saldo guardado previo, aquí añadiremos el segundo aviso.
-//                )
-//            )
-//            ConfirmCaso.ASIGNAR_SIN_SALDO_DEST -> TextoConfirm(
-//                titulo = "Asignar saldo",
-//                lineas = listOf(
-//                    LineaTexto("¿Estás seguro de querer asignar el saldo inicial a este mercadillo?")
-//                )
-//            )
-//            ConfirmCaso.ASIGNAR_CON_SALDO_DEST -> TextoConfirm(
-//                titulo = "Asignar saldo",
-//                lineas = listOf(
-//                    LineaTexto("El mercadillo seleccionado ya tiene saldo inicial. ¿Quieres reemplazar el saldo inicial?"),
-//                    LineaTexto("Esta operación no se puede deshacer.", esAvisoFinal = true)
-//                )
-//            )
-//            else -> TextoConfirm("", emptyList())
-//        }
-//    }
-//
-//    companion object {
-//        fun factory(context: android.content.Context, mercadilloIdOrigen: String): ViewModelProvider.Factory =
-//            object : ViewModelProvider.Factory {
-//                @Suppress("UNCHECKED_CAST")
-//                override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//                    return AsignarSaldoViewModel(
-//                        appDb = AppDatabase.getDatabase(context),
-//                        mercadilloIdOrigen = mercadilloIdOrigen
-//                    ) as T
-//                }
-//            }
-//    }
-//}
-//
-//

@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
@@ -98,6 +99,7 @@ fun PantallaMetodoPago(
             ) { onMetodoSeleccionado(MetodoPago.TARJETA) }
         }
     }
+    AdsBottomBar()
 }
 
 @Composable

@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/components/dialogs/DialogoSeleccionMercadillo.kt
 package es.nuskysoftware.marketsales.ui.components.dialogs
 
 import androidx.compose.foundation.clickable
@@ -28,7 +29,11 @@ fun DialogoSeleccionMercadillo(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Seleccionar mercadillo", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            Text(
+                text = StringResourceManager.getString("seleccionar_mercadillo", currentLanguage),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         },
         text = {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -39,8 +44,16 @@ fun DialogoSeleccionMercadillo(
                             .clickable { onMercadilloSeleccionado(mercadillo) },
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(Modifier.fillMaxWidth().padding(12.dp)) {
-                            Text(mercadillo.lugar, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                mercadillo.lugar,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
                             Spacer(Modifier.height(4.dp))
                             Text("${mercadillo.organizador} • ${mercadillo.horaInicio} - ${mercadillo.horaFin}")
                             Spacer(Modifier.height(4.dp))
@@ -58,7 +71,9 @@ fun DialogoSeleccionMercadillo(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(StringResourceManager.getString("cancelar", currentLanguage)) }
+            TextButton(onClick = onDismiss) {
+                Text(StringResourceManager.getString("cancelar", currentLanguage))
+            }
         }
     )
 }

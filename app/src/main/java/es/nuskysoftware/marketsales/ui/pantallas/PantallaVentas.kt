@@ -12,15 +12,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 import es.nuskysoftware.marketsales.data.repository.PestanaVenta
-import es.nuskysoftware.marketsales.data.repository.MetodoPago as MetodoPagoRepo
 import es.nuskysoftware.marketsales.ui.composables.PestanaVentaManual
 import es.nuskysoftware.marketsales.ui.composables.PestanaVentaProductos
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModelFactory
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filterNotNull
+import es.nuskysoftware.marketsales.utils.safePopBackStack
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +37,7 @@ fun PantallaVentas(
 
     val uiState by ventasViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     // Inicializa VM
     LaunchedEffect(mercadilloActivo.idMercadillo, mercadilloActivo.userId) {
@@ -43,28 +45,6 @@ fun PantallaVentas(
             mercadilloId = mercadilloActivo.idMercadillo,
             usuarioId = mercadilloActivo.userId
         )
-    }
-
-    // Consume “finalizar venta” al volver del recibo
-    val ventasRoute = remember(mercadilloActivo.idMercadillo) {
-        "ventas/${mercadilloActivo.idMercadillo}"
-    }
-    val ventasBackEntry = remember(navController, ventasRoute) {
-        navController.getBackStackEntry(ventasRoute)
-    }
-    val finalizarMetodoFlow =
-        remember(ventasBackEntry) { ventasBackEntry.savedStateHandle.getStateFlow<String?>("finalizar_metodo", null) }
-
-    LaunchedEffect(finalizarMetodoFlow) {
-        finalizarMetodoFlow.filterNotNull().collectLatest { metodoStr ->
-            val metodoRepo = when (metodoStr.lowercase()) {
-                "efectivo" -> MetodoPagoRepo.EFECTIVO
-                "bizum" -> MetodoPagoRepo.BIZUM
-                else -> MetodoPagoRepo.TARJETA
-            }
-            ventasViewModel.finalizarVenta(metodoRepo)
-            ventasBackEntry.savedStateHandle["finalizar_metodo"] = null
-        }
     }
 
     // Errores
@@ -77,15 +57,15 @@ fun PantallaVentas(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Nueva Venta - ${mercadilloActivo.lugar}",
+                        text = "${StringResourceManager.getString("nueva_venta", currentLanguage)} - ${mercadilloActivo.lugar}",
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
-                            contentDescription = "Atrás"
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
                         )
                     }
                 },
@@ -113,12 +93,12 @@ fun PantallaVentas(
                 Tab(
                     selected = uiState.pestanaActiva == PestanaVenta.MANUAL,
                     onClick = { ventasViewModel.cambiarPestana(PestanaVenta.MANUAL) },
-                    text = { Text("Venta Manual") }
+                    text = { Text(StringResourceManager.getString("venta_manual", currentLanguage)) }
                 )
                 Tab(
                     selected = uiState.pestanaActiva == PestanaVenta.PRODUCTOS,
                     onClick = { ventasViewModel.cambiarPestana(PestanaVenta.PRODUCTOS) },
-                    text = { Text("Productos") },
+                    text = { Text(StringResourceManager.getString("productos", currentLanguage)) },
                     enabled = true
                 )
             }
@@ -127,8 +107,8 @@ fun PantallaVentas(
                 PestanaVenta.MANUAL -> {
                     PestanaVentaManual(
                         ventasViewModel = ventasViewModel,
-                        navController = navController,                  // 👈 ahora se pasa
-                        mercadilloActivo = mercadilloActivo,            // 👈 ahora se pasa
+                        navController = navController,
+                        mercadilloActivo = mercadilloActivo,
                         onRealizarCargo = { totalFmt ->
                             navController.navigate(
                                 "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
@@ -139,8 +119,8 @@ fun PantallaVentas(
                 PestanaVenta.PRODUCTOS -> {
                     PestanaVentaProductos(
                         ventasViewModel = ventasViewModel,
-                        navController = navController,                  // 👈 ahora se pasa
-                        mercadilloActivo = mercadilloActivo,            // 👈 ahora se pasa
+                        navController = navController,
+                        mercadilloActivo = mercadilloActivo,
                         onRealizarCargo = { totalFmt ->
                             navController.navigate(
                                 "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
@@ -150,6 +130,6 @@ fun PantallaVentas(
                 }
             }
         }
+        AdsBottomBar()
     }
 }
-

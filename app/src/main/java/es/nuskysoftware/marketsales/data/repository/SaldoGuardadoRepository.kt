@@ -36,6 +36,13 @@ class SaldoGuardadoRepository(context: Context) {
         sincronizar(id)
     }
 
+    suspend fun borrarGuardado(id: String) = withContext(Dispatchers.IO) {
+        dao.deleteById(id)
+        try {
+            firestore.collection("saldosGuardados").document(id).delete().await()
+        } catch (_: Exception) { }
+    }
+
     private suspend fun sincronizar(id: String) {
         try {
             if (!connectivity.isConnected.first()) return

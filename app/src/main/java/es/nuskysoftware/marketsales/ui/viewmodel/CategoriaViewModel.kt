@@ -1,4 +1,4 @@
-// app/src/main/java/es/nuskysoftware/marketsales/data/viewmodel/CategoriaViewModel.kt
+// app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/CategoriaViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
 import android.util.Log
@@ -8,6 +8,8 @@ import es.nuskysoftware.marketsales.data.local.entity.CategoriaEntity
 import es.nuskysoftware.marketsales.data.repository.CategoriaRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 /**
  * CategoriaViewModel V11 - Market Sales
@@ -24,6 +26,13 @@ class CategoriaViewModel(
 
     companion object {
         private const val TAG = "CategoriaViewModel"
+    }
+
+    // Acceso cómodo a traducciones con placeholders {0}, {1}, …
+    private fun tr(key: String, vararg args: String): String {
+        var txt = StringResourceManager.getString(key, ConfigurationManager.idioma.value)
+        args.forEachIndexed { i, a -> txt = txt.replace("{$i}", a) }
+        return txt
     }
 
     // ========== ESTADOS REACTIVOS ==========
@@ -57,7 +66,7 @@ class CategoriaViewModel(
                 if (repository.existeCategoriaConNombre(nombre)) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Ya existe una categoría con ese nombre"
+                        error = tr("categoria_nombre_duplicado")
                     )
                     return@launch
                 }
@@ -66,7 +75,7 @@ class CategoriaViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    message = "Categoría creada exitosamente",
+                    message = tr("categoria_creada_ok"),
                     error = null
                 )
 
@@ -75,7 +84,7 @@ class CategoriaViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error creando categoría: ${e.message}"
+                    error = tr("error_creando_categoria_detalle", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error creando categoría", e)
             }
@@ -94,7 +103,7 @@ class CategoriaViewModel(
                 if (repository.existeCategoriaConNombre(categoria.nombre, categoria.idCategoria)) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Ya existe una categoría con ese nombre"
+                        error = tr("categoria_nombre_duplicado")
                     )
                     return@launch
                 }
@@ -104,21 +113,21 @@ class CategoriaViewModel(
                 if (exito) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Categoría actualizada exitosamente",
+                        message = tr("categoria_actualizada_ok"),
                         error = null
                     )
                     Log.d(TAG, "✅ Categoría actualizada: ${categoria.nombre}")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Error actualizando categoría"
+                        error = tr("error_actualizando_categoria")
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error actualizando categoría: ${e.message}"
+                    error = tr("error_actualizando_categoria_detalle", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error actualizando categoría", e)
             }
@@ -138,21 +147,21 @@ class CategoriaViewModel(
                 if (exito) {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = "Categoría eliminada exitosamente",
+                        message = tr("categoria_eliminada_ok"),
                         error = null
                     )
                     Log.d(TAG, "✅ Categoría eliminada: ${categoria.nombre}")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        error = "Error eliminando categoría"
+                        error = tr("error_eliminando_categoria")
                     )
                 }
 
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error eliminando categoría: ${e.message}"
+                    error = tr("error_eliminando_categoria_detalle", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error eliminando categoría", e)
             }
@@ -185,8 +194,8 @@ class CategoriaViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    message = if (exito) "Sincronización completada" else "Error en sincronización",
-                    error = if (!exito) "No se pudo completar la sincronización" else null
+                    message = if (exito) tr("sincronizacion_completada") else tr("error_en_sincronizacion"),
+                    error = if (!exito) tr("no_se_pudo_completar_sincronizacion") else null
                 )
 
                 Log.d(TAG, if (exito) "✅ Sincronización forzada exitosa" else "⚠️ Error en sincronización forzada")
@@ -194,7 +203,7 @@ class CategoriaViewModel(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
-                    error = "Error en sincronización: ${e.message}"
+                    error = tr("error_en_sincronizacion_detalle", e.message ?: "")
                 )
                 Log.e(TAG, "❌ Error en sincronización forzada", e)
             }
@@ -234,9 +243,9 @@ class CategoriaViewModel(
      */
     fun validarNombreCategoria(nombre: String): String? {
         return when {
-            nombre.isBlank() -> "El nombre no puede estar vacío"
-            nombre.length < 2 -> "El nombre debe tener al menos 2 caracteres"
-            nombre.length > 50 -> "El nombre no puede tener más de 50 caracteres"
+            nombre.isBlank() -> tr("nombre_vacio")
+            nombre.length < 2 -> tr("nombre_min_2")
+            nombre.length > 50 -> tr("nombre_max_50")
             else -> null
         }
     }
@@ -248,7 +257,7 @@ class CategoriaViewModel(
         return if (colorHex.matches(Regex("^#[0-9A-Fa-f]{6}$"))) {
             null
         } else {
-            "Color inválido"
+            tr("color_invalido")
         }
     }
 

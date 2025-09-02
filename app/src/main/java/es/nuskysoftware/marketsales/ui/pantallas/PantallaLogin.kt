@@ -50,6 +50,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavController
 
 import kotlinx.coroutines.launch
+val TAG = "PantallaLogin"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +81,11 @@ fun PantallaLogin(
     var prevAuthState by remember { mutableStateOf<AuthState?>(null) }
     LaunchedEffect(authState) {
         if (prevAuthState is AuthState.Authenticated && authState is AuthState.Unauthenticated) {
-            Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context,
+                StringResourceManager.getString("logout_success", currentLanguage),
+                Toast.LENGTH_LONG
+            ).show()
         }
         prevAuthState = authState
     }
@@ -106,35 +111,33 @@ fun PantallaLogin(
             null // Si falla, Google Auth no disponible
         }
     }
-
-    // Launcher para Google Sign-In
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
+        android.util.Log.d(TAG, "GSI result: resultCode=${result.resultCode}, hasData=${result.data != null}")
+        try {
             val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val idToken = account?.idToken
-                if (idToken != null) {
-                    authViewModel.signInWithGoogle(idToken)
-                } else {
-                    errorMessage = "Error obteniendo token de Google"
-                    showError = true
-                }
-            } catch (e: ApiException) {
-                errorMessage = "Error en Google Sign-In: ${e.message}"
+            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+            val token = account?.idToken
+            android.util.Log.d(TAG, "GSI OK: email=${account?.email}, idTokenNull=${token.isNullOrEmpty()}")
+            if (!token.isNullOrEmpty()) {
+                authViewModel.signInWithGoogle(token)
+            } else {
+                errorMessage = "Google no entregó ID Token (clientId/SHA-1/proyecto de esta variante)."
                 showError = true
             }
+        } catch (e: com.google.android.gms.common.api.ApiException) {
+            android.util.Log.e(TAG, "GSI FAILED status=${e.statusCode}", e) // 10=DEVELOPER_ERROR
+            errorMessage = "Google Sign-In falló: ${e.statusCode}"
+            showError = true
         }
     }
 
-    // ✅ Navegar tras autenticación (sin tocar tu estructura actual):
-    //    - Si tenemos navController, vamos al nuevo "splash_descarga" y limpiamos "login" del back stack.
-    //    - Si NO hay navController, se mantiene tu onNavigateToMain() tal cual.
+    // ✅ Navegar tras autenticación y resolver gate premium
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
+                ConfigurationManager.markPremiumKnown()
                 if (navController != null) {
                     navController.navigate("splash_descarga") {
                         popUpTo("login") { inclusive = true }
@@ -145,8 +148,12 @@ fun PantallaLogin(
                 }
             }
             is AuthState.Error -> {
+                ConfigurationManager.markPremiumKnown()
                 errorMessage = (authState as AuthState.Error).message
                 showError = true
+            }
+            is AuthState.Unauthenticated -> {
+                ConfigurationManager.markPremiumKnown()
             }
             else -> { /* no-op */ }
         }
@@ -155,6 +162,8 @@ fun PantallaLogin(
     fun handleAuthAction() {
         if (!isFormValid) return
         showError = false
+        // 🔒 gate: aún no sabemos premium real
+        ConfigurationManager.markPremiumUnknown()
         if (isLoginMode) authViewModel.loginWithEmail(email.trim(), password)
         else authViewModel.registerWithEmail(email.trim(), password)
     }
@@ -162,10 +171,12 @@ fun PantallaLogin(
     fun handleGoogleSignIn() {
         if (googleSignInClient != null) {
             showError = false
+            // 🔒 gate: aún no sabemos premium real
+            ConfigurationManager.markPremiumUnknown()
             val signInIntent = googleSignInClient.signInIntent
             googleSignInLauncher.launch(signInIntent)
         } else {
-            errorMessage = "Google Auth no disponible - Revisa configuración"
+            errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
             showError = true
         }
     }
@@ -384,6 +395,19 @@ fun PantallaLogin(
 
             // 🚀 Google Sign-In (tu estilo)
             if (googleSignInClient != null) {
+                fun handleGoogleSignIn() {
+                    if (googleSignInClient != null) {
+                        showError = false
+                        // 🔒 gate: aún no sabemos premium real
+                        ConfigurationManager.markPremiumUnknown()
+                        android.util.Log.d(TAG, "Lanzando Google Sign-In")
+                        val signInIntent = googleSignInClient.signInIntent
+                        googleSignInLauncher.launch(signInIntent)
+                    } else {
+                        errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
+                        showError = true
+                    }
+                }
                 OutlinedButton(
                     onClick = { handleGoogleSignIn() },
                     modifier = Modifier
@@ -487,7 +511,6 @@ fun PantallaLogin(
 }
 
 
-
 //package es.nuskysoftware.marketsales.ui.pantallas
 //
 //import android.app.Activity
@@ -539,13 +562,14 @@ fun PantallaLogin(
 //import androidx.compose.runtime.collectAsState
 //import androidx.navigation.NavController
 //
-//
 //import kotlinx.coroutines.launch
-//
+//val TAG = "PantallaLogin"
 //@OptIn(ExperimentalMaterial3Api::class)
 //@Composable
 //fun PantallaLogin(
-//    onNavigateToMain: () -> Unit = {}
+//    onNavigateToMain: () -> Unit = {},
+//    // ✅ NUEVO (opcional y retrocompatible): si se pasa, navegamos aquí al splash de descarga
+//    navController: NavController? = null
 //) {
 //    val context = LocalContext.current
 //    val focusManager = LocalFocusManager.current
@@ -569,7 +593,11 @@ fun PantallaLogin(
 //    var prevAuthState by remember { mutableStateOf<AuthState?>(null) }
 //    LaunchedEffect(authState) {
 //        if (prevAuthState is AuthState.Authenticated && authState is AuthState.Unauthenticated) {
-//            Toast.makeText(context, "Sesión cerrada correctamente", Toast.LENGTH_LONG).show()
+//            Toast.makeText(
+//                context,
+//                StringResourceManager.getString("logout_success", currentLanguage),
+//                Toast.LENGTH_LONG
+//            ).show()
 //        }
 //        prevAuthState = authState
 //    }
@@ -595,34 +623,64 @@ fun PantallaLogin(
 //            null // Si falla, Google Auth no disponible
 //        }
 //    }
-//
-//    // Launcher para Google Sign-In
 //    val googleSignInLauncher = rememberLauncherForActivityResult(
 //        contract = ActivityResultContracts.StartActivityForResult()
 //    ) { result ->
-//        if (result.resultCode == Activity.RESULT_OK) {
+//        android.util.Log.d(TAG, "GSI result: resultCode=${result.resultCode}, hasData=${result.data != null}")
+//        try {
 //            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-//            try {
-//                val account = task.getResult(ApiException::class.java)
-//                val idToken = account?.idToken
-//                if (idToken != null) {
-//                    authViewModel.signInWithGoogle(idToken)
-//                } else {
-//                    errorMessage = "Error obteniendo token de Google"
-//                    showError = true
-//                }
-//            } catch (e: ApiException) {
-//                errorMessage = "Error en Google Sign-In: ${e.message}"
+//            val account = task.getResult(com.google.android.gms.common.api.ApiException::class.java)
+//            val token = account?.idToken
+//            android.util.Log.d(TAG, "GSI OK: email=${account?.email}, idTokenNull=${token.isNullOrEmpty()}")
+//            if (!token.isNullOrEmpty()) {
+//                authViewModel.signInWithGoogle(token)
+//            } else {
+//                errorMessage = "Google no entregó ID Token (clientId/SHA-1/proyecto de esta variante)."
 //                showError = true
 //            }
+//        } catch (e: com.google.android.gms.common.api.ApiException) {
+//            android.util.Log.e(TAG, "GSI FAILED status=${e.statusCode}", e) // 10=DEVELOPER_ERROR
+//            errorMessage = "Google Sign-In falló: ${e.statusCode}"
+//            showError = true
 //        }
 //    }
+//    // Launcher para Google Sign-In
+////    val googleSignInLauncher = rememberLauncherForActivityResult(
+////        contract = ActivityResultContracts.StartActivityForResult()
+////    ) { result ->
+////        if (result.resultCode == Activity.RESULT_OK) {
+////            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+////            try {
+////                val account = task.getResult(ApiException::class.java)
+////                val idToken = account?.idToken
+////                if (idToken != null) {
+////                    authViewModel.signInWithGoogle(idToken)
+////                } else {
+////                    errorMessage = StringResourceManager.getString("google_token_error", currentLanguage)
+////                    showError = true
+////                }
+////            } catch (e: ApiException) {
+////                errorMessage = StringResourceManager.getString("google_auth_error", currentLanguage) + ": ${e.message}"
+////                showError = true
+////            }
+////        }
+////    }
 //
-//
-//    // Navegar tras autenticación
+//    // ✅ Navegar tras autenticación (sin tocar tu estructura actual):
+//    //    - Si tenemos navController, vamos al nuevo "splash_descarga" y limpiamos "login" del back stack.
+//    //    - Si NO hay navController, se mantiene tu onNavigateToMain() tal cual.
 //    LaunchedEffect(authState) {
 //        when (authState) {
-//            is AuthState.Authenticated -> onNavigateToMain()
+//            is AuthState.Authenticated -> {
+//                if (navController != null) {
+//                    navController.navigate("splash_descarga") {
+//                        popUpTo("login") { inclusive = true }
+//                        launchSingleTop = true
+//                    }
+//                } else {
+//                    onNavigateToMain()
+//                }
+//            }
 //            is AuthState.Error -> {
 //                errorMessage = (authState as AuthState.Error).message
 //                showError = true
@@ -644,7 +702,7 @@ fun PantallaLogin(
 //            val signInIntent = googleSignInClient.signInIntent
 //            googleSignInLauncher.launch(signInIntent)
 //        } else {
-//            errorMessage = "Google Auth no disponible - Revisa configuración"
+//            errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
 //            showError = true
 //        }
 //    }
@@ -863,6 +921,17 @@ fun PantallaLogin(
 //
 //            // 🚀 Google Sign-In (tu estilo)
 //            if (googleSignInClient != null) {
+//                fun handleGoogleSignIn() {
+//                    if (googleSignInClient != null) {
+//                        showError = false
+//                        android.util.Log.d(TAG, "Lanzando Google Sign-In")
+//                        val signInIntent = googleSignInClient.signInIntent
+//                        googleSignInLauncher.launch(signInIntent)
+//                    } else {
+//                        errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
+//                        showError = true
+//                    }
+//                }
 //                OutlinedButton(
 //                    onClick = { handleGoogleSignIn() },
 //                    modifier = Modifier
@@ -964,3 +1033,4 @@ fun PantallaLogin(
 //        }
 //    }
 //}
+//

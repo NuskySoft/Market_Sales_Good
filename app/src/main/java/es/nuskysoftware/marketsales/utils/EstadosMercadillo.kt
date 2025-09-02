@@ -20,6 +20,11 @@ object EstadosMercadillo {
     /**
      * Enum con todos los estados posibles de un mercadillo
      * Los códigos coinciden con el campo 'estado' en MercadilloEntity
+     *
+     * Nota: la propiedad 'descripcion' se mantiene por compatibilidad,
+     * pero para UI multi-idioma usa:
+     *   - obtenerDescripcionKey(estado)  -> clave
+     *   - obtenerDescripcion(estado, language) -> texto localizado
      */
     enum class Estado(val codigo: Int, val descripcion: String) {
         PROGRAMADO_PARCIAL(1, "Programado parcialmente"),
@@ -31,112 +36,91 @@ object EstadosMercadillo {
         CANCELADO(7, "Cancelado");
 
         companion object {
-            /**
-             * Obtiene el estado por su código
-             */
+            /** Obtiene el estado por su código */
             fun fromCodigo(codigo: Int): Estado? = values().find { it.codigo == codigo }
 
-            /**
-             * Obtiene el estado por defecto para nuevos mercadillos
-             */
+            /** Estado por defecto para nuevos mercadillos */
             fun getEstadoInicial(): Estado = PROGRAMADO_PARCIAL
         }
     }
 
-    /**
-     * Obtiene el color asociado a cada estado para la UI
-     */
-    fun obtenerColor(estado: Estado): Color {
-        return when (estado) {
-            Estado.PROGRAMADO_PARCIAL -> Color(0xFF81C7E8)      // Azul claro
-            Estado.PROGRAMADO_TOTAL -> Color(0xFF1976D2)        // Azul oscuro
-            Estado.EN_CURSO -> Color(0xFF4CAF50)                // Verde
-            Estado.PENDIENTE_ARQUEO -> Color(0xFFFF9800)        // Naranja ⚠️
-            Estado.PENDIENTE_ASIGNAR_SALDO -> Color(0xFFF44336) // Rojo ⚠️
-            Estado.CERRADO_COMPLETO -> Color(0xFF2E7D32)        // Verde oscuro
-            Estado.CANCELADO -> Color(0xFF757575)               // Gris
-        }
+    /** Devuelve la key de recursos para la descripción localizada de un estado */
+    fun obtenerDescripcionKey(estado: Estado): String = when (estado) {
+        Estado.PROGRAMADO_PARCIAL       -> "estado_programado_parcial"
+        Estado.PROGRAMADO_TOTAL         -> "estado_programado_total"
+        Estado.EN_CURSO                 -> "estado_en_curso"
+        Estado.PENDIENTE_ARQUEO         -> "estado_pendiente_arqueo"
+        Estado.PENDIENTE_ASIGNAR_SALDO  -> "estado_pendiente_asignar_saldo"
+        Estado.CERRADO_COMPLETO         -> "estado_cerrado_completo"
+        Estado.CANCELADO                -> "estado_cancelado"
     }
 
     /**
-     * Obtiene el color de texto más apropiado para cada fondo
+     * Devuelve la descripción localizada para mostrar en UI.
+     * @param currentLanguage Idioma actual (p.ej. "es" o "en")
      */
-    fun obtenerColorTexto(estado: Estado): Color {
-        return when (estado) {
-            Estado.PROGRAMADO_PARCIAL -> Color.Black
-            Estado.PROGRAMADO_TOTAL -> Color.White
-            Estado.EN_CURSO -> Color.White
-            Estado.PENDIENTE_ARQUEO -> Color.Black
-            Estado.PENDIENTE_ASIGNAR_SALDO -> Color.White
-            Estado.CERRADO_COMPLETO -> Color.White
-            Estado.CANCELADO -> Color.White
-        }
+    fun obtenerDescripcion(estado: Estado, currentLanguage: String): String =
+        StringResourceManager.getString(obtenerDescripcionKey(estado), currentLanguage)
+
+    /** Color asociado a cada estado para la UI */
+    fun obtenerColor(estado: Estado): Color = when (estado) {
+        Estado.PROGRAMADO_PARCIAL -> Color(0xFF81C7E8)      // Azul claro
+        Estado.PROGRAMADO_TOTAL -> Color(0xFF1976D2)        // Azul oscuro
+        Estado.EN_CURSO -> Color(0xFF4CAF50)                // Verde
+        Estado.PENDIENTE_ARQUEO -> Color(0xFFFF9800)        // Naranja ⚠️
+        Estado.PENDIENTE_ASIGNAR_SALDO -> Color(0xFFF44336) // Rojo ⚠️
+        Estado.CERRADO_COMPLETO -> Color(0xFF7B4F7A)        // Morado/granate
+        Estado.CANCELADO -> Color(0xFF757575)               // Gris
     }
 
-    /**
-     * Devuelve todos los estados para mostrar en la leyenda
-     */
-    fun obtenerTodosLosEstados(): List<Estado> {
-        return Estado.values().toList()
+    /** Color de texto más apropiado para cada fondo */
+    fun obtenerColorTexto(estado: Estado): Color = when (estado) {
+        Estado.PROGRAMADO_PARCIAL -> Color.Black
+        Estado.PROGRAMADO_TOTAL -> Color.White
+        Estado.EN_CURSO -> Color.White
+        Estado.PENDIENTE_ARQUEO -> Color.Black
+        Estado.PENDIENTE_ASIGNAR_SALDO -> Color.White
+        Estado.CERRADO_COMPLETO -> Color.White
+        Estado.CANCELADO -> Color.White
     }
 
-    /**
-     * Obtiene el icono/emoji representativo de cada estado
-     */
-    fun obtenerIcono(estado: Estado): String {
-        return when (estado) {
-            Estado.PROGRAMADO_PARCIAL -> "📋"
-            Estado.PROGRAMADO_TOTAL -> "📅"
-            Estado.EN_CURSO -> "🟢"
-            Estado.PENDIENTE_ARQUEO -> "⚠️"
-            Estado.PENDIENTE_ASIGNAR_SALDO -> "🔴"
-            Estado.CERRADO_COMPLETO -> "✅"
-            Estado.CANCELADO -> "❌"
-        }
+    /** Todos los estados (leyenda/listas) */
+    fun obtenerTodosLosEstados(): List<Estado> = Estado.values().toList()
+
+    /** Emoji representativo de cada estado (no requiere traducción) */
+    fun obtenerIcono(estado: Estado): String = when (estado) {
+        Estado.PROGRAMADO_PARCIAL -> "📋"
+        Estado.PROGRAMADO_TOTAL -> "📅"
+        Estado.EN_CURSO -> "🟢"
+        Estado.PENDIENTE_ARQUEO -> "⚠️"
+        Estado.PENDIENTE_ASIGNAR_SALDO -> "🔴"
+        Estado.CERRADO_COMPLETO -> "✅"
+        Estado.CANCELADO -> "❌"
     }
 
-    /**
-     * Indica si el estado requiere atención urgente del usuario
-     */
-    fun requiereAtencion(estado: Estado): Boolean {
-        return estado == Estado.PENDIENTE_ARQUEO || estado == Estado.PENDIENTE_ASIGNAR_SALDO
+    /** ¿Requiere atención urgente del usuario? */
+    fun requiereAtencion(estado: Estado): Boolean =
+        estado == Estado.PENDIENTE_ARQUEO || estado == Estado.PENDIENTE_ASIGNAR_SALDO
+
+    /** Prioridad para mostrar en calendario: menor número = mayor prioridad */
+    fun obtenerPrioridad(estado: Estado): Int = when (estado) {
+        Estado.EN_CURSO -> 1
+        Estado.PENDIENTE_ARQUEO -> 2
+        Estado.PENDIENTE_ASIGNAR_SALDO -> 3
+        Estado.PROGRAMADO_TOTAL -> 4
+        Estado.PROGRAMADO_PARCIAL -> 5
+        Estado.CERRADO_COMPLETO -> 6
+        Estado.CANCELADO -> 7
     }
 
-    /**
-     * Obtiene el orden de prioridad para mostrar en calendario cuando hay múltiples mercadillos
-     * Menor número = mayor prioridad
-     */
-    fun obtenerPrioridad(estado: Estado): Int {
-        return when (estado) {
-            Estado.EN_CURSO -> 1                    // Máxima prioridad
-            Estado.PENDIENTE_ARQUEO -> 2            // Urgente
-            Estado.PENDIENTE_ASIGNAR_SALDO -> 3     // Urgente
-            Estado.PROGRAMADO_TOTAL -> 4
-            Estado.PROGRAMADO_PARCIAL -> 5
-            Estado.CERRADO_COMPLETO -> 6
-            Estado.CANCELADO -> 7                   // Mínima prioridad
-        }
-    }
+    /** ¿Puede ser cancelado? (si no tiene ventas y no está ya cancelado/cerrado) */
+    fun puedeSerCancelado(estado: Estado, tieneVentas: Boolean): Boolean =
+        !tieneVentas && estado != Estado.CANCELADO && estado != Estado.CERRADO_COMPLETO
 
-    /**
-     * Indica si un mercadillo puede ser cancelado
-     * Solo se puede cancelar si no tiene ventas asociadas
-     */
-    fun puedeSerCancelado(estado: Estado, tieneVentas: Boolean): Boolean {
-        return !tieneVentas && estado != Estado.CANCELADO && estado != Estado.CERRADO_COMPLETO
-    }
+    /** ¿Puede recibir ventas? (solo EN_CURSO) */
+    fun puedeRecibirVentas(estado: Estado): Boolean = estado == Estado.EN_CURSO
 
-    /**
-     * Indica si se pueden asignar ventas a un mercadillo
-     * Solo se pueden asignar ventas a mercadillos EN_CURSO
-     */
-    fun puedeRecibirVentas(estado: Estado): Boolean {
-        return estado == Estado.EN_CURSO
-    }
-
-    /**
-     * Calcula el estado automático basado en fecha, hora y datos del mercadillo
-     */
+    /** Cálculo del estado automático (fecha/hora/arqueo) */
     fun calcularEstadoAutomatico(
         saldoInicial: Double?,
         fecha: String,
@@ -165,7 +149,7 @@ object EstadosMercadillo {
             calendar.add(Calendar.DAY_OF_MONTH, -1)
             val ayer = calendar.time
 
-            // Si es anterior a ayer → mantener estado actual
+            // Si es anterior a ayer → mantener estado actual estimado
             if (fechaMercadillo.before(ayer)) {
                 return when {
                     arqueoCaja != null -> Estado.CERRADO_COMPLETO
@@ -174,17 +158,17 @@ object EstadosMercadillo {
                 }
             }
 
-            // Si es mañana o futuro → PROGRAMADO
+            // Futuro → PROGRAMADO
             if (fechaMercadillo.after(fechaHoy)) {
                 return if (saldoInicial != null) Estado.PROGRAMADO_TOTAL else Estado.PROGRAMADO_PARCIAL
             }
 
-            // Si es HOY → ACTUAL
+            // Hoy → EN_CURSO
             if (fechaMercadillo.equals(fechaHoy)) {
                 return Estado.EN_CURSO
             }
 
-            // Si es AYER y son menos de las 5:00am → ACTUAL (mercadillos nocturnos)
+            // Ayer antes de 5:00 → EN_CURSO (nocturnos)
             calendar.time = fechaHoy
             calendar.set(Calendar.HOUR_OF_DAY, 5)
             calendar.set(Calendar.MINUTE, 0)
@@ -196,7 +180,7 @@ object EstadosMercadillo {
                 return Estado.EN_CURSO
             }
 
-            // Si es AYER y son las 5:00am o más tarde → PENDIENTE_ARQUEO
+            // Ayer 5:00 o más → PENDIENTE_ARQUEO / CERRADO / PENDIENTE_ASIGNAR_SALDO
             if (fechaMercadillo.equals(ayer)) {
                 return when {
                     arqueoCaja != null && pendienteAsignarSaldo -> Estado.PENDIENTE_ASIGNAR_SALDO

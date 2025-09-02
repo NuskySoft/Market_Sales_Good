@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/components/ventas/BarraAccionesVenta.kt
 package es.nuskysoftware.marketsales.ui.components.ventas
 
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModel
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
 fun BarraAccionesVenta(
@@ -21,6 +24,8 @@ fun BarraAccionesVenta(
     onAbrirCarrito: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -40,7 +45,7 @@ fun BarraAccionesVenta(
             )
         ) {
             Text(
-                text = "Realizar cargo  $totalFormateado",
+                text = StringResourceManager.getString("realizar_cargo", currentLanguage) + "  " + totalFormateado,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.background,
@@ -64,6 +69,7 @@ fun BotonCarritoVentas(
 ) {
     val ui by ventasViewModel.uiState.collectAsState()
     val badgeCount = remember(ui.lineasTicket) { ui.lineasTicket.sumOf { it.cantidad } }
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     BadgedBox(
         badge = {
@@ -78,7 +84,7 @@ fun BotonCarritoVentas(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_shopping_cart_24),
-                contentDescription = "Carrito"
+                contentDescription = StringResourceManager.getString("carrito", currentLanguage)
             )
         }
     }

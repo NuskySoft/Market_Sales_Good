@@ -47,8 +47,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.nuskysoftware.marketsales.ads.BannerAdBottom
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import es.nuskysoftware.marketsales.ads.AdsConsentManager
+import androidx.compose.ui.res.stringResource
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
+import es.nuskysoftware.marketsales.ads.AdsInterstitialController
+import es.nuskysoftware.marketsales.utils.findActivity
+import java.time.Month
+import java.time.format.TextStyle
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +75,10 @@ fun PantallaMercadillos(
     val progress by authViewModel.downloadProgress.collectAsState()
     val message by authViewModel.downloadMessage.collectAsState()
 
+    //Anuncios
+    val canRequestAds by AdsConsentManager.canRequestAds.collectAsState()
+    val activity = LocalContext.current.findActivity()
+
     // Config
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val esPremium by ConfigurationManager.esPremium.collectAsState()
@@ -74,7 +87,8 @@ fun PantallaMercadillos(
     val uiState by mercadilloViewModel.uiState.collectAsState()
     val calendarioState by mercadilloViewModel.calendarioState.collectAsState()
     val mercadillosPorDia by mercadilloViewModel.mercadillosPorDia.collectAsState()
-    val nombreMesActual by mercadilloViewModel.nombreMesActual.collectAsState()
+    // 🔁 Eliminamos la dependencia de nombreMesActual (que podía venir en inglés por Locale del sistema)
+    // val nombreMesActual by mercadilloViewModel.nombreMesActual.collectAsState()
 
     val mostrarBottomBar by mercadilloViewModel.mostrarBottomBar.collectAsState()
     val mercadillosEnCurso by mercadilloViewModel.mercadillosEnCurso.collectAsState()
@@ -109,6 +123,18 @@ fun PantallaMercadillos(
     }
 
     // 🔴 Se eliminan todas las llamadas de actualización/programación de estados desde esta pantalla.
+
+    // 🔤 Locale derivado del idioma de ConfigurationManager (ES, EN, GL, FR... amplía si usas más)
+    val localeForLang = remember(currentLanguage) { languageToLocale(currentLanguage) }
+
+    // 🗓️ Nombre de mes localizado a partir del estado del calendario y del idioma actual
+    val nombreMesLocalizado = remember(calendarioState.mes, calendarioState.ano, localeForLang) {
+        val month = Month.of(calendarioState.mes.coerceIn(1, 12))
+        val raw = month.getDisplayName(TextStyle.FULL_STANDALONE, localeForLang)
+        // Capitaliza adecuadamente según locale
+        raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(localeForLang) else it.toString() } +
+                " ${calendarioState.ano}"
+    }
 
     PullToRefreshBox(
         isRefreshing = isRefreshing,
@@ -185,18 +211,36 @@ fun PantallaMercadillos(
                             mercadilloActivo = mercadilloActivoParaOperaciones,
                             onVentasClick = {
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionVentas()
-                                if (ok && m != null) navController?.navigate("ventas/${m.idMercadillo}")
-                                else { accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true }
+                                if (ok && m != null) {
+                                    val ruta = "ventas/${m.idMercadillo}"
+                                    activity?.let { act ->
+                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+                                    } ?: run { navController?.navigate(ruta) }
+                                } else {
+                                    accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true
+                                }
                             },
                             onGastosClick = {
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionGastos()
-                                if (ok && m != null) navController?.navigate("gastos/${m.idMercadillo}")
-                                else { accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true }
+                                if (ok && m != null) {
+                                    val ruta = "gastos/${m.idMercadillo}"
+                                    activity?.let { act ->
+                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+                                    } ?: run { navController?.navigate(ruta) }
+                                } else {
+                                    accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true
+                                }
                             },
                             onResumenClick = {
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionResumen()
-                                if (ok && m != null) navController?.navigate("resumen/${m.idMercadillo}")
-                                else { accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true }
+                                if (ok && m != null) {
+                                    val ruta = "resumen/${m.idMercadillo}"
+                                    activity?.let { act ->
+                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+                                    } ?: run { navController?.navigate(ruta) }
+                                } else {
+                                    accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true
+                                }
                             },
                             onCambiarMercadillo = {
                                 mercadilloViewModel.cambiarMercadilloActivo()
@@ -205,6 +249,8 @@ fun PantallaMercadillos(
                             currentLanguage = currentLanguage,
                             mostrarBotonCambiar = (mercadilloActivoParaOperaciones != null && mercadillosEnCurso.size > 1)
                         )
+                    } else {
+                        AdsBottomBar()
                     }
                 }
             ) { paddingValues ->
@@ -243,7 +289,7 @@ fun PantallaMercadillos(
                                     Text("←", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
                                 }
                                 Text(
-                                    text = nombreMesActual,
+                                    text = nombreMesLocalizado, // ← ahora SIEMPRE según ConfigurationManager.idioma
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -268,7 +314,16 @@ fun PantallaMercadillos(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
-                                listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+                                val diasSemana = listOf(
+                                    StringResourceManager.getString("lunes", currentLanguage),
+                                    StringResourceManager.getString("martes", currentLanguage),
+                                    StringResourceManager.getString("miercoles", currentLanguage),
+                                    StringResourceManager.getString("jueves", currentLanguage),
+                                    StringResourceManager.getString("viernes", currentLanguage),
+                                    StringResourceManager.getString("sabado", currentLanguage),
+                                    StringResourceManager.getString("domingo", currentLanguage)
+                                )
+                                diasSemana.forEach { dia ->
                                     Text(
                                         text = dia,
                                         style = MaterialTheme.typography.bodySmall,
@@ -374,6 +429,16 @@ fun PantallaMercadillos(
     }
 }
 
+/** Mapea el código de idioma de ConfigurationManager.idioma a un Locale de Java. */
+private fun languageToLocale(language: String): Locale = when (language.lowercase(Locale.ROOT)) {
+    "es", "es_es" -> Locale("es", "ES")
+    "en", "en_us", "en_gb" -> Locale.ENGLISH
+    "gl" -> Locale("gl", "ES")
+    "fr" -> Locale.FRENCH
+    "pt" -> Locale("pt", "PT")
+    else -> Locale("es", "ES") // por defecto ES
+}
+
 
 
 //// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaMercadillos.kt
@@ -425,8 +490,14 @@ fun PantallaMercadillos(
 //import androidx.compose.ui.unit.sp
 //import androidx.lifecycle.viewmodel.compose.viewModel
 //import androidx.navigation.NavController
+//import es.nuskysoftware.marketsales.ads.BannerAdBottom
 //import kotlinx.coroutines.delay
 //import kotlinx.coroutines.launch
+//import es.nuskysoftware.marketsales.ads.AdsConsentManager
+//import androidx.compose.ui.res.stringResource
+//import es.nuskysoftware.marketsales.ads.AdsBottomBar
+//import es.nuskysoftware.marketsales.ads.AdsInterstitialController
+//import es.nuskysoftware.marketsales.utils.findActivity
 //
 //@RequiresApi(Build.VERSION_CODES.O)
 //@OptIn(ExperimentalMaterial3Api::class)
@@ -443,6 +514,10 @@ fun PantallaMercadillos(
 //    val syncState by authViewModel.syncState.collectAsState()
 //    val progress by authViewModel.downloadProgress.collectAsState()
 //    val message by authViewModel.downloadMessage.collectAsState()
+//
+//    //Anuncios
+//    val canRequestAds by AdsConsentManager.canRequestAds.collectAsState()
+//    val activity = LocalContext.current.findActivity()
 //
 //    // Config
 //    val currentLanguage by ConfigurationManager.idioma.collectAsState()
@@ -486,13 +561,7 @@ fun PantallaMercadillos(
 //        }
 //    }
 //
-//    LaunchedEffect(Unit) {
-//        // ✅ Cuando se abre la app: revisar estados y programar 00:00 y 05:00
-//        try {
-//            es.nuskysoftware.marketsales.work.AutoEstadoScheduler.runOnceNow(context.applicationContext)
-//            es.nuskysoftware.marketsales.work.AutoEstadoScheduler.scheduleDaily(context.applicationContext)
-//        } catch (_: Exception) { /* no bloquear UI */ }
-//    }
+//    // 🔴 Se eliminan todas las llamadas de actualización/programación de estados desde esta pantalla.
 //
 //    PullToRefreshBox(
 //        isRefreshing = isRefreshing,
@@ -569,18 +638,36 @@ fun PantallaMercadillos(
 //                            mercadilloActivo = mercadilloActivoParaOperaciones,
 //                            onVentasClick = {
 //                                val (ok, m) = mercadilloViewModel.manejarNavegacionVentas()
-//                                if (ok && m != null) navController?.navigate("ventas/${m.idMercadillo}")
-//                                else { accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true }
+//                                if (ok && m != null) {
+//                                    val ruta = "ventas/${m.idMercadillo}"
+//                                    activity?.let { act ->
+//                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+//                                    } ?: run { navController?.navigate(ruta) }
+//                                } else {
+//                                    accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true
+//                                }
 //                            },
 //                            onGastosClick = {
 //                                val (ok, m) = mercadilloViewModel.manejarNavegacionGastos()
-//                                if (ok && m != null) navController?.navigate("gastos/${m.idMercadillo}")
-//                                else { accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true }
+//                                if (ok && m != null) {
+//                                    val ruta = "gastos/${m.idMercadillo}"
+//                                    activity?.let { act ->
+//                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+//                                    } ?: run { navController?.navigate(ruta) }
+//                                } else {
+//                                    accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true
+//                                }
 //                            },
 //                            onResumenClick = {
 //                                val (ok, m) = mercadilloViewModel.manejarNavegacionResumen()
-//                                if (ok && m != null) navController?.navigate("resumen/${m.idMercadillo}")
-//                                else { accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true }
+//                                if (ok && m != null) {
+//                                    val ruta = "resumen/${m.idMercadillo}"
+//                                    activity?.let { act ->
+//                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
+//                                    } ?: run { navController?.navigate(ruta) }
+//                                } else {
+//                                    accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true
+//                                }
 //                            },
 //                            onCambiarMercadillo = {
 //                                mercadilloViewModel.cambiarMercadilloActivo()
@@ -589,6 +676,8 @@ fun PantallaMercadillos(
 //                            currentLanguage = currentLanguage,
 //                            mostrarBotonCambiar = (mercadilloActivoParaOperaciones != null && mercadillosEnCurso.size > 1)
 //                        )
+//                    } else {
+//                        AdsBottomBar()
 //                    }
 //                }
 //            ) { paddingValues ->
@@ -652,7 +741,16 @@ fun PantallaMercadillos(
 //                                modifier = Modifier.fillMaxWidth(),
 //                                horizontalArrangement = Arrangement.SpaceEvenly
 //                            ) {
-//                                listOf("L", "M", "X", "J", "V", "S", "D").forEach { dia ->
+//                                val diasSemana = listOf(
+//                                    StringResourceManager.getString("lunes", currentLanguage),
+//                                    StringResourceManager.getString("martes", currentLanguage),
+//                                    StringResourceManager.getString("miercoles", currentLanguage),
+//                                    StringResourceManager.getString("jueves", currentLanguage),
+//                                    StringResourceManager.getString("viernes", currentLanguage),
+//                                    StringResourceManager.getString("sabado", currentLanguage),
+//                                    StringResourceManager.getString("domingo", currentLanguage)
+//                                )
+//                                diasSemana.forEach { dia ->
 //                                    Text(
 //                                        text = dia,
 //                                        style = MaterialTheme.typography.bodySmall,

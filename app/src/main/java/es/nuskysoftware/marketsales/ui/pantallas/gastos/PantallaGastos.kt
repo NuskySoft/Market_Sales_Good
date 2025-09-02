@@ -17,11 +17,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 import es.nuskysoftware.marketsales.ui.composables.gastos.PestanaGastosAutomaticas
 import es.nuskysoftware.marketsales.ui.composables.gastos.PestanaGastosManual
 import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ContextCastToActivity")
@@ -31,10 +35,10 @@ fun PantallaGastos(
     mercadilloActivo: MercadilloEntity
 ) {
     val activity = LocalContext.current as ComponentActivity
-    // ⬇️ ViewModel scopeado al Activity para compartir estado con carrito y método de pago
     val gastosViewModel: GastosViewModel =
         viewModel(activity, factory = GastosViewModelFactory(activity.applicationContext))
 
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
     var selectedTab by rememberSaveable { mutableStateOf(0) }
 
     Scaffold(
@@ -42,18 +46,23 @@ fun PantallaGastos(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Nuevos Gastos - ${mercadilloActivo.lugar}",
-                        fontWeight = FontWeight.Bold
+                        text = "${mercadilloActivo.lugar} - " +
+                                StringResourceManager.getString("gastos", currentLanguage),
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { navController.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
-                            contentDescription = "Atrás"
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage),
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
             )
         }
     ) { paddingValues ->
@@ -66,13 +75,14 @@ fun PantallaGastos(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Ingresar Gasto") }
+                    text = { Text(StringResourceManager.getString("ingresar_gasto", currentLanguage)) }
                 )
-//                Tab(
-//                    selected = selectedTab == 1,
-//                    onClick = { selectedTab = 1 },
-//                    text = { Text("Automáticos") }
-//                )
+                // Si activas la pestaña de automáticos, internacionaliza también su etiqueta:
+                // Tab(
+                //     selected = selectedTab == 1,
+                //     onClick = { selectedTab = 1 },
+                //     text = { Text(StringResourceManager.getString("automaticos", currentLanguage)) }
+                // )
             }
 
             when (selectedTab) {
@@ -94,103 +104,9 @@ fun PantallaGastos(
                 )
             }
         }
+        AdsBottomBar()
     }
 }
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/gastos/PantallaGastos.kt
-//package es.nuskysoftware.marketsales.ui.pantallas.gastos
-//
-//import android.net.Uri
-//import androidx.compose.foundation.layout.Column
-//import androidx.compose.foundation.layout.fillMaxSize
-//import androidx.compose.foundation.layout.padding
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.runtime.saveable.rememberSaveable
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.res.painterResource
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.lifecycle.viewmodel.compose.viewModel
-//import androidx.navigation.NavController
-//import es.nuskysoftware.marketsales.R
-//import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
-//import es.nuskysoftware.marketsales.ui.composables.gastos.PestanaGastosAutomaticas
-//import es.nuskysoftware.marketsales.ui.composables.gastos.PestanaGastosManual
-//import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel
-//import es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory
-//
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun PantallaGastos(
-//    navController: NavController,
-//    mercadilloActivo: MercadilloEntity
-//) {
-//    val context = androidx.compose.ui.platform.LocalContext.current
-//    val gastosViewModel: GastosViewModel = viewModel(factory = GastosViewModelFactory(context))
-//    var selectedTab by rememberSaveable { mutableStateOf(0) }
-//
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = {
-//                    Text(
-//                        text = "Nuevos Gastos - ${mercadilloActivo.lugar}",
-//                        fontWeight = FontWeight.Bold
-//                    )
-//                },
-//                navigationIcon = {
-//                    IconButton(onClick = { navController.popBackStack() }) {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_arrow_left),
-//                            contentDescription = "Atrás"
-//                        )
-//                    }
-//                }
-//            )
-//        }
-//    ) { paddingValues ->
-//        Column(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(paddingValues)
-//        ) {
-//            TabRow(selectedTabIndex = selectedTab) {
-//                Tab(
-//                    selected = selectedTab == 0,
-//                    onClick = { selectedTab = 0 },
-//                    text = { Text("Gasto Manual") }
-//                )
-//                Tab(
-//                    selected = selectedTab == 1,
-//                    onClick = { selectedTab = 1 },
-//                    text = { Text("Automáticos") }
-//                )
-//            }
-//
-//            when (selectedTab) {
-//                0 -> PestanaGastosManual(
-//                    gastosViewModel = gastosViewModel,
-//                    mercadilloActivo = mercadilloActivo,
-//                    onAbrirCarrito = {
-//                        navController.navigate("carrito_gastos/${mercadilloActivo.idMercadillo}")
-//                    },
-//                    onCargarGasto = { totalFmt ->
-//                        navController.navigate(
-//                            "metodo_pago_gastos/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
-//                        )
-//                    }
-//                )
-//
-//                1 -> PestanaGastosAutomaticas(
-//                    gastosViewModel = gastosViewModel,
-//                    mercadilloActivo = mercadilloActivo
-//                )
-//            }
-//        }
-//    }
-//}
-
 
 private fun fechaCorta(ts: Long): String {
     val cal = java.util.Calendar.getInstance().apply { timeInMillis = ts }
@@ -200,4 +116,3 @@ private fun fechaCorta(ts: Long): String {
     val mi = cal.get(java.util.Calendar.MINUTE)
     return "%02d/%02d %02d:%02d".format(dd, mm, hh, mi)
 }
-

@@ -20,10 +20,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.R
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.data.repository.AuthRepository
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.FooterMarca
 import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,15 +37,6 @@ fun PantallaConfiguracion(
     val authRepo = remember { AuthRepository(context) }
     val scope = rememberCoroutineScope()
 
-//    // Estados V10 simplificados
-//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
-//    val currentFont by ConfigurationManager.fuente.collectAsState()
-//    val isDarkTheme by ConfigurationManager.temaOscuro.collectAsState()
-//    val currentMoneda by ConfigurationManager.moneda.collectAsState()
-//    val esPremium by ConfigurationManager.esPremium.collectAsState()
-//    val usuarioEmail by ConfigurationManager.usuarioEmail.collectAsState()
-//    val isAuthenticated by ConfigurationManager.isAuthenticated.collectAsState()
-
     // Estados V10 simplificados
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val currentFont by ConfigurationManager.fuente.collectAsState()
@@ -52,9 +45,9 @@ fun PantallaConfiguracion(
     val esPremium by ConfigurationManager.esPremium.collectAsState()
     val usuarioEmail by ConfigurationManager.usuarioEmail.collectAsState()
     val isAuthenticated by ConfigurationManager.isAuthenticated.collectAsState()
+    val appVersionText = ConfigurationManager.versionAppValue
 
     // Permisos V10 simplificados
-    //val canChangeAdvanced = ConfigurationManager.canChangeConfiguration()
     val canChangeAdvanced = esPremium // En lugar de ConfigurationManager.canChangeConfiguration()
 
     Scaffold(
@@ -67,10 +60,10 @@ fun PantallaConfiguracion(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
                         )
                     }
                 },
@@ -97,10 +90,10 @@ fun PantallaConfiguracion(
                 // Información de cuenta V10
                 item {
                     TarjetaInformacionCuenta(
-                        email = usuarioEmail ?: if (isAuthenticated) "usuario@email.com" else "Usuario Invitado",
+                        email = usuarioEmail ?: if (isAuthenticated) "usuario@email.com" else StringResourceManager.getString("usuario_invitado", currentLanguage),
                         esPremium = esPremium,
                         isAuthenticated = isAuthenticated,
-                        version = "V10.0",
+                        version = appVersionText,
                         language = currentLanguage
                     )
                 }
@@ -110,13 +103,18 @@ fun PantallaConfiguracion(
                     OpcionConfiguracionV10(
                         iconRes = R.drawable.ic_language,
                         titulo = StringResourceManager.getString("idioma", currentLanguage),
-                        valorActual = if (currentLanguage == "es") "Español" else "English",
-                        opciones = listOf("es" to "Español", "en" to "English"),
+                        valorActual = if (currentLanguage == "es")
+                            StringResourceManager.getString("espanol", currentLanguage)
+                        else
+                            StringResourceManager.getString("ingles", currentLanguage),
+                        opciones = listOf(
+                            "es" to StringResourceManager.getString("espanol", currentLanguage),
+                            "en" to StringResourceManager.getString("ingles", currentLanguage)
+                        ),
                         habilitado = canChangeAdvanced,
                         onSeleccionar = { codigo ->
                             scope.launch {
                                 authRepo.updateConfiguration(idioma = codigo)
-
                             }
                         }
                     )
@@ -128,7 +126,11 @@ fun PantallaConfiguracion(
                         iconRes = R.drawable.ic_font,
                         titulo = StringResourceManager.getString("fuente", currentLanguage),
                         valorActual = currentFont,
-                        opciones = listOf("Montserrat" to "Montserrat", "Poppins" to "Poppins", "Roboto" to "Roboto"),
+                        opciones = listOf(
+                            "Montserrat" to StringResourceManager.getString("montserrat", currentLanguage),
+                            "Poppins" to StringResourceManager.getString("poppins", currentLanguage),
+                            "Roboto" to StringResourceManager.getString("roboto", currentLanguage)
+                        ),
                         habilitado = canChangeAdvanced,
                         onSeleccionar = { fuente ->
                             scope.launch {
@@ -153,7 +155,7 @@ fun PantallaConfiguracion(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_palette),
-                                contentDescription = "Tema",
+                                contentDescription = StringResourceManager.getString("tema", currentLanguage),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -165,7 +167,10 @@ fun PantallaConfiguracion(
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = if (isDarkTheme) "Oscuro" else "Claro",
+                                    text = if (isDarkTheme)
+                                        StringResourceManager.getString("tema_oscuro", currentLanguage)
+                                    else
+                                        StringResourceManager.getString("tema_claro", currentLanguage),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
@@ -185,21 +190,21 @@ fun PantallaConfiguracion(
                 // Moneda (solo Premium)
                 item {
                     val monedas = listOf(
-                        "€ Euro" to "€ Euro",
-                        "$ Dólar" to "$ Dólar",
-                        "£ Libra" to "£ Libra",
-                        "$ Peso Argentino" to "$ Peso Argentino",
-                        "$ Peso Mexicano" to "$ Peso Mexicano",
-                        "$ Peso Colombiano" to "$ Peso Colombiano",
-                        "S/ Sol Peruano" to "S/ Sol Peruano",
-                        "$ Peso Chileno" to "$ Peso Chileno",
-                        "Bs Bolívar" to "Bs Bolívar",
-                        "$ Real Brasileño" to "$ Real Brasileño"
+                        "€ Euro" to StringResourceManager.getString("euro", currentLanguage),
+                        "$ Dólar" to StringResourceManager.getString("dolar", currentLanguage),
+                        "£ Libra" to StringResourceManager.getString("libra", currentLanguage),
+                        "$ Peso Argentino" to StringResourceManager.getString("peso_argentino", currentLanguage),
+                        "$ Peso Mexicano" to StringResourceManager.getString("peso_mexicano", currentLanguage),
+                        "$ Peso Colombiano" to StringResourceManager.getString("peso_colombiano", currentLanguage),
+                        "S/ Sol Peruano" to StringResourceManager.getString("sol_peruano", currentLanguage),
+                        "$ Peso Chileno" to StringResourceManager.getString("peso_chileno", currentLanguage),
+                        "Bs Bolívar" to StringResourceManager.getString("bolivar", currentLanguage),
+                        "$ Real Brasileño" to StringResourceManager.getString("real_brasileno", currentLanguage)
                     )
 
                     OpcionConfiguracionV10(
                         iconRes = R.drawable.ic_money,
-                        titulo = "Moneda",
+                        titulo = StringResourceManager.getString("moneda", currentLanguage),
                         valorActual = currentMoneda,
                         opciones = monedas,
                         habilitado = canChangeAdvanced,
@@ -211,134 +216,6 @@ fun PantallaConfiguracion(
                     )
                 }
 
-                // Sección desarrollo/testing
-//                item {
-//                    Card(
-//                        modifier = Modifier.fillMaxWidth().clickable {
-//                            scope.launch {
-//                                authRepo.updateUserPremium(!esPremium)
-//                            }
-//                        },
-//                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-//                    ) {
-//                        Row(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .padding(16.dp),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Icon(
-//                                painter = painterResource(id = R.drawable.ic_settings),
-//                                contentDescription = "Desarrollo",
-//                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-//                                modifier = Modifier.size(24.dp)
-//                            )
-//                            Spacer(modifier = Modifier.width(16.dp))
-//                            Column(modifier = Modifier.weight(1f)) {
-//                                Text(
-//                                    text = "Desarrollo",
-//                                    style = MaterialTheme.typography.bodyLarge,
-//                                    fontWeight = FontWeight.Medium,
-//                                    color = MaterialTheme.colorScheme.onSecondaryContainer
-//                                )
-//                                Text(
-//                                    text = if (esPremium) "🚀 Premium ACTIVO" else "✋ Modo FREE",
-//                                    style = MaterialTheme.typography.bodySmall,
-//                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-//                                )
-//                            }
-//                        }
-//                    }
-//                }
-
-                // Reemplazar la sección de desarrollo/testing en PantallaConfiguracion.kt:
-
-// Sección desarrollo/testing - ✅ TOGGLE PREMIUM ARREGLADO
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            // ✅ CAMBIO: Usar función simplificada para desarrollo
-                            ConfigurationManager.togglePremiumForDevelopment()
-                        },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (esPremium) {
-                                Color(0xFFFFD700).copy(alpha = 0.3f) // Dorado para Premium
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer // Normal para Free
-                            }
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = if (esPremium) 8.dp else 4.dp
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    id = if (esPremium) R.drawable.ic_info else R.drawable.ic_settings
-                                ),
-                                contentDescription = "Desarrollo",
-                                tint = if (esPremium) {
-                                    Color(0xFFFFD700) // Dorado para Premium
-                                } else {
-                                    MaterialTheme.colorScheme.onSecondaryContainer
-                                },
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "🔧 Toggle Premium (Desarrollo)",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (esPremium) {
-                                        Color(0xFFFFD700)
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer
-                                    }
-                                )
-                                Text(
-                                    text = if (esPremium) "🚀 PREMIUM ACTIVO - Tap para FREE" else "✋ MODO FREE - Tap para PREMIUM",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (esPremium) {
-                                        Color(0xFFFFD700).copy(alpha = 0.8f)
-                                    } else {
-                                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                                    }
-                                )
-                                if (esPremium) {
-                                    Text(
-                                        text = "• Idiomas adicionales\n• Fuentes personalizadas\n• Monedas múltiples",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontSize = 10.sp,
-                                        color = Color(0xFFFFD700).copy(alpha = 0.6f)
-                                    )
-                                }
-                            }
-
-                            // Indicador visual del estado
-                            Card(
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if (esPremium) Color(0xFFFFD700) else Color.Gray
-                                ),
-                                modifier = Modifier.padding(4.dp)
-                            ) {
-                                Text(
-                                    text = if (esPremium) "PREMIUM" else "FREE",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.Black
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // Promoción Premium para usuarios FREE
                 if (!esPremium) {
                     item {
@@ -346,6 +223,7 @@ fun PantallaConfiguracion(
                     }
                 }
             }
+            AdsBottomBar()
 
             // Footer
             FooterMarca()
@@ -370,6 +248,7 @@ private fun OpcionConfiguracionV10(
     onSeleccionar: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -421,7 +300,7 @@ private fun OpcionConfiguracionV10(
                     )
                     if (!habilitado) {
                         Text(
-                            text = "Solo Premium",
+                            text = StringResourceManager.getString("solo_premium", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Red.copy(alpha = 0.7f)
                         )
@@ -432,7 +311,7 @@ private fun OpcionConfiguracionV10(
                         painter = painterResource(
                             id = if (expanded) R.drawable.ic_arrow_up else R.drawable.ic_arrow_down
                         ),
-                        contentDescription = "Expandir",
+                        contentDescription = StringResourceManager.getString("expandir", currentLanguage),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier.size(16.dp)
                     )
@@ -504,9 +383,9 @@ private fun TarjetaInformacionCuenta(
                 ) {
                     Text(
                         text = when {
-                            !isAuthenticated -> "INVITADO"
-                            esPremium -> "PREMIUM"
-                            else -> "FREE"
+                            !isAuthenticated -> StringResourceManager.getString("version_invitado", language)
+                            esPremium -> StringResourceManager.getString("version_premium", language)
+                            else -> StringResourceManager.getString("version_free", language)
                         },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 12.sp,
@@ -522,7 +401,9 @@ private fun TarjetaInformacionCuenta(
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "App $version",
+                text = StringResourceManager
+                    .getString("app_version", language)
+                    .replace("{version}", version),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -543,7 +424,7 @@ private fun TarjetaPromocionPremium(language: String) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_info),
-                contentDescription = "Premium",
+                contentDescription = StringResourceManager.getString("premium", language),
                 tint = Color(0xFFFFD700),
                 modifier = Modifier.size(32.dp)
             )

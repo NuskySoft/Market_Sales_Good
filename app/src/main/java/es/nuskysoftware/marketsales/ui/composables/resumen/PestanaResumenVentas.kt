@@ -13,8 +13,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.LineaVentaEntity
+import es.nuskysoftware.marketsales.data.repository.ArticuloRepository
+import es.nuskysoftware.marketsales.data.repository.TipoLinea
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.MonedaUtils
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -30,6 +33,7 @@ fun PestanaResumenVentas(
     val db = remember { AppDatabase.getDatabase(context) }
     val lineasDao = remember { db.lineasVentaDao() }
     val recibosDao = remember { db.recibosDao() }
+    val articuloRepository = remember { ArticuloRepository(context) }
 
     val lineas by remember(mercadilloId) { lineasDao.obtenerLineasPorMercadillo(mercadilloId) }
         .collectAsState(initial = emptyList())
@@ -38,6 +42,7 @@ fun PestanaResumenVentas(
 
     val metodoPorRecibo = remember(recibos) { recibos.associate { it.idRecibo to it.metodoPago } }
     val moneda by ConfigurationManager.moneda.collectAsState()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     // 1) Separar originales y abonos
     val originalesOrdenadas = remember(lineas) {
@@ -70,7 +75,7 @@ fun PestanaResumenVentas(
 
     Column(Modifier.fillMaxSize()) {
         Text(
-            text = "Resumen de ventas",
+            text = StringResourceManager.getString("resumen_ventas", currentLanguage),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
@@ -116,8 +121,16 @@ fun PestanaResumenVentas(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Total de ventas", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-            Text(text = totalFmt, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
+            Text(
+                StringResourceManager.getString("total_ventas", currentLanguage),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = totalFmt,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 
@@ -127,13 +140,13 @@ fun PestanaResumenVentas(
         val totalLineaFmt = MonedaUtils.formatearImporte(lineaConfirm.subtotal, moneda)
         AlertDialog(
             onDismissRequest = { lineaParaConfirmar = null },
-            title = { Text("Confirmar abono") },
+            title = { Text(StringResourceManager.getString("confirmar_abono", currentLanguage)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("¿Seguro que quieres abonar esta línea?")
+                    Text(StringResourceManager.getString("confirmar_abono_pregunta", currentLanguage))
                     Text("• ${lineaConfirm.descripcion}")
-                    Text("• Cantidad: ${lineaConfirm.cantidad}")
-                    Text("• Total línea: $totalLineaFmt")
+                    Text("• " + StringResourceManager.getString("cantidad", currentLanguage) + ": ${lineaConfirm.cantidad}")
+                    Text("• " + StringResourceManager.getString("total_linea", currentLanguage) + ": $totalLineaFmt")
                 }
             },
             confirmButton = {
@@ -162,13 +175,30 @@ fun PestanaResumenVentas(
                                     idLineaOriginalAbonada = l.idLinea
                                 )
                                 lineasDao.insertarLinea(abono)
+                                if (
+                                    ConfigurationManager.getIsPremium() &&
+                                    l.tipoLinea == TipoLinea.PRODUCTO.name &&
+                                    l.idProducto != null
+                                ) {
+                                    try {
+                                        val articulo = articuloRepository.getArticuloById(l.idProducto!!)
+                                        if (articulo != null && articulo.controlarStock) {
+                                            val nuevoStock = (articulo.stock ?: 0) + abs(l.cantidad)
+                                            articuloRepository.actualizarArticulo(
+                                                articulo.copy(stock = nuevoStock)
+                                            )
+                                        }
+                                    } catch (_: Exception) { }
+                                }
                             } catch (_: Exception) { /* Silencio: se mostrará al refrescar */ }
                         }
                     }
-                ) { Text("Sí, abonar") }
+                ) { Text(StringResourceManager.getString("si_abonar", currentLanguage)) }
             },
             dismissButton = {
-                TextButton(onClick = { lineaParaConfirmar = null }) { Text("Cancelar") }
+                TextButton(onClick = { lineaParaConfirmar = null }) {
+                    Text(StringResourceManager.getString("cancelar", currentLanguage))
+                }
             }
         )
     }
@@ -184,6 +214,7 @@ private fun LineaResumenCard(
     mostrarBotonAbono: Boolean,
     onAbonarClick: () -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val precioUnitFmt = remember(linea, moneda) { MonedaUtils.formatearImporte(linea.precioUnitario, moneda) }
     val totalLineaFmt = remember(linea, moneda) { MonedaUtils.formatearImporte(linea.subtotal, moneda) }
 
@@ -204,7 +235,7 @@ private fun LineaResumenCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = linea.descripcion, fontWeight = FontWeight.Medium)
                 Text(
-                    text = "PU: $precioUnitFmt",
+                    text = StringResourceManager.getString("precio_unitario", currentLanguage) + " " + precioUnitFmt,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -214,8 +245,11 @@ private fun LineaResumenCard(
                 Text(text = totalLineaFmt, fontWeight = FontWeight.SemiBold)
                 if (mostrarBotonAbono) {
                     Spacer(Modifier.height(6.dp))
-                    OutlinedButton(onClick = onAbonarClick, contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)) {
-                        Text("Abonar")
+                    OutlinedButton(
+                        onClick = onAbonarClick,
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(StringResourceManager.getString("abonar", currentLanguage))
                     }
                 }
             }
@@ -229,6 +263,7 @@ private fun AbonoResumenCard(
     moneda: String,
     metodoPago: String
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val precioUnitFmt = remember(linea, moneda) { MonedaUtils.formatearImporte(linea.precioUnitario, moneda) }
     val totalLineaFmt = remember(linea, moneda) { MonedaUtils.formatearImporte(linea.subtotal, moneda) }
 
@@ -256,19 +291,19 @@ private fun AbonoResumenCard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(text = linea.cantidad.toString(), fontWeight = FontWeight.Bold)
-                AssistChip(
-                    onClick = { },
-                    enabled = false,
-                    label = { Text("ABONO") }
-                )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = linea.descripcion, fontWeight = FontWeight.Medium)
                 Text(
-                    text = "PU: $precioUnitFmt",
+                    text = StringResourceManager.getString("precio_unitario", currentLanguage) + " " + precioUnitFmt,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                AssistChip(
+                    onClick = { },
+                    enabled = false,
+                    label = { Text(StringResourceManager.getString("abono_chip", currentLanguage)) }
                 )
             }
 
@@ -309,4 +344,3 @@ private fun siguienteIdLinea(maxId: String?): String {
     val next = n + 1
     return next.toString().padStart(len, '0')
 }
-

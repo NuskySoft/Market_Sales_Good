@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/components/DialogoSeleccionMercadilloActivo.kt
 package es.nuskysoftware.marketsales.ui.components
 
 import androidx.compose.foundation.layout.Column
@@ -12,12 +13,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.ConfigurationManager.moneda
+import es.nuskysoftware.marketsales.utils.MonedaUtils
 
 @Composable
 fun DialogoSeleccionMercadilloActivo(
@@ -33,7 +38,7 @@ fun DialogoSeleccionMercadilloActivo(
                 text = StringResourceManager.getString(
                     "seleccionar_mercadillo_activo",
                     currentLanguage
-                ).ifBlank { "Seleccionar Mercadillo Activo" },
+                ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -46,7 +51,7 @@ fun DialogoSeleccionMercadilloActivo(
                     text = StringResourceManager.getString(
                         "varios_mercadillos_en_curso",
                         currentLanguage
-                    ).ifBlank { "Hay varios mercadillos en curso. Elige uno para continuar:" },
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
                 )
@@ -62,10 +67,11 @@ fun DialogoSeleccionMercadilloActivo(
                             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                         )
                     ) {
-                        Column(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp)) {
-
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
                             Text(
                                 text = m.lugar,
                                 style = MaterialTheme.typography.titleMedium,
@@ -83,8 +89,13 @@ fun DialogoSeleccionMercadilloActivo(
 
                             if (m.saldoInicial != null) {
                                 Spacer(modifier = Modifier.height(4.dp))
+                                val moneda by ConfigurationManager.moneda.collectAsState()
                                 Text(
-                                    text = "💰 ${StringResourceManager.getString("saldo_inicial", currentLanguage).ifBlank { "Saldo inicial" }}: €${String.format("%.2f", m.saldoInicial)}",
+//                                    text = "💰 " +
+//                                            StringResourceManager.getString("saldo_inicial", currentLanguage) +
+//                                            ": €${String.format("%.2f", m.saldoInicial)}",
+                                    text = "💰 ${StringResourceManager.getString("saldo_inicial", currentLanguage).ifBlank { "Saldo inicial" }}: " +
+                                            MonedaUtils.formatearImporte(m.saldoInicial, moneda),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF4CAF50),
                                     fontWeight = FontWeight.Medium
@@ -97,12 +108,11 @@ fun DialogoSeleccionMercadilloActivo(
                 }
             }
         },
-        confirmButton = { /* selección se hace tocando una tarjeta */ },
+        confirmButton = { /* la selección se realiza tocando una tarjeta */ },
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(
                     text = StringResourceManager.getString("cancelar", currentLanguage)
-                        .ifBlank { "Cancelar" }
                 )
             }
         }

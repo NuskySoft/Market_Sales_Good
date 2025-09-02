@@ -1,0 +1,242 @@
+kotlin version: 2.0.21
+error message: org.jetbrains.kotlin.codegen.CompilationException: Back-end (JVM) Internal error: Couldn't transform method node:
+<clinit> ()V:
+    TRYCATCHBLOCK L0 L1 L2 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L3 L4 L5 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L6 L7 L8 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L9 L10 L11 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L12 L13 L14 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L15 L16 L17 java/lang/NoSuchFieldError
+    TRYCATCHBLOCK L18 L19 L20 java/lang/NoSuchFieldError
+   L21
+    INVOKESTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.values ()[Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    ARRAYLENGTH
+    NEWARRAY T_INT
+    ASTORE 0
+   L22
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L0
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.PROGRAMADO_PARCIAL : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    ICONST_1
+    IASTORE
+   L1
+    GOTO L23
+   L2
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L24
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L23
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L3
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.PROGRAMADO_TOTAL : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    ICONST_2
+    IASTORE
+   L4
+    GOTO L25
+   L5
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L26
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L25
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L6
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.EN_CURSO : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    ICONST_3
+    IASTORE
+   L7
+    GOTO L27
+   L8
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L28
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L27
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L9
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.PENDIENTE_ARQUEO : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    ICONST_4
+    IASTORE
+   L10
+    GOTO L29
+   L11
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L30
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L29
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L12
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.PENDIENTE_ASIGNAR_SALDO : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    ICONST_5
+    IASTORE
+   L13
+    GOTO L31
+   L14
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L32
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L31
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L15
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.CERRADO_COMPLETO : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    BIPUSH 6
+    IASTORE
+   L16
+    GOTO L33
+   L17
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L34
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L33
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.SAVE_STACK_BEFORE_TRY ()V
+   L18
+    NOP
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+    ALOAD 0
+    GETSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.CANCELADO : Les/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado;
+    INVOKEVIRTUAL es/nuskysoftware/marketsales/utils/EstadosMercadillo$Estado.ordinal ()I
+    BIPUSH 7
+    IASTORE
+   L19
+    GOTO L35
+   L20
+    ASTORE 1
+    INVOKESTATIC kotlin/jvm/internal/$PseudoInsn.RESTORE_STACK_IN_TRY_CATCH ()V
+   L36
+    GETSTATIC kotlin/Unit.INSTANCE : Lkotlin/Unit;
+    POP
+   L35
+    ALOAD 0
+   L37
+    PUTSTATIC es/nuskysoftware/marketsales/utils/EstadosMercadillo$WhenMappings.$EnumSwitchMapping$0 : [I
+    RETURN
+   L38
+    MAXSTACK = 3
+    MAXLOCALS = 2
+
+File is unknown
+The root cause java.lang.OutOfMemoryError was thrown at: org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer$FixStackFrame.getStackContent(FixStackAnalyzer.kt:132)
+	at org.jetbrains.kotlin.codegen.TransformationMethodVisitor.visitEnd(TransformationMethodVisitor.kt:89)
+	at org.jetbrains.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.jetbrains.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethod(ClassCodegen.kt:453)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:172)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:181)
+	at org.jetbrains.kotlin.backend.jvm.FileCodegen.lower(JvmPhases.kt:39)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt.createFilePhase$lambda$4(PhaseFactories.kt:71)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:69)
+	at org.jetbrains.kotlin.backend.common.phaser.SimpleNamedCompilerPhase.phaseBody(CompilerPhase.kt:226)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:62)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:52)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:38)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:27)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:14)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompilerPhaseKt.invokeToplevel(CompilerPhase.kt:62)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.invokeCodegen(JvmIrCodegenFactory.kt:371)
+	at org.jetbrains.kotlin.codegen.CodegenFactory.generateModule(CodegenFactory.kt:47)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.generateModuleInFrontendIRMode(JvmIrCodegenFactory.kt:433)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.generateCodeFromIr(jvmCompilerPipeline.kt:246)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.compileModulesUsingFrontendIrAndLightTree(jvmCompilerPipeline.kt:142)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:148)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:43)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:103)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:49)
+	at org.jetbrains.kotlin.cli.common.CLITool.exec(CLITool.kt:101)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:464)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:73)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.doCompile(IncrementalCompilerRunner.kt:506)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileImpl(IncrementalCompilerRunner.kt:423)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileNonIncrementally(IncrementalCompilerRunner.kt:301)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compile(IncrementalCompilerRunner.kt:129)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.execIncrementalCompiler(CompileServiceImpl.kt:675)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.access$execIncrementalCompiler(CompileServiceImpl.kt:92)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1660)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Caused by: java.lang.OutOfMemoryError: GC overhead limit exceeded
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer$FixStackFrame.getStackContent(FixStackAnalyzer.kt:132)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer$FixStackFrame.saveStackAndClear(FixStackAnalyzer.kt:177)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer$FixStackFrame.executeSaveStackBeforeTry(FixStackAnalyzer.kt:205)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer$FixStackFrame.execute(FixStackAnalyzer.kt:115)
+	at org.jetbrains.kotlin.codegen.optimization.common.FastAnalyzer.analyzeInstruction(FastAnalyzer.kt:111)
+	at org.jetbrains.kotlin.codegen.optimization.common.FastAnalyzer.analyzeMainLoop(FastAnalyzer.kt:74)
+	at org.jetbrains.kotlin.codegen.optimization.common.FastAnalyzer.analyze(FastAnalyzer.kt:53)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackAnalyzer.analyze(FixStackAnalyzer.kt:60)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackMethodTransformer.analyzeAndTransformBreakContinueGotos(FixStackMethodTransformer.kt:55)
+	at org.jetbrains.kotlin.codegen.optimization.fixStack.FixStackMethodTransformer.transform(FixStackMethodTransformer.kt:44)
+	at org.jetbrains.kotlin.codegen.optimization.transformer.CompositeMethodTransformer.transform(CompositeMethodTransformer.kt:25)
+	at org.jetbrains.kotlin.codegen.optimization.transformer.CompositeMethodTransformer.transform(CompositeMethodTransformer.kt:25)
+	at org.jetbrains.kotlin.codegen.optimization.OptimizationMethodVisitor.performTransformations(OptimizationMethodVisitor.kt:70)
+	at org.jetbrains.kotlin.codegen.TransformationMethodVisitor.visitEnd(TransformationMethodVisitor.kt:67)
+	at org.jetbrains.org.objectweb.asm.MethodVisitor.visitEnd(MethodVisitor.java:783)
+	at org.jetbrains.org.objectweb.asm.tree.MethodNode.accept(MethodNode.java:772)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethod(ClassCodegen.kt:453)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:172)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:181)
+	at org.jetbrains.kotlin.backend.jvm.FileCodegen.lower(JvmPhases.kt:39)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt.createFilePhase$lambda$4(PhaseFactories.kt:71)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt$$Lambda/0x00000001002265d0.invoke(Unknown Source)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:69)
+	at org.jetbrains.kotlin.backend.common.phaser.SimpleNamedCompilerPhase.phaseBody(CompilerPhase.kt:226)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:62)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:52)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:38)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:27)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:14)
+
+

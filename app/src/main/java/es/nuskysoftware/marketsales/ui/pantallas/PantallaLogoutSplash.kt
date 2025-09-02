@@ -11,11 +11,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.delay
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
 fun PantallaLogoutSplash(
     navController: NavController
 ) {
+    val currentLanguage = ConfigurationManager.idioma.collectAsState().value
+
     // Pantalla simple: informa que la sesión se ha cerrado y redirige a "mercadillos"
     LaunchedEffect(Unit) {
         // pequeña pausa para que el usuario lo vea claramente
@@ -50,12 +54,12 @@ fun PantallaLogoutSplash(
                 )
 
                 Text(
-                    text = "Sesión cerrada",
+                    text = StringResourceManager.getString("sesion_cerrada", currentLanguage),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Redirigiendo al inicio…",
+                    text = StringResourceManager.getString("redirigiendo_al_inicio", currentLanguage),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

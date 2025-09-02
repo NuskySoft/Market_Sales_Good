@@ -20,6 +20,9 @@ import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModelFactory
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,14 +42,18 @@ fun PantallaArqueo(
     LaunchedEffect(mercadilloId) { vm.cargar(mercadilloId) }
     val ui by vm.ui.collectAsState()
     val scope = rememberCoroutineScope()
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Arqueo") },
+                title = { Text(StringResourceManager.getString("arqueo", currentLanguage)) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    IconButton(onClick = { navController.safePopBackStack() }) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
+                        )
                     }
                 }
             )
@@ -75,7 +82,10 @@ fun PantallaArqueo(
             val data = ui.mercadillo ?: run {
                 ElevatedCard(shape = RoundedCornerShape(16.dp)) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Cargando datos de mercadillo…", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            StringResourceManager.getString("cargando_datos_mercadillo", currentLanguage),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
                     }
                 }
                 return@Column
@@ -98,19 +108,28 @@ fun PantallaArqueo(
 
                     Text(data.organizador, style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(8.dp))
-                    InfoRow("Suscripción", vm.fmtMoneda(data.importeSuscripcion))
-                    InfoRow("Saldo inicial", vm.fmtMoneda(data.saldoInicial))
+                    InfoRow(
+                        label = StringResourceManager.getString("importe_suscripcion", currentLanguage),
+                        value = vm.fmtMoneda(data.importeSuscripcion)
+                    )
+                    InfoRow(
+                        label = StringResourceManager.getString("saldo_inicial", currentLanguage),
+                        value = vm.fmtMoneda(data.saldoInicial)
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        EstadoChip(data.estado)
+                        EstadoChip(data.estado, currentLanguage)
                         OutlinedButton(
                             onClick = { navController.navigate("resumen/$mercadilloId") },
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Text("Resumen Mercadillo", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                StringResourceManager.getString("resumen_mercadillo", currentLanguage),
+                                style = MaterialTheme.typography.labelLarge
+                            )
                         }
                     }
                 }
@@ -119,7 +138,11 @@ fun PantallaArqueo(
             // ===== Ventas (rejilla 2x2) =====
             ElevatedCard(shape = RoundedCornerShape(16.dp)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Ventas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        StringResourceManager.getString("ventas", currentLanguage),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
 
                     // Fila 1: Bizum / Tarjeta
                     Row(
@@ -127,29 +150,29 @@ fun PantallaArqueo(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         MetricCard(
-                            title = "Bizum",
+                            title = StringResourceManager.getString("bizum", currentLanguage),
                             valueText = vm.fmtMoneda(data.ventasBizum),
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
-                            title = "Tarjeta",
+                            title = StringResourceManager.getString("tarjeta", currentLanguage),
                             valueText = vm.fmtMoneda(data.ventasTarjeta),
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    // Fila 2: Efectivo / Total (Total destacado)
+                    // Fila 2: Efectivo / Total
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         MetricCard(
-                            title = "Efectivo",
+                            title = StringResourceManager.getString("efectivo", currentLanguage),
                             valueText = vm.fmtMoneda(data.ventasEfectivo),
                             modifier = Modifier.weight(1f)
                         )
                         MetricCard(
-                            title = "Total",
+                            title = StringResourceManager.getString("total", currentLanguage),
                             valueText = vm.fmtMoneda(data.totalVentas),
                             emphasized = true,
                             modifier = Modifier.weight(1f)
@@ -160,7 +183,8 @@ fun PantallaArqueo(
 
             // ===== Acciones =====
             val puedeArqueo = data.estado == 4
-            val puedeAsignar = data.estado == 5
+            val esPremium = remember { ConfigurationManager.isPremium() }
+            val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
 
             ElevatedCard(shape = RoundedCornerShape(16.dp)) {
                 LazyColumn(
@@ -170,7 +194,7 @@ fun PantallaArqueo(
                 ) {
                     item {
                         Text(
-                            "Acciones",
+                            StringResourceManager.getString("acciones", currentLanguage),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -180,20 +204,20 @@ fun PantallaArqueo(
                             onClick = { navController.navigate("arqueo/caja/$mercadilloId") },
                             enabled = puedeArqueo,
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text("Realizar arqueo") }
+                        ) { Text(StringResourceManager.getString("realizar_arqueo", currentLanguage)) }
                     }
                     item {
                         Button(
                             onClick = { navController.navigate("arqueo/resultado/$mercadilloId") },
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text("Resultado del mercadillo") }
+                        ) { Text(StringResourceManager.getString("resultado_mercadillo", currentLanguage)) }
                     }
                     item {
                         Button(
                             onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
                             enabled = puedeAsignar,
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text("Asignar saldo") }
+                        ) { Text(StringResourceManager.getString("asignar_saldo", currentLanguage)) }
                     }
                     item {
                         OutlinedButton(
@@ -204,11 +228,11 @@ fun PantallaArqueo(
                                         es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
                                             .actualizarEstadosAutomaticos(uid)
                                     }
-                                    navController.popBackStack()
+                                    navController.safePopBackStack()
                                 }
                             },
                             modifier = Modifier.fillMaxWidth()
-                        ) { Text("Cerrar") }
+                        ) { Text(StringResourceManager.getString("cerrar", currentLanguage)) }
                     }
                 }
             }
@@ -263,13 +287,30 @@ private fun MetricCard(
 }
 
 @Composable
-private fun EstadoChip(estado: Int) {
-    val (bg, txt, label) = when (estado) {
-        4 -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, "Pendiente de arqueo")
-        5 -> Triple(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, "Pendiente de asignar saldo")
-        6 -> Triple(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, "Cerrado")
-        else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, "—")
+private fun EstadoChip(estado: Int, currentLanguage: String) {
+    val (bg, txt, labelKey) = when (estado) {
+        4 -> Triple(
+            MaterialTheme.colorScheme.tertiaryContainer,
+            MaterialTheme.colorScheme.onTertiaryContainer,
+            "estado_pendiente_arqueo"
+        )
+        5 -> Triple(
+            MaterialTheme.colorScheme.primaryContainer,
+            MaterialTheme.colorScheme.onPrimaryContainer,
+            "estado_pendiente_asignar_saldo"
+        )
+        6 -> Triple(
+            MaterialTheme.colorScheme.secondaryContainer,
+            MaterialTheme.colorScheme.onSecondaryContainer,
+            "estado_cerrado_completo"
+        )
+        else -> Triple(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant,
+            "guion_largo"
+        )
     }
+    val label = StringResourceManager.getString(labelKey, currentLanguage)
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
@@ -281,12 +322,15 @@ private fun EstadoChip(estado: Int) {
 }
 
 
+//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaArqueo.kt
 //package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 //
 //import androidx.compose.foundation.background
 //import androidx.compose.foundation.layout.*
 //import androidx.compose.foundation.lazy.LazyColumn
 //import androidx.compose.foundation.shape.RoundedCornerShape
+//import androidx.compose.material.icons.Icons
+//import androidx.compose.material.icons.filled.ArrowBack
 //import androidx.compose.material3.*
 //import androidx.compose.runtime.*
 //import androidx.compose.ui.Alignment
@@ -300,9 +344,9 @@ private fun EstadoChip(estado: Int) {
 //import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModel
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModelFactory
+//import es.nuskysoftware.marketsales.utils.ConfigurationManager
+//import es.nuskysoftware.marketsales.utils.safePopBackStack
 //import kotlinx.coroutines.launch
-//import es.nuskysoftware.marketsales.work.AutoEstadoScheduler   // ✅ IMPORTACIÓN
-//import es.nuskysoftware.marketsales.utils.StringResourceManager
 //
 //@OptIn(ExperimentalMaterial3Api::class)
 //@Composable
@@ -321,12 +365,15 @@ private fun EstadoChip(estado: Int) {
 //    LaunchedEffect(mercadilloId) { vm.cargar(mercadilloId) }
 //    val ui by vm.ui.collectAsState()
 //    val scope = rememberCoroutineScope()
+//
 //    Scaffold(
 //        topBar = {
 //            TopAppBar(
 //                title = { Text("Arqueo") },
 //                navigationIcon = {
-//                    TextButton(onClick = { navController.popBackStack() }) { Text("←") }
+//                    IconButton(onClick = { navController.safePopBackStack() }) {
+//                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+//                    }
 //                }
 //            )
 //        }
@@ -377,8 +424,8 @@ private fun EstadoChip(estado: Int) {
 //
 //                    Text(data.organizador, style = MaterialTheme.typography.bodyMedium)
 //                    Spacer(Modifier.height(8.dp))
-//                    InfoRow("Suscripción", formateaEuros(data.importeSuscripcion))
-//                    InfoRow("Saldo inicial", formateaEuros(data.saldoInicial))
+//                    InfoRow("Suscripción", vm.fmtMoneda(data.importeSuscripcion))
+//                    InfoRow("Saldo inicial", vm.fmtMoneda(data.saldoInicial))
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.SpaceBetween,
@@ -389,7 +436,7 @@ private fun EstadoChip(estado: Int) {
 //                            onClick = { navController.navigate("resumen/$mercadilloId") },
 //                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
 //                        ) {
-//                            Text("Listado ventas", style = MaterialTheme.typography.labelLarge)
+//                            Text("Resumen Mercadillo", style = MaterialTheme.typography.labelLarge)
 //                        }
 //                    }
 //                }
@@ -400,27 +447,48 @@ private fun EstadoChip(estado: Int) {
 //                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 //                    Text("Ventas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
 //
+//                    // Fila 1: Bizum / Tarjeta
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.spacedBy(12.dp)
 //                    ) {
-//                        MetricCard("Bizum", data.ventasBizum, modifier = Modifier.weight(1f))
-//                        MetricCard("Tarjeta", data.ventasTarjeta, modifier = Modifier.weight(1f))
+//                        MetricCard(
+//                            title = "Bizum",
+//                            valueText = vm.fmtMoneda(data.ventasBizum),
+//                            modifier = Modifier.weight(1f)
+//                        )
+//                        MetricCard(
+//                            title = "Tarjeta",
+//                            valueText = vm.fmtMoneda(data.ventasTarjeta),
+//                            modifier = Modifier.weight(1f)
+//                        )
 //                    }
 //
+//                    // Fila 2: Efectivo / Total (Total destacado)
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.spacedBy(12.dp)
 //                    ) {
-//                        MetricCard("Efectivo", data.ventasEfectivo, modifier = Modifier.weight(1f))
-//                        MetricCard("Total", data.totalVentas, emphasized = true, modifier = Modifier.weight(1f))
+//                        MetricCard(
+//                            title = "Efectivo",
+//                            valueText = vm.fmtMoneda(data.ventasEfectivo),
+//                            modifier = Modifier.weight(1f)
+//                        )
+//                        MetricCard(
+//                            title = "Total",
+//                            valueText = vm.fmtMoneda(data.totalVentas),
+//                            emphasized = true,
+//                            modifier = Modifier.weight(1f)
+//                        )
 //                    }
 //                }
 //            }
 //
 //            // ===== Acciones =====
 //            val puedeArqueo = data.estado == 4
-//            val puedeAsignar = data.estado == 5
+////            val puedeAsignar = data.estado == 5
+//            val esPremium = remember { ConfigurationManager.isPremium() }
+//            val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
 //
 //            ElevatedCard(shape = RoundedCornerShape(16.dp)) {
 //                LazyColumn(
@@ -429,7 +497,11 @@ private fun EstadoChip(estado: Int) {
 //                    contentPadding = PaddingValues(16.dp)
 //                ) {
 //                    item {
-//                        Text("Acciones", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+//                        Text(
+//                            "Acciones",
+//                            style = MaterialTheme.typography.titleSmall,
+//                            fontWeight = FontWeight.SemiBold
+//                        )
 //                    }
 //                    item {
 //                        Button(
@@ -455,9 +527,12 @@ private fun EstadoChip(estado: Int) {
 //                        OutlinedButton(
 //                            onClick = {
 //                                scope.launch {
-//                                    // ✅ Al cerrar la pantalla de Arqueo: catch-up inmediato
-//                                    try { AutoEstadoScheduler.runOnceNow(context.applicationContext) } catch (_: Exception) {}
-//                                    navController.popBackStack()
+//                                    val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
+//                                    if (!uid.isNullOrBlank()) {
+//                                        es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
+//                                            .actualizarEstadosAutomaticos(uid)
+//                                    }
+//                                    navController.safePopBackStack()
 //                                }
 //                            },
 //                            modifier = Modifier.fillMaxWidth()
@@ -480,15 +555,19 @@ private fun EstadoChip(estado: Int) {
 //}
 //
 //@Composable
-//private fun MetricCard(title: String, value: Double, emphasized: Boolean = false, modifier: Modifier = Modifier) {
+//private fun MetricCard(
+//    title: String,
+//    valueText: String,
+//    emphasized: Boolean = false,
+//    modifier: Modifier = Modifier
+//) {
 //    val shape = RoundedCornerShape(14.dp)
 //    val colors = if (emphasized)
 //        CardDefaults.cardColors(
 //            containerColor = MaterialTheme.colorScheme.primaryContainer,
 //            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
 //        )
-//    else
-//        CardDefaults.cardColors()
+//    else CardDefaults.cardColors()
 //
 //    Card(modifier = modifier, shape = shape, colors = colors) {
 //        Column(
@@ -503,7 +582,7 @@ private fun EstadoChip(estado: Int) {
 //                else MaterialTheme.colorScheme.onSurfaceVariant
 //            )
 //            Text(
-//                formateaEuros(value),
+//                valueText,
 //                style = if (emphasized) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
 //                fontWeight = FontWeight.SemiBold
 //            )
@@ -528,6 +607,4 @@ private fun EstadoChip(estado: Int) {
 //        Text(label, color = txt, style = MaterialTheme.typography.labelMedium)
 //    }
 //}
-//
-//private fun formateaEuros(v: Double) = "€ " + String.format("%,.2f", v)
 //

@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 
+import kotlinx.coroutines.tasks.await
+
 /**
  * AuthRepository — Login + restauración Premium con indicador de progreso (TOP-LEVEL Firestore)
  *
@@ -420,6 +422,7 @@ class AuthRepository(
         val cats = try {
             colCategorias(firestore, uid)
                 .whereEqualTo("userId", uid)
+                .whereEqualTo("activa", true)
                 .get().await().documents.mapNotNull { it.toCategoria(uid) }
         } catch (e: Exception) { Log.e(TAG, "Error descargando categorías", e); emptyList() }
 
@@ -427,6 +430,7 @@ class AuthRepository(
         val arts = try {
             colArticulos(firestore, uid)
                 .whereEqualTo("userId", uid)
+                .whereEqualTo("activo", true)
                 .get().await().documents.mapNotNull { it.toArticulo(uid) }
         } catch (e: Exception) { Log.e(TAG, "Error descargando artículos", e); emptyList() }
 
@@ -434,6 +438,7 @@ class AuthRepository(
         val mercs = try {
             colMercadillos(firestore, uid)
                 .whereEqualTo("userId", uid)
+                .whereEqualTo("activo", true)
                 .get().await().documents.mapNotNull { it.toMercadillo(uid) }
         } catch (e: Exception) { Log.e(TAG, "Error descargando mercadillos", e); emptyList() }
 
@@ -441,6 +446,7 @@ class AuthRepository(
         val recs = try {
             colRecibos(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
+                .whereEqualTo("activo", true)
                 .get().await().documents.mapNotNull { it.toRecibo(uid) }
         } catch (e: Exception) { Log.e(TAG, "Error descargando recibos", e); emptyList() }
 
@@ -448,6 +454,7 @@ class AuthRepository(
         val lineas = try {
             colLineasVenta(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
+                .whereEqualTo("activo", true)
                 .get().await().documents.mapNotNull { snap ->
                     val idRecibo = (snap.data?.get("idRecibo") as? String).orElseEmpty()
                     snap.toLinea(uid, idRecibo)
@@ -527,6 +534,7 @@ class AuthRepository(
         }
         Log.e(TAG, errorMessage, e); _authState.value = AuthState.Error(errorMessage); AuthResult.Error(errorMessage)
     }
+
 
     suspend fun signInWithGoogle(idToken: String): AuthResult = try {
         Log.d(TAG, "Iniciando Google Auth con idToken")
@@ -841,7 +849,11 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toRecibo(uid: String)
         fechaHora = m.getLong("fechaHora", System.currentTimeMillis()),
         metodoPago = m.getString("metodoPago", "efectivo"),
         totalTicket = m.getDouble("totalTicket", 0.0),
-        estado = m.getString("estado", "COMPLETADO")
+        estado = m.getString("estado", "COMPLETADO"),
+        activo = m.getBool("activo", true),
+        version = m.getLong("version", 1),
+        lastModified = m.getLong("lastModified", System.currentTimeMillis()),
+        sincronizadoFirebase = true
     )
 }
 
@@ -862,7 +874,11 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toLinea(uid: String, 
         cantidad = m.getInt("cantidad", 1),
         precioUnitario = m.getDouble("precioUnitario", 0.0),
         subtotal = m.getDouble("subtotal", 0.0),
-        idLineaOriginalAbonada = m["idLineaOriginalAbonada"] as? String
+        idLineaOriginalAbonada = m["idLineaOriginalAbonada"] as? String,
+        activo = m.getBool("activo", true),
+        version = m.getLong("version", 1),
+        lastModified = m.getLong("lastModified", System.currentTimeMillis()),
+        sincronizadoFirebase = true
     )
 }
 

@@ -8,6 +8,7 @@ import es.nuskysoftware.marketsales.data.local.dao.ConfiguracionDao
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity
 import es.nuskysoftware.marketsales.utils.ConnectivityObserver
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
@@ -70,6 +71,7 @@ class ConfiguracionRepository(
         val existente = configuracionDao.getConfiguracion()
         if (existente == null) {
             val porDefecto = ConfiguracionEntity(
+                moneda = ConfigurationManager.getMoneda(),
                 usuarioLogueado = "usuario_default",
                 ultimoDispositivo = android.os.Build.MODEL,
                 fechaUltimaSync = dateFormat.format(Date())
@@ -259,7 +261,8 @@ class ConfiguracionRepository(
                                 usuarioLogueado = roomConfig.usuarioLogueado, // Mantener local
                                 pendienteSync = false // Marcar como sincronizado
                             ) ?: ConfiguracionEntity(
-                                moneda = firebaseData["moneda"] as? String ?: "€ Euro",
+                               // moneda = firebaseData["moneda"] as? String ?: "€ Euro",
+                                moneda = firebaseData["moneda"] as? String ?: ConfigurationManager.getMoneda(),
                                 idioma = firebaseData["idioma"] as? String ?: "es",
                                 fuente = firebaseData["fuente"] as? String ?: "Montserrat",
                                 temaOscuro = firebaseData["temaOscuro"] as? Boolean ?: false
@@ -277,14 +280,16 @@ class ConfiguracionRepository(
                 }
 
                 // Fallback: usar Room
-                return@withContext roomConfig ?: ConfiguracionEntity()
+                //return@withContext roomConfig ?: ConfiguracionEntity()
+                return@withContext roomConfig ?: ConfiguracionEntity(moneda = ConfigurationManager.getMoneda())
             }
 
         } catch (e: Exception) {
             Log.e("ConfiguracionRepository", "Error en estrategia híbrida", e)
             // En caso de error, devolver lo que tengamos en Room o crear configuración por defecto
             val fallbackConfig = configuracionDao.getConfiguracionSync()
-            return@withContext fallbackConfig ?: ConfiguracionEntity()
+            //return@withContext fallbackConfig ?: ConfiguracionEntity()
+            return@withContext fallbackConfig ?: ConfiguracionEntity(moneda = ConfigurationManager.getMoneda())
         }
     }
     // ========== MÉTODOS OBSOLETOS V10 (compatibilidad) ==========

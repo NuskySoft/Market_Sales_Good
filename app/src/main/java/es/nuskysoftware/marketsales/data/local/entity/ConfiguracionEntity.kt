@@ -1,4 +1,4 @@
-// app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/ConfiguracionEntity.kt
+    // app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/ConfiguracionEntity.kt
 package es.nuskysoftware.marketsales.data.local.entity
 
 import androidx.room.Entity

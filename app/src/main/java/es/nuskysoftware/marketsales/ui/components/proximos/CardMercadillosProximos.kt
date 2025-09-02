@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/components/proximos/CardMercadillosProximos.kt
 package es.nuskysoftware.marketsales.ui.components.proximos
 
 import androidx.compose.foundation.background
@@ -7,6 +8,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -14,7 +18,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
+import es.nuskysoftware.marketsales.utils.MonedaUtils
+
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -24,6 +32,8 @@ fun CardMercadillosProximos(
     onMercadilloClick: (MercadilloEntity) -> Unit
 ) {
     if (mercadillosProximos.isEmpty()) return
+
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     val df = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
     val listaOrdenada = mercadillosProximos.sortedWith(
@@ -46,7 +56,7 @@ fun CardMercadillosProximos(
         Column(Modifier.fillMaxSize().padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    "Próximos Mercadillos",
+                    StringResourceManager.getString("proximos_mercadillos", currentLanguage),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -113,9 +123,11 @@ private fun MercadilloProximoItem(
                 }
             }
             mercadillo.saldoInicial?.let {
+                val moneda by ConfigurationManager.moneda.collectAsState()
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    "💰  €${String.format("%.2f", it)}",
+                    //"💰  €${String.format("%.2f", it)}",
+                    "💰  ${MonedaUtils.formatearImporte(it, moneda)}",
                     color = Color(0xFF4CAF50),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
@@ -130,4 +142,3 @@ private fun MercadilloProximoItem(
         )
     }
 }
-

@@ -12,5 +12,25 @@ data class ReciboEntity(
     val fechaHora: Long,
     val metodoPago: String,
     val totalTicket: Double,
-    val estado: String = "COMPLETADO"
-)
+    val estado: String = "COMPLETADO",
+    val version: Long = 1L,
+    val lastModified: Long = System.currentTimeMillis(),
+    val sincronizadoFirebase: Boolean = false,
+    val activo: Boolean = true
+
+){
+    // Constructor vacío requerido por Firebase/Room
+    constructor() : this(
+        idRecibo = "",
+        idMercadillo = "",
+        idUsuario = "",
+        fechaHora = 0L,
+        metodoPago = "",
+        totalTicket = 0.0,
+        estado = "COMPLETADO",
+        version = 1L,
+        lastModified = System.currentTimeMillis(),
+        sincronizadoFirebase = false,
+        activo = true
+    )
+}

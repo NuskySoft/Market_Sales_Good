@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AsignarSaldoViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
 import android.content.Context
@@ -10,6 +11,7 @@ import es.nuskysoftware.marketsales.data.local.entity.SaldoGuardadoEntity
 import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 import es.nuskysoftware.marketsales.data.repository.SaldoGuardadoRepository
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -225,33 +227,36 @@ class AsignarSaldoViewModel(
     fun textoConfirmacion(): TextoConfirm {
         val caso = _ui.value.confirm.caso ?: return TextoConfirm("", emptyList())
         val hayPrevio = _ui.value.haySaldoGuardadoPrevio
+        val lang = ConfigurationManager.idioma.value
 
         return when (caso) {
             ConfirmCaso.GUARDAR_SIN_PROX -> TextoConfirm(
-                titulo = "Guardar saldo",
+                titulo = StringResourceManager.getString("guardar_saldo", lang),
                 lineas = buildList {
-                    add(LineaTexto("¿Estás seguro de querer guardar el saldo?"))
-                    add(LineaTexto("Se podrá utilizar como saldo inicial al dar de alta un mercadillo."))
-                    if (hayPrevio) add(LineaTexto("Ya hay un saldo inicial guardado. ¿Seguro que deseas reemplazarlo? Esta operación no se puede deshacer.", esAvisoFinal = true))
+                    add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
+                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_uso", lang)))
+                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
                 }
             )
             ConfirmCaso.GUARDAR_CON_PROX -> TextoConfirm(
-                titulo = "Guardar saldo",
+                titulo = StringResourceManager.getString("guardar_saldo", lang),
                 lineas = buildList {
-                    add(LineaTexto("¿Estás seguro de querer guardar el saldo?"))
-                    add(LineaTexto("Si lo guardas, solo podrás asignarlo al crear un mercadillo nuevo."))
-                    if (hayPrevio) add(LineaTexto("Ya hay un saldo inicial guardado. ¿Seguro que deseas reemplazarlo? Esta operación no se puede deshacer.", esAvisoFinal = true))
+                    add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
+                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_limite", lang)))
+                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
                 }
             )
             ConfirmCaso.ASIGNAR_SIN_SALDO_DEST -> TextoConfirm(
-                titulo = "Asignar saldo",
-                lineas = listOf(LineaTexto("¿Estás seguro de querer asignar el saldo inicial a este mercadillo?"))
+                titulo = StringResourceManager.getString("asignar_saldo", lang),
+                lineas = listOf(
+                    LineaTexto(StringResourceManager.getString("confirmar_asignar_saldo", lang))
+                )
             )
             ConfirmCaso.ASIGNAR_CON_SALDO_DEST -> TextoConfirm(
-                titulo = "Asignar saldo",
+                titulo = StringResourceManager.getString("asignar_saldo", lang),
                 lineas = listOf(
-                    LineaTexto("El mercadillo seleccionado ya tiene saldo inicial. ¿Quieres reemplazar el saldo inicial?"),
-                    LineaTexto("Esta operación no se puede deshacer.", esAvisoFinal = true)
+                    LineaTexto(StringResourceManager.getString("destino_con_saldo_pregunta", lang)),
+                    LineaTexto(StringResourceManager.getString("operacion_no_se_puede_deshacer", lang), esAvisoFinal = true)
                 )
             )
         }
@@ -288,7 +293,6 @@ class AsignarSaldoViewModel(
                         saldoRepo.reemplazarGuardado(item)
 
                         // 2) Cerrar origen con saldoFinal ajustado (estado 6)
-                        //    Reutilizamos repo.confirmarArqueoCaja para fijar saldo y estado.
                         mercRepo.confirmarArqueoCaja(
                             mercadilloId = origen.idMercadillo,
                             arqueoFinal = ajustado,

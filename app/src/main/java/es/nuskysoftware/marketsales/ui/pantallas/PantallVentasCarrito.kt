@@ -16,10 +16,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.VentasViewModelFactory
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.MonedaUtils
+import es.nuskysoftware.marketsales.utils.safePopBackStack
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 /**
  * Carrito de la compra (edición del ticket en curso)
@@ -44,6 +47,7 @@ fun PantallaVentasCarrito(
     val uiState by vm.uiState.collectAsState()
     val moneda by ConfigurationManager.moneda.collectAsState()
     val idioma by ConfigurationManager.idioma.collectAsState()
+    val currentLanguage = idioma
 
     // Id provisional para mostrar (no se usa para persistir)
     val idReciboHeader by remember {
@@ -55,8 +59,11 @@ fun PantallaVentasCarrito(
             TopAppBar(
                 title = { Text(text = idReciboHeader) },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(painter = androidx.compose.ui.res.painterResource(id = es.nuskysoftware.marketsales.R.drawable.ic_arrow_left), contentDescription = "Atrás")
+                    IconButton(onClick = { navController.safePopBackStack() }) {
+                        Icon(
+                            painter = androidx.compose.ui.res.painterResource(id = es.nuskysoftware.marketsales.R.drawable.ic_arrow_left),
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -117,15 +124,6 @@ fun PantallaVentasCarrito(
                                     }
                                 }
 
-                                // Precio unitario (editable)
-                                var precioTxt by remember(linea.id, linea.precioUnitario) {
-                                    mutableStateOf(
-                                        // mostramos con coma si así formateas en UI
-                                        String.format(java.util.Locale.US, "%.2f", linea.precioUnitario).replace('.', ',')
-                                    )
-                                }
-
-
                                 // Total (calculado)
                                 Text(
                                     text = MonedaUtils.formatearImporte(linea.subtotal, moneda),
@@ -133,7 +131,7 @@ fun PantallaVentasCarrito(
                                     modifier = Modifier.weight(1f)
                                 )
 
-                                // Eliminar
+                                // Eliminar (texto no visible en pantalla; se mantiene literal)
                                 IconButton(onClick = { vm.eliminarLinea(linea.id) }) {
                                     Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
                                 }
@@ -148,7 +146,10 @@ fun PantallaVentasCarrito(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Total", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = StringResourceManager.getString("total", currentLanguage),
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Text(
                     text = MonedaUtils.formatearImporte(uiState.totalTicket, moneda),
                     style = MaterialTheme.typography.titleLarge,
@@ -164,15 +165,20 @@ fun PantallaVentasCarrito(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
-                    onClick = { navController.popBackStack() },
-                    modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text("Cancelar") }
+                    onClick = { navController.safePopBackStack() },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) { Text(StringResourceManager.getString("cancelar", currentLanguage)) }
 
                 Button(
-                    onClick = { navController.popBackStack() }, // los cambios ya están en el VM
-                    modifier = Modifier.weight(1f).height(48.dp)
-                ) { Text("Aceptar") }
+                    onClick = { navController.safePopBackStack() }, // los cambios ya están en el VM
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) { Text(StringResourceManager.getString("aceptar", currentLanguage)) }
             }
         }
+        AdsBottomBar()
     }
 }

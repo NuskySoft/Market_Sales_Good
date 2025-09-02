@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -15,6 +17,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 /**
  * Teclado numérico con estilo:
@@ -30,6 +34,7 @@ fun TecladoNumerico(
 ) {
     val size = 64.dp
     val textSize = 22.sp
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
     @Composable
     fun Numero(texto: String, isBorrar: Boolean = false, onClick: () -> Unit) {
@@ -50,7 +55,7 @@ fun TecladoNumerico(
             if (isBorrar) {
                 Icon(
                     imageVector = Icons.Default.Backspace,
-                    contentDescription = "Borrar"
+                    contentDescription = StringResourceManager.getString("borrar", currentLanguage)
                 )
             } else {
                 Text(text = texto, fontSize = textSize, fontWeight = FontWeight.Medium)
@@ -110,4 +115,3 @@ fun TecladoNumericoPago(
         onDoubleZeroClick = { onDigitClick("0"); onDigitClick("0") }
     )
 }
-

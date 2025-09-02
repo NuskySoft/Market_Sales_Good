@@ -38,6 +38,7 @@ import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.data.local.entity.ArticuloEntity
 import es.nuskysoftware.marketsales.ui.viewmodel.ArticuloViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.ArticuloViewModelFactory
+
 import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModelFactory
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
@@ -48,6 +49,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.graphics.SolidColor
 import es.nuskysoftware.cajamercadillos.ui.components.DialogSelectorColor
+import es.nuskysoftware.marketsales.ads.AdsBottomBar
+import es.nuskysoftware.marketsales.utils.safePopBackStack
+import es.nuskysoftware.marketsales.utils.MonedaUtils   // ✅ nuevo import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,24 +61,20 @@ fun PantallaArticulos(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // ViewModels con factory
     val articuloViewModel: ArticuloViewModel = viewModel(factory = ArticuloViewModelFactory(context))
     val categoriaViewModel: CategoriaViewModel = viewModel(factory = CategoriaViewModelFactory(context))
 
-    // Estados de configuración
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val esPremium by ConfigurationManager.esPremium.collectAsState()
 
-    // Estados de los ViewModels
     val articulos by articuloViewModel.articulos.collectAsState()
     val categorias by categoriaViewModel.categorias.collectAsState()
     val articuloUiState by articuloViewModel.uiState.collectAsState()
     val tieneArticulos by articuloViewModel.tieneArticulos.collectAsState()
 
-    // ======= Estados locales del formulario =======
     var mostrarFormulario by remember { mutableStateOf(false) }
     var nombreArticulo by remember { mutableStateOf("") }
-    var categoriaSeleccionada by remember { mutableStateOf("") } // idCategoria
+    var categoriaSeleccionada by remember { mutableStateOf("") }
     var precioVenta by remember { mutableStateOf("") }
     var precioCoste by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
@@ -83,21 +83,16 @@ fun PantallaArticulos(
     var favorito by remember { mutableStateOf(false) }
     var modoEdicion by remember { mutableStateOf<ArticuloEntity?>(null) }
 
-    // Dropdown categoría
     var expandedCategoria by remember { mutableStateOf(false) }
 
-    // Nueva categoría (inline, no modal)
     var mostrarNuevaCategoriaInline by remember { mutableStateOf(false) }
     var nombreNuevaCategoria by remember { mutableStateOf("") }
     var colorNuevaCategoria by remember { mutableStateOf(Color(0xFFD1C4E9)) }
     var mostrarColorPicker by remember { mutableStateOf(false) }
     var pendingSeleccionarCategoriaPorNombre by remember { mutableStateOf<String?>(null) }
 
-    // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
 
-
-    // Helpers
     fun limpiarFormulario() {
         nombreArticulo = ""
         categoriaSeleccionada = ""
@@ -108,13 +103,11 @@ fun PantallaArticulos(
         controlarCoste = false
         favorito = false
         modoEdicion = null
-        // al cerrar form, también ocultamos la creación inline
         mostrarNuevaCategoriaInline = false
         nombreNuevaCategoria = ""
         colorNuevaCategoria = Color(0xFFD1C4E9)
     }
 
-    // Manejar mensajes VM
     LaunchedEffect(articuloUiState.message) {
         articuloUiState.message?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -128,7 +121,6 @@ fun PantallaArticulos(
         }
     }
 
-    // Cuando acabamos de crear una categoría, selecciónala en el desplegable (por nombre)
     LaunchedEffect(categorias, pendingSeleccionarCategoriaPorNombre) {
         val nombre = pendingSeleccionarCategoriaPorNombre ?: return@LaunchedEffect
         categorias.firstOrNull { it.nombre == nombre }?.let { nueva ->
@@ -150,11 +142,10 @@ fun PantallaArticulos(
                 navigationIcon = {
                     IconButton(onClick = {
                         if (mostrarFormulario) {
-                            // Cierra el formulario en lugar de salir a otra pantalla
                             limpiarFormulario()
                             mostrarFormulario = false
                         } else {
-                            navController?.popBackStack()
+                            navController?.safePopBackStack()
                         }
                     }) {
                         Icon(
@@ -182,8 +173,10 @@ fun PantallaArticulos(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(imageVector = Icons.Default.Add,
-                        contentDescription = StringResourceManager.getString("add_articulo", currentLanguage))
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = StringResourceManager.getString("add_articulo", currentLanguage)
+                    )
                 }
             }
         }
@@ -194,7 +187,6 @@ fun PantallaArticulos(
                 .padding(paddingValues)
         ) {
 
-            // ===== FORMULARIO (fondo BLANCO) =====
             AnimatedVisibility(visible = mostrarFormulario) {
                 Card(
                     modifier = Modifier
@@ -202,7 +194,7 @@ fun PantallaArticulos(
                         .padding(16.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = Color.White,            // << Fondo BLANCO
+                        containerColor = Color.White,
                         contentColor = MaterialTheme.colorScheme.onSurface
                     ),
                     shape = RoundedCornerShape(16.dp)
@@ -223,7 +215,6 @@ fun PantallaArticulos(
                             fontWeight = FontWeight.Bold
                         )
 
-                        // Nombre
                         OutlinedTextField(
                             value = nombreArticulo,
                             onValueChange = { nombreArticulo = it },
@@ -239,13 +230,6 @@ fun PantallaArticulos(
                             singleLine = true
                         )
 
-//                        // ====== DESPLEGABLE DE CATEGORÍA (con “Crear categoría” primero) ======
-//                        var textoCategoria by remember(categorias, categoriaSeleccionada) {
-//                            mutableStateOf(
-//                                categorias.firstOrNull { it.idCategoria == categoriaSeleccionada }?.nombre ?: ""
-//                            )
-//                        }
-                        // ====== DESPLEGABLE DE CATEGORÍA (con “Crear categoría” primero) ======
                         var textoCategoria by remember(categorias, categoriaSeleccionada) {
                             mutableStateOf(
                                 categorias.firstOrNull { it.idCategoria == categoriaSeleccionada }?.nombre ?: ""
@@ -262,12 +246,11 @@ fun PantallaArticulos(
                                     .fillMaxWidth(),
                                 readOnly = true,
                                 value = textoCategoria,
-                                onValueChange = { /* readOnly */ },
+                                onValueChange = { },
                                 label = { Text(StringResourceManager.getString("categoria", currentLanguage), color = Color.Black) },
                                 trailingIcon = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategoria)
                                 },
-                                // Forzamos texto negro sin utilizar outlinedTextFieldColors (compat amplio)
                                 textStyle = LocalTextStyle.current.copy(color = Color.Black)
                             )
 
@@ -275,7 +258,6 @@ fun PantallaArticulos(
                                 expanded = expandedCategoria,
                                 onDismissRequest = { expandedCategoria = false }
                             ) {
-                                // Opción “Crear categoría”
                                 DropdownMenuItem(
                                     text = { Text(StringResourceManager.getString("crear_nueva_categoria", currentLanguage)) },
                                     onClick = {
@@ -283,7 +265,6 @@ fun PantallaArticulos(
                                         mostrarNuevaCategoriaInline = true
                                     }
                                 )
-                                // Categorías existentes
                                 categorias.forEach { cat ->
                                     DropdownMenuItem(
                                         text = { Text(cat.nombre) },
@@ -306,65 +287,6 @@ fun PantallaArticulos(
                             }
                         }
 
-
-//                        ExposedDropdownMenuBox(
-//                            expanded = expandedCategoria,
-//                            onExpandedChange = { expandedCategoria = !expandedCategoria }
-//                        ) {
-//                            OutlinedTextField(
-//                                modifier = Modifier
-//                                    .menuAnchor()
-//                                    .fillMaxWidth(),
-//                                readOnly = true,
-//                                value = textoCategoria,
-//                                onValueChange = { /* readOnly */ },
-//                                label = { Text(StringResourceManager.getString("categoria", currentLanguage), color = Color.Black) },
-//                                trailingIcon = {
-//                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategoria)
-//                                },
-//                                colors = TextFieldDefaults.outlinedTextFieldColors(
-//                                    textColor = Color.Black,
-//                                    focusedLabelColor = Color.Black,
-//                                    unfocusedLabelColor = Color.Black
-//                                )
-//                            )
-//
-//                            ExposedDropdownMenu(
-//                                expanded = expandedCategoria,
-//                                onDismissRequest = { expandedCategoria = false }
-//                            ) {
-//                                // Opción “Crear categoría”
-//                                DropdownMenuItem(
-//                                    text = { Text(StringResourceManager.getString("crear_nueva_categoria", currentLanguage)) },
-//                                    onClick = {
-//                                        expandedCategoria = false
-//                                        mostrarNuevaCategoriaInline = true
-//                                    }
-//                                )
-//                                // Categorías existentes
-//                                categorias.forEach { cat ->
-//                                    DropdownMenuItem(
-//                                        text = { Text(cat.nombre) },
-//                                        leadingIcon = {
-//                                            Box(
-//                                                modifier = Modifier
-//                                                    .size(14.dp)
-//                                                    .clip(CircleShape)
-//                                                    .background(Color(android.graphics.Color.parseColor(cat.colorHex)))
-//                                            )
-//                                        },
-//                                        onClick = {
-//                                            categoriaSeleccionada = cat.idCategoria
-//                                            textoCategoria = cat.nombre
-//                                            mostrarNuevaCategoriaInline = false
-//                                            expandedCategoria = false
-//                                        }
-//                                    )
-//                                }
-//                            }
-//                        }
-
-                        // ====== FORMULARIO NUEVA CATEGORÍA (INLINE + SCROLLABLE) ======
                         AnimatedVisibility(visible = mostrarNuevaCategoriaInline) {
                             Card(
                                 colors = CardDefaults.cardColors(
@@ -390,7 +312,6 @@ fun PantallaArticulos(
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
-                                    // Muestra previa + botón selector color
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         modifier = Modifier.fillMaxWidth()
@@ -415,17 +336,14 @@ fun PantallaArticulos(
                                             enabled = nombreNuevaCategoria.isNotBlank(),
                                             onClick = {
                                                 scope.launch {
-                                                    // Si el usuario no cambió color, asigna uno pastel aleatorio
                                                     val colorFinal = if (colorNuevaCategoria == Color(0xFFD1C4E9))
                                                         generarColorAleatorioPastel()
                                                     else colorNuevaCategoria
                                                     val colorHex = String.format("#%06X", 0xFFFFFF and colorFinal.toArgb())
 
-                                                    // Crea categoría y marca que debemos seleccionarla cuando aparezca en el flow
                                                     pendingSeleccionarCategoriaPorNombre = nombreNuevaCategoria
                                                     categoriaViewModel.crearCategoria(nombreNuevaCategoria, colorHex)
 
-                                                    // Reseteo nombre (la selección real llega por LaunchedEffect)
                                                     nombreNuevaCategoria = ""
                                                 }
                                             }
@@ -441,7 +359,6 @@ fun PantallaArticulos(
                             }
                         }
 
-                        // Precio venta
                         OutlinedTextField(
                             value = precioVenta,
                             onValueChange = { precioVenta = it },
@@ -461,7 +378,6 @@ fun PantallaArticulos(
                             singleLine = true
                         )
 
-                        // Control coste
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
                                 checked = controlarCoste,
@@ -494,7 +410,6 @@ fun PantallaArticulos(
                             )
                         }
 
-                        // Control stock
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(
                                 checked = controlarStock,
@@ -527,7 +442,6 @@ fun PantallaArticulos(
                             )
                         }
 
-                        // Favorito
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = favorito, onCheckedChange = { favorito = it })
                             Text(
@@ -536,7 +450,6 @@ fun PantallaArticulos(
                             )
                         }
 
-                        // Botones Guardar/Cancelar
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -551,14 +464,17 @@ fun PantallaArticulos(
                                         }
                                         val precio = precioVenta.toDoubleOrNull()
                                         if (precio == null) {
-                                            snackbarHostState.showSnackbar("Precio de venta inválido"); return@launch
+                                            snackbarHostState.showSnackbar(
+                                                StringResourceManager.getString("precio_invalido", currentLanguage)
+                                            ); return@launch
                                         }
                                         if (categoriaSeleccionada.isEmpty()) {
-                                            snackbarHostState.showSnackbar("Selecciona una categoría"); return@launch
+                                            snackbarHostState.showSnackbar(
+                                                StringResourceManager.getString("selecciona_categoria", currentLanguage)
+                                            ); return@launch
                                         }
 
                                         if (modoEdicion == null) {
-                                            // Crear
                                             articuloViewModel.crearArticulo(
                                                 nombre = nombreArticulo,
                                                 idCategoria = categoriaSeleccionada,
@@ -572,7 +488,6 @@ fun PantallaArticulos(
                                                 favorito = favorito
                                             )
                                         } else {
-                                            // Actualizar
                                             val actualizado = modoEdicion!!.copy(
                                                 nombre = nombreArticulo,
                                                 idCategoria = categoriaSeleccionada,
@@ -618,7 +533,6 @@ fun PantallaArticulos(
                 }
             }
 
-            // ===== LISTA =====
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -670,22 +584,18 @@ fun PantallaArticulos(
                                     mostrarNuevaCategoriaInline = false
                                 },
                                 onEliminar = {
-                                    // Confirmación simple inline (puedes mantener tu diálogo si lo prefieres)
-                                    scope.launch {
-                                        articuloViewModel.eliminarArticulo(articulo)
-                                    }
+                                    scope.launch { articuloViewModel.eliminarArticulo(articulo) }
                                 }
                             )
                         }
                     }
                 }
             }
-
+                AdsBottomBar()
             FooterMarca()
         }
     }
 
-    // ===== Selector de color (con muestra previa ya visible en el formulario) =====
     if (mostrarColorPicker) {
         DialogSelectorColor(
             onColorElegido = { c ->
@@ -706,6 +616,10 @@ private fun ArticuloCard(
     onEliminar: () -> Unit
 ) {
     val categoria = categorias.find { it.idCategoria == articulo.idCategoria }
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()   // ✅ para textos
+    val moneda by ConfigurationManager.moneda.collectAsState()            // ✅ para moneda
+    val precioFmt = remember(articulo, moneda) { MonedaUtils.formatearImporte(articulo.precioVenta, moneda) }
+    val costeFmt = remember(articulo, moneda) { articulo.precioCoste?.let { MonedaUtils.formatearImporte(it, moneda) } }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -728,26 +642,26 @@ private fun ArticuloCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = categoria?.nombre ?: "Sin categoría",
+                    text = categoria?.nombre ?: StringResourceManager.getString("sin_categoria", currentLanguage),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Precio: ${articulo.precioVenta} €",
+                    text = "${StringResourceManager.getString("precio", currentLanguage)}: $precioFmt",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (esPremium) {
                     if (articulo.controlarStock && articulo.stock != null) {
                         Text(
-                            text = "Stock: ${articulo.stock}",
+                            text = "${StringResourceManager.getString("stock", currentLanguage)}: ${articulo.stock}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    if (articulo.controlarCoste && articulo.precioCoste != null) {
+                    if (articulo.controlarCoste && costeFmt != null) {
                         Text(
-                            text = "Coste: ${articulo.precioCoste} €",
+                            text = "${StringResourceManager.getString("coste", currentLanguage)}: $costeFmt",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -755,7 +669,7 @@ private fun ArticuloCard(
                 }
                 if (articulo.favorito) {
                     Text(
-                        text = "⭐ Favorito",
+                        text = StringResourceManager.getString("favorito_estrella", currentLanguage),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -766,14 +680,14 @@ private fun ArticuloCard(
                 IconButton(onClick = onEditar) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_edit),
-                        contentDescription = "Editar",
+                        contentDescription = StringResourceManager.getString("editar", currentLanguage),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 IconButton(onClick = onEliminar) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = "Eliminar",
+                        contentDescription = StringResourceManager.getString("eliminar", currentLanguage),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -782,867 +696,3 @@ private fun ArticuloCard(
     }
 }
 
-
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaArticulos.kt
-//package es.nuskysoftware.marketsales.ui.pantallas
-//
-//import androidx.compose.animation.AnimatedVisibility
-//import androidx.compose.foundation.background
-//import androidx.compose.foundation.clickable
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.lazy.LazyColumn
-//import androidx.compose.foundation.lazy.items
-//import androidx.compose.foundation.rememberScrollState
-//import androidx.compose.foundation.shape.CircleShape
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.foundation.text.KeyboardOptions
-//import androidx.compose.foundation.verticalScroll
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Add
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.draw.clip
-//import androidx.compose.ui.graphics.Color
-//import androidx.compose.ui.graphics.toArgb
-//import androidx.compose.ui.platform.LocalContext
-//import androidx.compose.ui.res.painterResource
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.text.input.KeyboardType
-//import androidx.compose.ui.text.style.TextAlign
-//import androidx.compose.ui.text.style.TextOverflow
-//import androidx.compose.ui.unit.dp
-//import androidx.lifecycle.viewmodel.compose.viewModel
-//import androidx.navigation.NavController
-//import com.github.skydoves.colorpicker.compose.AlphaSlider
-//import com.github.skydoves.colorpicker.compose.BrightnessSlider
-//import com.github.skydoves.colorpicker.compose.HsvColorPicker
-//import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-//import es.nuskysoftware.marketsales.R
-//import es.nuskysoftware.marketsales.data.local.entity.ArticuloEntity
-//import es.nuskysoftware.marketsales.ui.viewmodel.ArticuloViewModel
-//import es.nuskysoftware.marketsales.ui.viewmodel.ArticuloViewModelFactory
-//import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModel
-//import es.nuskysoftware.marketsales.ui.viewmodel.CategoriaViewModelFactory
-//import es.nuskysoftware.marketsales.utils.ConfigurationManager
-//import es.nuskysoftware.marketsales.utils.FooterMarca
-//import es.nuskysoftware.marketsales.utils.StringResourceManager
-//import es.nuskysoftware.marketsales.utils.generarColorAleatorioPastel
-//import kotlinx.coroutines.launch
-//
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun PantallaArticulos(
-//    navController: NavController? = null
-//) {
-//    val context = LocalContext.current
-//    val scope = rememberCoroutineScope()
-//
-//    // ViewModels con factory
-//    val articuloViewModel: ArticuloViewModel = viewModel(
-//        factory = ArticuloViewModelFactory(context)
-//    )
-//    val categoriaViewModel: CategoriaViewModel = viewModel(
-//        factory = CategoriaViewModelFactory(context)
-//    )
-//
-//    // Estados de configuración
-//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
-//    val esPremium by ConfigurationManager.esPremium.collectAsState()
-//
-//    // Estados de los ViewModels
-//    val articulos by articuloViewModel.articulos.collectAsState()
-//    val categorias by categoriaViewModel.categorias.collectAsState()
-//    val articuloUiState by articuloViewModel.uiState.collectAsState()
-//    val tieneArticulos by articuloViewModel.tieneArticulos.collectAsState()
-//
-//    // Estados locales del formulario
-//    var mostrarFormulario by remember { mutableStateOf(false) }
-//    var nombreArticulo by remember { mutableStateOf("") }
-//    var categoriaSeleccionada by remember { mutableStateOf("") }
-//    var precioVenta by remember { mutableStateOf("") }
-//    var precioCoste by remember { mutableStateOf("") }
-//    var stock by remember { mutableStateOf("") }
-//    var controlarStock by remember { mutableStateOf(false) }
-//    var controlarCoste by remember { mutableStateOf(false) }
-//    var favorito by remember { mutableStateOf(false) }
-//    var modoEdicion by remember { mutableStateOf<ArticuloEntity?>(null) }
-//
-//    // Estados de diálogos
-//    var mostrarDialogoEliminar by remember { mutableStateOf(false) }
-//    var articuloAEliminar by remember { mutableStateOf<ArticuloEntity?>(null) }
-//    var mostrarSelectorCategoria by remember { mutableStateOf(false) }
-//
-//    // Estados para nueva categoría
-//    var mostrarDialogoNuevaCategoria by remember { mutableStateOf(false) }
-//    var nombreNuevaCategoria by remember { mutableStateOf("") }
-//    var colorNuevaCategoria by remember { mutableStateOf(Color(0xFFD1C4E9)) }
-//    var mostrarColorPicker by remember { mutableStateOf(false) }
-//
-//    val snackbarHostState = remember { SnackbarHostState() }
-//
-//    // Función para limpiar formulario
-//    fun limpiarFormulario() {
-//        nombreArticulo = ""
-//        categoriaSeleccionada = ""
-//        precioVenta = ""
-//        precioCoste = ""
-//        stock = ""
-//        controlarStock = false
-//        controlarCoste = false
-//        favorito = false
-//        modoEdicion = null
-//    }
-//
-//    // Manejar mensajes del ViewModel
-//    LaunchedEffect(articuloUiState.message) {
-//        articuloUiState.message?.let { message ->
-//            snackbarHostState.showSnackbar(message)
-//            articuloViewModel.limpiarMensaje()
-//        }
-//    }
-//
-//    LaunchedEffect(articuloUiState.error) {
-//        articuloUiState.error?.let { error ->
-//            snackbarHostState.showSnackbar(error)
-//            articuloViewModel.limpiarError()
-//        }
-//    }
-//
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = {
-//                    Text(
-//                        StringResourceManager.getString("articulos", currentLanguage),
-//                        fontWeight = FontWeight.Bold
-//                    )
-//                },
-//                navigationIcon = {
-//                    IconButton(onClick = { navController?.popBackStack() }) {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_arrow_left),
-//                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
-//                        )
-//                    }
-//                },
-//                colors = TopAppBarDefaults.topAppBarColors(
-//                    containerColor = MaterialTheme.colorScheme.primary,
-//                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-//                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-//                )
-//            )
-//        },
-//        snackbarHost = { SnackbarHost(snackbarHostState) },
-//        floatingActionButton = {
-//            if (!mostrarFormulario) {
-//                FloatingActionButton(
-//                    onClick = {
-//                        limpiarFormulario()
-//                        mostrarFormulario = true
-//                    },
-//                    shape = CircleShape,
-//                    containerColor = MaterialTheme.colorScheme.primary,
-//                    contentColor = MaterialTheme.colorScheme.onPrimary
-//                ) {
-//                    Icon(
-//                        imageVector = Icons.Default.Add,
-//                        contentDescription = StringResourceManager.getString("add_articulo", currentLanguage)
-//                    )
-//                }
-//            }
-//        }
-//    ) { paddingValues ->
-//        Column(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .padding(paddingValues)
-//        ) {
-//            // ========== FORMULARIO DESLIZANTE ==========
-//            AnimatedVisibility(visible = mostrarFormulario) {
-//                Card(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                        .padding(16.dp),
-//                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-//                    colors = CardDefaults.cardColors(
-//                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-//                    ),
-//                    shape = RoundedCornerShape(16.dp)
-//                ) {
-//                    Column(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(20.dp)
-//                            .verticalScroll(rememberScrollState())
-//                    ) {
-//                        Text(
-//                            text = if (modoEdicion == null)
-//                                StringResourceManager.getString("nuevo_articulo", currentLanguage)
-//                            else
-//                                StringResourceManager.getString("editar_articulo", currentLanguage),
-//                            style = MaterialTheme.typography.titleMedium,
-//                            fontWeight = FontWeight.Bold,
-//                            color = MaterialTheme.colorScheme.onSecondaryContainer
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(16.dp))
-//
-//                        // Campo nombre
-//                        OutlinedTextField(
-//                            value = nombreArticulo,
-//                            onValueChange = { nombreArticulo = it },
-//                            label = { Text(StringResourceManager.getString("nombre", currentLanguage)) },
-//                            modifier = Modifier.fillMaxWidth(),
-//                            isError = nombreArticulo.isNotEmpty() && articuloViewModel.validarNombreArticulo(nombreArticulo) != null,
-//                            supportingText = {
-//                                articuloViewModel.validarNombreArticulo(nombreArticulo)?.let { error ->
-//                                    Text(
-//                                        text = error,
-//                                        color = MaterialTheme.colorScheme.error
-//                                    )
-//                                }
-//                            },
-//                            singleLine = true
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(12.dp))
-//
-//                        // ========== SELECTOR DE CATEGORÍA MEJORADO ==========
-//                        OutlinedTextField(
-//                            value = categorias.find { it.idCategoria == categoriaSeleccionada }?.nombre ?: "",
-//                            onValueChange = { },
-//                            label = { Text(StringResourceManager.getString("categoria", currentLanguage)) },
-//                            modifier = Modifier.fillMaxWidth(),
-//                            readOnly = true,
-//                            trailingIcon = {
-//                                IconButton(onClick = { mostrarSelectorCategoria = true }) {
-//                                    Icon(
-//                                        painter = painterResource(id = R.drawable.ic_arrow_down),
-//                                        contentDescription = "Seleccionar categoría"
-//                                    )
-//                                }
-//                            }
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(12.dp))
-//
-//                        // Precio de venta
-//                        OutlinedTextField(
-//                            value = precioVenta,
-//                            onValueChange = { precioVenta = it },
-//                            label = { Text(StringResourceManager.getString("precio_venta", currentLanguage)) },
-//                            modifier = Modifier.fillMaxWidth(),
-//                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-//                            isError = precioVenta.isNotEmpty() && precioVenta.toDoubleOrNull()?.let {
-//                                articuloViewModel.validarPrecioVenta(it)
-//                            } != null,
-//                            supportingText = {
-//                                precioVenta.toDoubleOrNull()?.let { precio ->
-//                                    articuloViewModel.validarPrecioVenta(precio)?.let { error ->
-//                                        Text(
-//                                            text = error,
-//                                            color = MaterialTheme.colorScheme.error
-//                                        )
-//                                    }
-//                                }
-//                            },
-//                            singleLine = true
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(12.dp))
-//
-//                        // ========== CAMPOS PREMIUM CON RESTRICCIONES ==========
-//
-//                        // Control de coste
-//                        Row(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Checkbox(
-//                                checked = controlarCoste,
-//                                onCheckedChange = {
-//                                    if (esPremium) {
-//                                        controlarCoste = it
-//                                    }
-//                                },
-//                                enabled = esPremium
-//                            )
-//                            Column(modifier = Modifier.weight(1f)) {
-//                                Text(
-//                                    text = StringResourceManager.getString("controlar_coste", currentLanguage),
-//                                    color = if (esPremium) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-//                                )
-//                                if (!esPremium) {
-//                                    Text(
-//                                        text = StringResourceManager.getString("solo_premium_coste", currentLanguage),
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-//                                    )
-//                                }
-//                            }
-//                        }
-//
-//                        if (controlarCoste && esPremium) {
-//                            Spacer(modifier = Modifier.height(8.dp))
-//                            OutlinedTextField(
-//                                value = precioCoste,
-//                                onValueChange = { precioCoste = it },
-//                                label = { Text(StringResourceManager.getString("precio_coste", currentLanguage)) },
-//                                modifier = Modifier.fillMaxWidth(),
-//                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-//                                singleLine = true
-//                            )
-//                        }
-//
-//                        Spacer(modifier = Modifier.height(12.dp))
-//
-//                        // Control de stock
-//                        Row(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Checkbox(
-//                                checked = controlarStock,
-//                                onCheckedChange = {
-//                                    if (esPremium) {
-//                                        controlarStock = it
-//                                    }
-//                                },
-//                                enabled = esPremium
-//                            )
-//                            Column(modifier = Modifier.weight(1f)) {
-//                                Text(
-//                                    text = StringResourceManager.getString("controlar_stock", currentLanguage),
-//                                    color = if (esPremium) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-//                                )
-//                                if (!esPremium) {
-//                                    Text(
-//                                        text = StringResourceManager.getString("solo_premium_stock", currentLanguage),
-//                                        style = MaterialTheme.typography.bodySmall,
-//                                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-//                                    )
-//                                }
-//                            }
-//                        }
-//
-//                        if (controlarStock && esPremium) {
-//                            Spacer(modifier = Modifier.height(8.dp))
-//                            OutlinedTextField(
-//                                value = stock,
-//                                onValueChange = { stock = it },
-//                                label = { Text(StringResourceManager.getString("stock", currentLanguage)) },
-//                                modifier = Modifier.fillMaxWidth(),
-//                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-//                                singleLine = true
-//                            )
-//                        }
-//
-//                        Spacer(modifier = Modifier.height(12.dp))
-//
-//                        // Favorito (disponible para todos)
-//                        Row(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            Checkbox(
-//                                checked = favorito,
-//                                onCheckedChange = { favorito = it }
-//                            )
-//                            Text(
-//                                text = StringResourceManager.getString("marcar_favorito", currentLanguage),
-//                                modifier = Modifier.weight(1f)
-//                            )
-//                        }
-//
-//                        Spacer(modifier = Modifier.height(20.dp))
-//
-//                        // Botones
-//                        Row(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-//                        ) {
-//                            Button(
-//                                onClick = {
-//                                    scope.launch {
-//                                        val validacionNombre = articuloViewModel.validarNombreArticulo(nombreArticulo)
-//                                        if (validacionNombre != null) {
-//                                            snackbarHostState.showSnackbar(validacionNombre)
-//                                            return@launch
-//                                        }
-//
-//                                        val precio = precioVenta.toDoubleOrNull()
-//                                        if (precio == null) {
-//                                            snackbarHostState.showSnackbar("Precio de venta inválido")
-//                                            return@launch
-//                                        }
-//
-//                                        if (categoriaSeleccionada.isEmpty()) {
-//                                            snackbarHostState.showSnackbar("Selecciona una categoría")
-//                                            return@launch
-//                                        }
-//
-//                                        if (modoEdicion == null) {
-//                                            // Crear nuevo artículo
-//                                            articuloViewModel.crearArticulo(
-//                                                nombre = nombreArticulo,
-//                                                idCategoria = categoriaSeleccionada,
-//                                                precioVenta = precio,
-//                                                precioCoste = if (controlarCoste && esPremium && precioCoste.isNotEmpty()) precioCoste.toDoubleOrNull() else null,
-//                                                stock = if (controlarStock && esPremium && stock.isNotEmpty()) stock.toIntOrNull() else null,
-//                                                controlarStock = controlarStock && esPremium,
-//                                                controlarCoste = controlarCoste && esPremium,
-//                                                favorito = favorito
-//                                            )
-//                                        } else {
-//                                            // Actualizar artículo existente
-//                                            val articuloActualizado = modoEdicion!!.copy(
-//                                                nombre = nombreArticulo,
-//                                                idCategoria = categoriaSeleccionada,
-//                                                precioVenta = precio,
-//                                                precioCoste = if (controlarCoste && esPremium && precioCoste.isNotEmpty()) precioCoste.toDoubleOrNull() else null,
-//                                                stock = if (controlarStock && esPremium && stock.isNotEmpty()) stock.toIntOrNull() else null,
-//                                                controlarStock = controlarStock && esPremium,
-//                                                controlarCoste = controlarCoste && esPremium,
-//                                                favorito = favorito
-//                                            )
-//                                            articuloViewModel.actualizarArticulo(articuloActualizado)
-//                                        }
-//
-//                                        // Limpiar y cerrar formulario
-//                                        limpiarFormulario()
-//                                        mostrarFormulario = false
-//                                    }
-//                                },
-//                                enabled = !articuloUiState.loading && nombreArticulo.isNotBlank() && precioVenta.isNotBlank(),
-//                                modifier = Modifier.weight(1f)
-//                            ) {
-//                                if (articuloUiState.loading) {
-//                                    CircularProgressIndicator(
-//                                        modifier = Modifier.size(16.dp),
-//                                        strokeWidth = 2.dp,
-//                                        color = MaterialTheme.colorScheme.onPrimary
-//                                    )
-//                                } else {
-//                                    Text(StringResourceManager.getString("guardar", currentLanguage))
-//                                }
-//                            }
-//
-//                            OutlinedButton(
-//                                onClick = {
-//                                    limpiarFormulario()
-//                                    mostrarFormulario = false
-//                                },
-//                                modifier = Modifier.weight(1f)
-//                            ) {
-//                                Text(StringResourceManager.getString("cancelar", currentLanguage))
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // ========== CONTENIDO PRINCIPAL ==========
-//            Box(
-//                modifier = Modifier
-//                    .weight(1f)
-//                    .fillMaxWidth()
-//                    .padding(horizontal = 16.dp)
-//            ) {
-//                if (!tieneArticulos) {
-//                    // Estado vacío
-//                    Column(
-//                        modifier = Modifier.fillMaxSize(),
-//                        horizontalAlignment = Alignment.CenterHorizontally,
-//                        verticalArrangement = Arrangement.Center
-//                    ) {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_list),
-//                            contentDescription = null,
-//                            modifier = Modifier.size(64.dp),
-//                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-//                        )
-//
-//                        Spacer(modifier = Modifier.height(16.dp))
-//
-//                        Text(
-//                            text = StringResourceManager.getString("pulsa_crear_primer_articulo", currentLanguage),
-//                            style = MaterialTheme.typography.titleMedium,
-//                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-//                            textAlign = TextAlign.Center
-//                        )
-//                    }
-//                } else {
-//                    // Lista de artículos en Cards
-//                    LazyColumn(
-//                        modifier = Modifier.fillMaxSize(),
-//                        verticalArrangement = Arrangement.spacedBy(8.dp),
-//                        contentPadding = PaddingValues(vertical = 8.dp)
-//                    ) {
-//                        items(articulos) { articulo ->
-//                            ArticuloCard(
-//                                articulo = articulo,
-//                                categorias = categorias,
-//                                esPremium = esPremium,
-//                                onEditar = {
-//                                    // Cargar datos en el formulario
-//                                    modoEdicion = articulo
-//                                    nombreArticulo = articulo.nombre
-//                                    categoriaSeleccionada = articulo.idCategoria
-//                                    precioVenta = articulo.precioVenta.toString()
-//                                    precioCoste = articulo.precioCoste?.toString() ?: ""
-//                                    stock = articulo.stock?.toString() ?: ""
-//                                    controlarStock = articulo.controlarStock
-//                                    controlarCoste = articulo.controlarCoste
-//                                    favorito = articulo.favorito
-//                                    mostrarFormulario = true
-//                                },
-//                                onEliminar = {
-//                                    articuloAEliminar = articulo
-//                                    mostrarDialogoEliminar = true
-//                                }
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//
-//            // ========== FOOTER ==========
-//            FooterMarca()
-//        }
-//    }
-//
-//    // ========== DIÁLOGOS ==========
-//
-//    // ========== SELECTOR DE CATEGORÍA MEJORADO ==========
-//    if (mostrarSelectorCategoria) {
-//        AlertDialog(
-//            onDismissRequest = { mostrarSelectorCategoria = false },
-//            title = { Text(StringResourceManager.getString("seleccionar_categoria", currentLanguage)) },
-//            text = {
-//                LazyColumn {
-//                    // Opción para crear nueva categoría
-//                    item {
-//                        Card(
-//                            modifier = Modifier
-//                                .fillMaxWidth()
-//                                .padding(vertical = 4.dp)
-//                                .clickable {
-//                                    mostrarSelectorCategoria = false
-//                                    mostrarDialogoNuevaCategoria = true
-//                                },
-//                            colors = CardDefaults.cardColors(
-//                                containerColor = MaterialTheme.colorScheme.primaryContainer
-//                            )
-//                        ) {
-//                            Row(
-//                                modifier = Modifier
-//                                    .fillMaxWidth()
-//                                    .padding(16.dp),
-//                                verticalAlignment = Alignment.CenterVertically
-//                            ) {
-//                                Icon(
-//                                    imageVector = Icons.Default.Add,
-//                                    contentDescription = "Crear categoría",
-//                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-//                                )
-//                                Spacer(modifier = Modifier.width(12.dp))
-//                                Text(
-//                                    text = StringResourceManager.getString("crear_nueva_categoria", currentLanguage),
-//                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-//                                    fontWeight = FontWeight.Medium
-//                                )
-//                            }
-//                        }
-//                    }
-//
-//                    // Lista de categorías existentes
-//                    items(categorias) { categoria ->
-//                        TextButton(
-//                            onClick = {
-//                                categoriaSeleccionada = categoria.idCategoria
-//                                mostrarSelectorCategoria = false
-//                            },
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) {
-//                            Row(
-//                                verticalAlignment = Alignment.CenterVertically,
-//                                modifier = Modifier.fillMaxWidth()
-//                            ) {
-//                                // Círculo de color
-//                                Box(
-//                                    modifier = Modifier
-//                                        .size(16.dp)
-//                                        .clip(CircleShape)
-//                                        .background(Color(android.graphics.Color.parseColor(categoria.colorHex)))
-//                                )
-//                                Spacer(modifier = Modifier.width(12.dp))
-//                                Text(categoria.nombre)
-//                            }
-//                        }
-//                    }
-//
-//                    if (categorias.isEmpty()) {
-//                        item {
-//                            Text(
-//                                text = StringResourceManager.getString("sin_categorias", currentLanguage),
-//                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                                modifier = Modifier.padding(16.dp)
-//                            )
-//                        }
-//                    }
-//                }
-//            },
-//            confirmButton = {
-//                TextButton(onClick = { mostrarSelectorCategoria = false }) {
-//                    Text(StringResourceManager.getString("cancelar", currentLanguage))
-//                }
-//            }
-//        )
-//    }
-//
-//    // ========== DIÁLOGO NUEVA CATEGORÍA ==========
-//    if (mostrarDialogoNuevaCategoria) {
-//        AlertDialog(
-//            onDismissRequest = {
-//                mostrarDialogoNuevaCategoria = false
-//                nombreNuevaCategoria = ""
-//                colorNuevaCategoria = Color(0xFFD1C4E9)
-//            },
-//            title = { Text(StringResourceManager.getString("nueva_categoria", currentLanguage)) },
-//            text = {
-//                Column {
-//                    OutlinedTextField(
-//                        value = nombreNuevaCategoria,
-//                        onValueChange = { nombreNuevaCategoria = it },
-//                        label = { Text(StringResourceManager.getString("nombre", currentLanguage)) },
-//                        modifier = Modifier.fillMaxWidth(),
-//                        singleLine = true
-//                    )
-//
-//                    Spacer(modifier = Modifier.height(16.dp))
-//
-//                    // Selector de color
-//                    Row(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .clickable { mostrarColorPicker = true }
-//                            .padding(vertical = 8.dp),
-//                        verticalAlignment = Alignment.CenterVertically
-//                    ) {
-//                        Text(
-//                            text = StringResourceManager.getString("seleccionar_color", currentLanguage),
-//                            modifier = Modifier.weight(1f)
-//                        )
-//                        Spacer(modifier = Modifier.width(16.dp))
-//                        Box(
-//                            modifier = Modifier
-//                                .size(32.dp)
-//                                .clip(CircleShape)
-//                                .background(colorNuevaCategoria)
-//                        )
-//                    }
-//                }
-//            },
-//            confirmButton = {
-//                TextButton(
-//                    onClick = {
-//                        if (nombreNuevaCategoria.isNotBlank()) {
-//                            scope.launch {
-//                                val colorFinal = if (colorNuevaCategoria == Color(0xFFD1C4E9)) {
-//                                    generarColorAleatorioPastel()
-//                                } else colorNuevaCategoria
-//
-//                                val colorHex = String.format("#%06X", 0xFFFFFF and colorFinal.toArgb())
-//
-//                                categoriaViewModel.crearCategoria(nombreNuevaCategoria, colorHex)
-//
-//                                // Limpiar y cerrar
-//                                nombreNuevaCategoria = ""
-//                                colorNuevaCategoria = Color(0xFFD1C4E9)
-//                                mostrarDialogoNuevaCategoria = false
-//                            }
-//                        }
-//                    },
-//                    enabled = nombreNuevaCategoria.isNotBlank()
-//                ) {
-//                    Text(StringResourceManager.getString("crear", currentLanguage))
-//                }
-//            },
-//            dismissButton = {
-//                TextButton(onClick = {
-//                    mostrarDialogoNuevaCategoria = false
-//                    nombreNuevaCategoria = ""
-//                    colorNuevaCategoria = Color(0xFFD1C4E9)
-//                }) {
-//                    Text(StringResourceManager.getString("cancelar", currentLanguage))
-//                }
-//            }
-//        )
-//    }
-//
-//    // ========== SELECTOR DE COLOR ==========
-//    if (mostrarColorPicker) {
-//        ColorPickerDialog(
-//            onColorElegido = { color ->
-//                colorNuevaCategoria = color
-//                mostrarColorPicker = false
-//            },
-//            onCancelar = { mostrarColorPicker = false }
-//        )
-//    }
-//
-//    // Confirmación eliminar
-//    if (mostrarDialogoEliminar && articuloAEliminar != null) {
-//        AlertDialog(
-//            onDismissRequest = {
-//                mostrarDialogoEliminar = false
-//                articuloAEliminar = null
-//            },
-//            title = {
-//                Text(StringResourceManager.getString("eliminar_articulo", currentLanguage))
-//            },
-//            text = {
-//                Text(
-//                    StringResourceManager.getString("confirmar_eliminar_articulo", currentLanguage)
-//                        .replace("{nombre}", articuloAEliminar!!.nombre)
-//                )
-//            },
-//            confirmButton = {
-//                Button(
-//                    onClick = {
-//                        articuloViewModel.eliminarArticulo(articuloAEliminar!!)
-//                        mostrarDialogoEliminar = false
-//                        articuloAEliminar = null
-//                    },
-//                    colors = ButtonDefaults.buttonColors(
-//                        containerColor = MaterialTheme.colorScheme.error
-//                    )
-//                ) {
-//                    Text(
-//                        StringResourceManager.getString("eliminar", currentLanguage),
-//                        color = MaterialTheme.colorScheme.onError
-//                    )
-//                }
-//            },
-//            dismissButton = {
-//                OutlinedButton(
-//                    onClick = {
-//                        mostrarDialogoEliminar = false
-//                        articuloAEliminar = null
-//                    }
-//                ) {
-//                    Text(StringResourceManager.getString("cancelar", currentLanguage))
-//                }
-//            }
-//        )
-//    }
-//}
-//
-//
-//@Composable
-//private fun ArticuloCard(
-//    articulo: ArticuloEntity,
-//    categorias: List<es.nuskysoftware.marketsales.data.local.entity.CategoriaEntity>,
-//    esPremium: Boolean,
-//    onEditar: () -> Unit,
-//    onEliminar: () -> Unit
-//) {
-//    val categoria = categorias.find { it.idCategoria == articulo.idCategoria }
-//
-//    Card(
-//        modifier = Modifier.fillMaxWidth(),
-//        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-//        colors = CardDefaults.cardColors(
-//            containerColor = MaterialTheme.colorScheme.surface
-//        ),
-//        shape = RoundedCornerShape(12.dp)
-//    ) {
-//        Row(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(16.dp),
-//            horizontalArrangement = Arrangement.SpaceBetween,
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Column(modifier = Modifier.weight(1f)) {
-//                // Nombre del artículo
-//                Text(
-//                    text = articulo.nombre,
-//                    style = MaterialTheme.typography.titleMedium,
-//                    fontWeight = FontWeight.Medium,
-//                    maxLines = 1,
-//                    overflow = TextOverflow.Ellipsis
-//                )
-//
-//                Spacer(modifier = Modifier.height(4.dp))
-//
-//                // Categoría
-//                Text(
-//                    text = categoria?.nombre ?: "Sin categoría",
-//                    style = MaterialTheme.typography.bodySmall,
-//                    color = MaterialTheme.colorScheme.onSurfaceVariant
-//                )
-//
-//                // Precio de venta
-//                Text(
-//                    text = "Precio: ${articulo.precioVenta} €",
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    color = MaterialTheme.colorScheme.onSurface
-//                )
-//
-//                // Información Premium
-//                if (esPremium) {
-//                    if (articulo.controlarStock && articulo.stock != null) {
-//                        Text(
-//                            text = "Stock: ${articulo.stock}",
-//                            style = MaterialTheme.typography.bodySmall,
-//                            color = MaterialTheme.colorScheme.onSurfaceVariant
-//                        )
-//                    }
-//                    if (articulo.controlarCoste && articulo.precioCoste != null) {
-//                        Text(
-//                            text = "Coste: ${articulo.precioCoste} €",
-//                            style = MaterialTheme.typography.bodySmall,
-//                            color = MaterialTheme.colorScheme.onSurfaceVariant
-//                        )
-//                    }
-//                }
-//
-//                // Indicador favorito
-//                if (articulo.favorito) {
-//                    Text(
-//                        text = "⭐ Favorito",
-//                        style = MaterialTheme.typography.bodySmall,
-//                        color = MaterialTheme.colorScheme.primary
-//                    )
-//                }
-//            }
-//
-//            // Botones de acción
-//            Row(
-//                horizontalArrangement = Arrangement.spacedBy(8.dp)
-//            ) {
-//                IconButton(onClick = onEditar) {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.ic_edit),
-//                        contentDescription = "Editar",
-//                        tint = MaterialTheme.colorScheme.primary
-//                    )
-//                }
-//
-//                IconButton(onClick = onEliminar) {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.ic_delete),
-//                        contentDescription = "Eliminar",
-//                        tint = MaterialTheme.colorScheme.error
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-//

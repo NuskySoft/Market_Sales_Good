@@ -1,3 +1,4 @@
+// app/src/main/java/es/nuskysoftware/marketsales/utils/ui/alta/CamposAlta.kt
 package es.nuskysoftware.marketsales.utils.ui.alta
 
 import androidx.compose.foundation.background
@@ -6,10 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 import java.text.SimpleDateFormat
@@ -31,6 +33,9 @@ fun CampoEstadoDebug(
     onEstadoChange: (EstadosMercadillo.Estado) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     var expanded by remember { mutableStateOf(false) }
     var estadoSeleccionado by remember(estadoActual) {
         mutableStateOf(
@@ -40,7 +45,12 @@ fun CampoEstadoDebug(
     }
 
     Column(modifier = modifier) {
-        Text("🔧 Estado (DEBUG)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color.Red)
+        Text(
+            t("estado_debug_titulo"),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            color = Color.Red
+        )
         Spacer(Modifier.height(4.dp))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
             OutlinedTextField(
@@ -62,8 +72,12 @@ fun CampoEstadoDebug(
                 }
             }
         }
-        Text("⚠️ Solo para debugging - Se eliminará en producción",
-            style = MaterialTheme.typography.bodySmall, color = Color.Red.copy(alpha = 0.7f), fontSize = 10.sp)
+        Text(
+            t("estado_debug_aviso"),
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Red.copy(alpha = 0.7f),
+            fontSize = 10.sp
+        )
     }
 }
 
@@ -74,13 +88,20 @@ fun CampoFecha(
     onMostrarDatePicker: () -> Unit,
     enabled: Boolean
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     Column {
-        Text("Fecha", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(t("fecha"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
-            value = fecha, onValueChange = onFechaChange, placeholder = { Text("dd-MM-yyyy") },
+            value = fecha,
+            onValueChange = onFechaChange,
+            placeholder = { Text(t("formato_fecha_hint")) },
             enabled = enabled,
-            modifier = Modifier.fillMaxWidth().then(if (enabled) Modifier.clickable { onMostrarDatePicker() } else Modifier),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (enabled) Modifier.clickable { onMostrarDatePicker() } else Modifier),
             readOnly = true,
             trailingIcon = { IconButton(onClick = onMostrarDatePicker, enabled = enabled) { Text("📅", fontSize = 18.sp) } }
         )
@@ -94,10 +115,16 @@ fun CampoTexto(
     label: String,
     placeholder: String
 ) {
+    // El label/placeholder llegan ya localizados desde el llamador
     Column {
         Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(4.dp))
-        OutlinedTextField(value = valor, onValueChange = onValueChange, placeholder = { Text(placeholder) }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = valor,
+            onValueChange = onValueChange,
+            placeholder = { Text(placeholder) },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -108,18 +135,26 @@ fun ConfiguracionEconomica(
     importeSuscripcion: String,
     onImporteSuscripcionChange: (String) -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val moneda by ConfigurationManager.moneda.collectAsState()
+    val simboloMoneda = remember(moneda) { moneda.split(" ").firstOrNull() ?: "€" }
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     Column {
-        Text("Configuración Económica", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(t("config_economica"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Switch(checked = esGratis, onCheckedChange = onEsGratisChange)
-            Spacer(Modifier.width(8.dp)); Text("Mercadillo gratuito")
+            Spacer(Modifier.width(8.dp))
+            Text(t("mercadillo_gratuito"))
         }
         if (!esGratis) {
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
-                value = importeSuscripcion, onValueChange = onImporteSuscripcionChange,
-                label = { Text("Importe suscripción (€)") }, placeholder = { Text("0.00") },
+                value = importeSuscripcion,
+                onValueChange = onImporteSuscripcionChange,
+                label = { Text(t("importe_suscripcion") + " (${simboloMoneda})") },
+                placeholder = { Text(t("importe_placeholder")) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -135,12 +170,24 @@ fun ConfiguracionLogistica(
     hayPuntoLuz: Boolean,
     onHayPuntoLuzChange: (Boolean) -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     Column {
-        Text("Configuración Logística", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(t("config_logistica"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = requiereMesa, onCheckedChange = onRequiereMesaChange); Text("Requiere mesa") }
-        Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = requiereCarpa, onCheckedChange = onRequiereCarpaChange); Text("Requiere carpa") }
-        Row(verticalAlignment = Alignment.CenterVertically) { Checkbox(checked = hayPuntoLuz, onCheckedChange = onHayPuntoLuzChange); Text("Hay punto de luz") }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = requiereMesa, onCheckedChange = onRequiereMesaChange)
+            Text(t("requiere_mesa"))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = requiereCarpa, onCheckedChange = onRequiereCarpaChange)
+            Text(t("requiere_carpa"))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = hayPuntoLuz, onCheckedChange = onHayPuntoLuzChange)
+            Text(t("hay_punto_luz"))
+        }
     }
 }
 
@@ -153,24 +200,37 @@ fun ConfiguracionHorarios(
     onMostrarTimePickerInicio: () -> Unit,
     onMostrarTimePickerFin: () -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     Column {
-        Text("Horarios", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(t("horarios"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
-                Text("Hora inicio", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(t("hora_inicio"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                 OutlinedTextField(
-                    value = horaInicio, onValueChange = onHoraInicioChange, placeholder = { Text("HH:mm") },
-                    modifier = Modifier.fillMaxWidth().clickable { onMostrarTimePickerInicio() }, readOnly = true,
+                    value = horaInicio,
+                    onValueChange = onHoraInicioChange,
+                    placeholder = { Text(t("formato_hora_hint")) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onMostrarTimePickerInicio() },
+                    readOnly = true,
                     trailingIcon = { IconButton(onClick = onMostrarTimePickerInicio) { Text("🕐", fontSize = 18.sp) } }
                 )
             }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                Text("Hora fin", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                Text(t("hora_fin"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                 OutlinedTextField(
-                    value = horaFin, onValueChange = onHoraFinChange, placeholder = { Text("HH:mm") },
-                    modifier = Modifier.fillMaxWidth().clickable { onMostrarTimePickerFin() }, readOnly = true,
+                    value = horaFin,
+                    onValueChange = onHoraFinChange,
+                    placeholder = { Text(t("formato_hora_hint")) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onMostrarTimePickerFin() },
+                    readOnly = true,
                     trailingIcon = { IconButton(onClick = onMostrarTimePickerFin) { Text("🕐", fontSize = 18.sp) } }
                 )
             }
@@ -183,10 +243,21 @@ fun CampoSaldoInicial(
     saldoInicial: String,
     onSaldoInicialChange: (String) -> Unit
 ) {
+    val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val moneda by ConfigurationManager.moneda.collectAsState()
+    val simboloMoneda = remember(moneda) { moneda.split(" ").firstOrNull() ?: "€" }
+    fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
+
     Column {
-        Text("Saldo Inicial (Opcional)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+        Text(t("saldo_inicial_opcional"), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Spacer(Modifier.height(4.dp))
-        OutlinedTextField(value = saldoInicial, onValueChange = onSaldoInicialChange, placeholder = { Text("0.00") }, modifier = Modifier.fillMaxWidth(), suffix = { Text("€") })
+        OutlinedTextField(
+            value = saldoInicial,
+            onValueChange = onSaldoInicialChange,
+            placeholder = { Text(t("importe_placeholder")) },
+            modifier = Modifier.fillMaxWidth(),
+            suffix = { Text(simboloMoneda) }
+        )
     }
 }
 
@@ -237,10 +308,17 @@ private fun SelectedDateDisplay(selectedDate: Calendar, currentLanguage: String)
     else SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH)
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(dayFormat.format(selectedDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            Text(displayFormat.format(selectedDate.time), style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+            Text(
+                dayFormat.format(selectedDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            Text(
+                displayFormat.format(selectedDate.time),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Bold
+            )
         }
     }
 }
@@ -271,21 +349,28 @@ private fun CalendarGrid(
     currentLanguage: String
 ) {
     val diasSemana = if (currentLanguage == "es")
-        listOf(StringResourceManager.getString("lunes", currentLanguage),
+        listOf(
+            StringResourceManager.getString("lunes", currentLanguage),
             StringResourceManager.getString("martes", currentLanguage),
             StringResourceManager.getString("miercoles", currentLanguage),
             StringResourceManager.getString("jueves", currentLanguage),
             StringResourceManager.getString("viernes", currentLanguage),
             StringResourceManager.getString("sabado", currentLanguage),
-            StringResourceManager.getString("domingo", currentLanguage))
+            StringResourceManager.getString("domingo", currentLanguage)
+        )
     else listOf("M", "T", "W", "T", "F", "S", "S")
 
     Column {
         Row(Modifier.fillMaxWidth()) {
             diasSemana.forEach { dia ->
-                Text(dia, modifier = Modifier.weight(1f), textAlign = TextAlign.Center,
-                    style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary)
+                Text(
+                    dia,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -317,14 +402,17 @@ private fun CalendarGrid(
 @Composable
 private fun DayCell(day: Int, isSelected: Boolean, isToday: Boolean, onClick: () -> Unit) {
     Box(
-        modifier = Modifier.size(40.dp).clickable { onClick() }.background(
-            color = when {
-                isSelected -> MaterialTheme.colorScheme.primary
-                isToday -> MaterialTheme.colorScheme.primaryContainer
-                else -> Color.Transparent
-            },
-            shape = RoundedCornerShape(8.dp)
-        ),
+        modifier = Modifier
+            .size(40.dp)
+            .clickable { onClick() }
+            .background(
+                color = when {
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    isToday -> MaterialTheme.colorScheme.primaryContainer
+                    else -> Color.Transparent
+                },
+                shape = RoundedCornerShape(8.dp)
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -362,7 +450,11 @@ fun TimePickerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(StringResourceManager.getString("seleccionar_hora", currentLanguage)) },
-        text = { Column(horizontalAlignment = Alignment.CenterHorizontally) { TimePicker(state = timePickerState, modifier = Modifier.padding(16.dp)) } },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                TimePicker(state = timePickerState, modifier = Modifier.padding(16.dp))
+            }
+        },
         confirmButton = {
             TextButton(onClick = {
                 val hour = "%02d".format(timePickerState.hour)

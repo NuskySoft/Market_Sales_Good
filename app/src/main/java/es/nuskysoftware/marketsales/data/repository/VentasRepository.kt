@@ -2,6 +2,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import es.nuskysoftware.marketsales.data.local.dao.LineasVentaDao
@@ -10,7 +11,12 @@ import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.LineaVentaEntity
 import es.nuskysoftware.marketsales.data.local.entity.ReciboEntity
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.ConnectivityObserver
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -18,22 +24,41 @@ import java.util.Locale
 
 class VentasRepository(context: Context) {
 
-    private val database: AppDatabase = AppDatabase.getDatabase(context)
-    private val recibosDao: RecibosDao = database.recibosDao()
-    private val lineasVentaDao: LineasVentaDao = database.lineasVentaDao()
-    private val configuracionDao = database.configuracionDao()
+//    private val database: AppDatabase = AppDatabase.getDatabase(context)
+//    private val recibosDao: RecibosDao = database.recibosDao()
+//    private val lineasVentaDao: LineasVentaDao = database.lineasVentaDao()
+//    private val configuracionDao = database.configuracionDao()
+
+    companion object { private const val TAG = "VentasRepository" }
+
+    private val db = AppDatabase.getDatabase(context)
+    private val recibosDao: RecibosDao = db.recibosDao()
+    private val lineasVentaDao: LineasVentaDao = db.lineasVentaDao()
+    private val configuracionDao = db.configuracionDao()
+
+
 
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
+    private val connectivity = ConnectivityObserver(context)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        scope.launch {
+            connectivity.isConnected.collect { online ->
+                if (online) {
+                    runCatching { sincronizarPendientes() }
+                        .onFailure { Log.w(TAG, "Error sincronizando pendientes", it) }
+                }
+            }
+        }
+    }
+
+
     /**
-     * Guarda una venta completa (recibo + líneas) en Room (offline-first) y
-     * hace un best-effort de subida a Firestore.
+     *  * Guarda una venta completa (recibo + líneas) en Room y sincroniza cuando es posible.
      *
-     * Reglas:
-     * - idRecibo = "RC" + HHmmss + "-" + <IDIOMA_APP_MAYUS>  (idioma tomado de ConfiguracionEntity)
-     * - idLinea  = contador "0001", "0002", ... que SE REINICIA por mercadillo.
-     *             Se calcula como max(idLinea) del mercadillo + 1 (zero-padded 4 dígitos).
      */
     suspend fun guardarVenta(
         idMercadillo: String,
@@ -42,11 +67,12 @@ class VentasRepository(context: Context) {
         total: Double
     ): Result<String> {
         return try {
-            val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
+            //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
+            val userId = auth.currentUser?.uid
+                ?: ConfigurationManager.usuarioLogueado.value
+                ?: "usuario_default"
             val now = System.currentTimeMillis()
 
-            // === IDIOMA desde la configuración de la APP (no del dispositivo) ===
-            // Intento 1: DAO (persistido). Si por cualquier motivo es null, uso el flujo en memoria del ConfigurationManager.
             val idiomaCfgPersistido = configuracionDao.getConfiguracionSync()?.idioma
             val idioma2Letras = (idiomaCfgPersistido ?: ConfigurationManager.idioma.value)
                 .trim()
@@ -56,7 +82,6 @@ class VentasRepository(context: Context) {
                 ?.uppercase(Locale.ROOT)
                 ?: "ES"
 
-            // === idRecibo en formato RChhmmss-ES ===
             val hora = SimpleDateFormat("HHmmss", Locale.getDefault()).format(Date(now))
             val idRecibo = "RC$hora-$idioma2Letras"
 
@@ -74,12 +99,16 @@ class VentasRepository(context: Context) {
                 fechaHora = now,
                 metodoPago = metodoPago,
                 totalTicket = total,
-                estado = "COMPLETADO"
+                estado = "COMPLETADO",
+                lastModified = now,
+                sincronizadoFirebase = false
             )
 
             val lineasEntity = lineas.mapIndexed { index, l ->
-                val numeroLineaRecibo = index + 1                         // orden dentro de este recibo
-                val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)  // 0001, 0002, ...
+//                val numeroLineaRecibo = index + 1                         // orden dentro de este recibo
+//                val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)  // 0001, 0002, ...
+                val numeroLineaRecibo = index + 1
+                val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)
                 LineaVentaEntity(
                     idLinea = idLineaSecuencial,
                     idRecibo = idRecibo,
@@ -92,7 +121,9 @@ class VentasRepository(context: Context) {
                     cantidad = l.cantidad,
                     precioUnitario = l.precioUnitario,
                     subtotal = l.subtotal,
-                    idLineaOriginalAbonada = l.idLineaOriginalAbonada
+                    idLineaOriginalAbonada = l.idLineaOriginalAbonada,
+                    lastModified = now,
+                    sincronizadoFirebase = false
                 )
             }
 
@@ -106,6 +137,7 @@ class VentasRepository(context: Context) {
                     .document(idRecibo)
                     .set(recibo)
                     .await()
+                recibosDao.marcarSincronizado(idRecibo, System.currentTimeMillis())
 
                 lineasEntity.forEach { linea ->
                     val docId = "${linea.idMercadillo}_${linea.idLinea}" // único por mercadillo+línea (tu formato anterior)
@@ -116,7 +148,8 @@ class VentasRepository(context: Context) {
                 }
             } catch (e: Exception) {
                 // Silencioso: ya quedó persistido en Room
-                println("Error subiendo a Firestore: ${e.message}")
+//                println("Error subiendo a Firestore: ${e.message}")
+                Log.w(TAG, "Error subiendo a Firebase", e)
             }
 
             Result.success(idRecibo)
@@ -141,7 +174,10 @@ class VentasRepository(context: Context) {
         idMercadillo: String
     ): Result<String> {
         return try {
-            val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
+            //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
+            val userId = auth.currentUser?.uid
+                ?: ConfigurationManager.usuarioLogueado.value
+                ?: "usuario_default"
             val now = System.currentTimeMillis()
 
             val idiomaCfgPersistido = configuracionDao.getConfiguracionSync()?.idioma
@@ -167,7 +203,9 @@ class VentasRepository(context: Context) {
                 fechaHora = now,
                 metodoPago = "ABONO", // Recibo de abono
                 totalTicket = -(lineaOriginal.precioUnitario * cantidadAbonar),
-                estado = "COMPLETADO"
+                estado = "COMPLETADO",
+                lastModified = now,
+                sincronizadoFirebase = false
             )
 
             val lineaAbono = LineaVentaEntity(
@@ -182,7 +220,9 @@ class VentasRepository(context: Context) {
                 cantidad = -cantidadAbonar,
                 precioUnitario = lineaOriginal.precioUnitario,
                 subtotal = -(lineaOriginal.precioUnitario * cantidadAbonar),
-                idLineaOriginalAbonada = lineaOriginal.idLinea
+                idLineaOriginalAbonada = lineaOriginal.idLinea,
+                lastModified = now,
+                sincronizadoFirebase = false
             )
 
             recibosDao.insertarRecibo(reciboAbono)
@@ -193,6 +233,7 @@ class VentasRepository(context: Context) {
                     .document(idRecibo)
                     .set(reciboAbono)
                     .await()
+                recibosDao.marcarSincronizado(idRecibo, System.currentTimeMillis())
 
                 val docId = "${lineaAbono.idMercadillo}_${lineaAbono.idLinea}"
                 firestore.collection("lineas_venta")
@@ -202,11 +243,30 @@ class VentasRepository(context: Context) {
             } catch (e: Exception) {
                 // Silencioso: ya quedó persistido en Room
                 println("Error subiendo abono a Firestore: ${e.message}")
+                Log.w(TAG, "Error subiendo abono a Firebase", e)
             }
 
             Result.success(idRecibo)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+    private suspend fun sincronizarPendientes() {
+        val uid = auth.currentUser?.uid ?: return
+        val recibosPend = recibosDao.getPendientesSync(uid)
+        recibosPend.forEach { r ->
+            runCatching {
+                firestore.collection("recibos").document(r.idRecibo).set(r).await()
+                recibosDao.marcarSincronizado(r.idRecibo, System.currentTimeMillis())
+            }
+        }
+        val lineasPend = lineasVentaDao.getPendientesSync(uid)
+        lineasPend.forEach { l ->
+            runCatching {
+                val docId = "${l.idMercadillo}_${l.idLinea}"
+                firestore.collection("lineas_venta").document(docId).set(l).await()
+                lineasVentaDao.marcarSincronizado(l.idMercadillo, l.idLinea, System.currentTimeMillis())
+            }
         }
     }
 }

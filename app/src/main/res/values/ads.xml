@@ -1,0 +1,8 @@
+<resources>
+    <!-- Tu App ID REAL (con ~). El del Manifest sigue viniendo por placeholder, ok. -->
+    <string name="admob_app_id">ca-app-pub-9343856188038526~1418564772</string>
+    <!-- Tu bloque REAL de banner (con /) -->
+    <string name="admob_banner_id">ca-app-pub-9343856188038526/5904335194</string>
+
+    <string name="admob_interstitial_id">ca-app-pub-9343856188038526/5904335194</string>
+</resources>

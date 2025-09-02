@@ -44,11 +44,31 @@ object DefaultBootstrapper {
 
             val fs = FirebaseFirestore.getInstance()
 
-            val catsSnap = fs.collection("categorias").whereEqualTo("userId", uid).get().await()
-            val artsSnap = fs.collection("articulos").whereEqualTo("userId", uid).get().await()
-            val mercSnap = fs.collection("mercadillos").whereEqualTo("userId", uid).get().await()
-            val recsSnap = fs.collection("recibos").whereEqualTo("idUsuario", uid).get().await()
-            val linsSnap = fs.collection("lineas_venta").whereEqualTo("idUsuario", uid).get().await()
+//            val catsSnap = fs.collection("categorias").whereEqualTo("userId", uid).get().await()
+//            val artsSnap = fs.collection("articulos").whereEqualTo("userId", uid).get().await()
+//            val mercSnap = fs.collection("mercadillos").whereEqualTo("userId", uid).get().await()
+//            val recsSnap = fs.collection("recibos").whereEqualTo("idUsuario", uid).get().await()
+//            val linsSnap = fs.collection("lineas_venta").whereEqualTo("idUsuario", uid).get().await()
+            val catsSnap = fs.collection("categorias")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("activa", true)
+                .get().await()
+            val artsSnap = fs.collection("articulos")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("activo", true)
+                .get().await()
+            val mercSnap = fs.collection("mercadillos")
+                .whereEqualTo("userId", uid)
+                .whereEqualTo("activo", true)
+                .get().await()
+            val recsSnap = fs.collection("recibos")
+                .whereEqualTo("idUsuario", uid)
+                .whereEqualTo("activo", true)
+                .get().await()
+            val linsSnap = fs.collection("lineas_venta")
+                .whereEqualTo("idUsuario", uid)
+                .whereEqualTo("activo", true)
+                .get().await()
 
             val categorias = catsSnap.documents.mapNotNull { it.toCategoria(uid) }
             val articulos  = artsSnap.documents.mapNotNull { it.toArticulo(uid) }
@@ -164,7 +184,11 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toRecibo(uid: String)
         fechaHora = m.getLong("fechaHora", System.currentTimeMillis()),
         metodoPago = m.getString("metodoPago", "efectivo"),
         totalTicket = m.getDouble("totalTicket", 0.0),
-        estado = m.getString("estado", "COMPLETADO")
+        estado = m.getString("estado", "COMPLETADO"),
+        activo = m.getBool("activo", true),
+        version = m.getLong("version", 1),
+        lastModified = m.getLong("lastModified", System.currentTimeMillis()),
+        sincronizadoFirebase = true
     )
 }
 private fun com.google.firebase.firestore.DocumentSnapshot.toLinea(uid: String, idRecibo: String): LineaVentaEntity? {
@@ -181,6 +205,10 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toLinea(uid: String, 
         cantidad = m.getInt("cantidad", 1),
         precioUnitario = m.getDouble("precioUnitario", 0.0),
         subtotal = m.getDouble("subtotal", 0.0),
-        idLineaOriginalAbonada = m["idLineaOriginalAbonada"] as? String
+        idLineaOriginalAbonada = m["idLineaOriginalAbonada"] as? String,
+        activo = m.getBool("activo", true),
+        version = m.getLong("version", 1),
+        lastModified = m.getLong("lastModified", System.currentTimeMillis()),
+        sincronizadoFirebase = true
     )
 }

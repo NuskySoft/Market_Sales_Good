@@ -2,6 +2,9 @@
 package es.nuskysoftware.marketsales.data.local.entity
 
 import androidx.room.Entity
+/**
+ * LineaVentaEntity V15 - incluye campos de versión y sincronización.
+ */
 
 @Entity(
     tableName = "lineas_venta",
@@ -19,5 +22,29 @@ data class LineaVentaEntity(
     val cantidad: Int,
     val precioUnitario: Double,
     val subtotal: Double,
-    val idLineaOriginalAbonada: String? = null
-)
+    val idLineaOriginalAbonada: String? = null,
+    val version: Long = 1L,
+    val lastModified: Long = System.currentTimeMillis(),
+    val sincronizadoFirebase: Boolean = false,
+    val activo: Boolean = true
+) {
+    @Suppress("unused")
+    constructor() : this(
+        idLinea = "",
+        idRecibo = "",
+        idMercadillo = "",
+        idUsuario = "",
+        numeroLinea = 0,
+        tipoLinea = "MANUAL",
+        descripcion = "",
+        idProducto = null,
+        cantidad = 0,
+        precioUnitario = 0.0,
+        subtotal = 0.0,
+        idLineaOriginalAbonada = null,
+        version = 1L,
+        lastModified = System.currentTimeMillis(),
+        sincronizadoFirebase = false,
+        activo = true
+    )
+}

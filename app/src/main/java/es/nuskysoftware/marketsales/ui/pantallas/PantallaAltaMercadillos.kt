@@ -1,18 +1,14 @@
+// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaAltaMercadillo.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
-import android.R.attr.delay
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModel
@@ -20,13 +16,13 @@ import es.nuskysoftware.marketsales.ui.viewmodel.MercadilloViewModelFactory
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import es.nuskysoftware.marketsales.utils.ui.alta.*
+import es.nuskysoftware.marketsales.data.repository.SaldoGuardadoRepository
+import es.nuskysoftware.marketsales.data.local.entity.SaldoGuardadoEntity
+import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.launch
-import es.nuskysoftware.marketsales.work.AutoEstadoScheduler   // ✅ IMPORTACIÓN
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.time.delay
-
-import java.time.Duration
-
+import es.nuskysoftware.marketsales.work.AutoEstadoScheduler
+import androidx.compose.ui.platform.LocalContext
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +41,10 @@ fun PantallaAltaMercadillo(
     val esEdicion = mercadilloId != null
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    val saldoRepo = remember { SaldoGuardadoRepository(context) }
+    var saldoPendiente by remember { mutableStateOf<SaldoGuardadoEntity?>(null) }
+    var mostrarDialogoSaldoGuardado by remember { mutableStateOf(false) }
 
     // --- Estado del formulario ---
     var fecha by remember { mutableStateOf(fechaPreseleccionada ?: "") }
@@ -84,22 +84,18 @@ fun PantallaAltaMercadillo(
         }
     }
 
-    // Mensajes
-
+    // Mensajes / navegación
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
             snackbarHostState.showSnackbar(it)
             mercadilloViewModel.limpiarMensaje()
-            // ✅ Tras crear/actualizar, disparamos catch-up de estados
             try { AutoEstadoScheduler.runOnceNow(context.applicationContext) } catch (_: Exception) {}
             mercadilloViewModel.recargarDatos()
-            navController.popBackStack()
+            navController.safePopBackStack()
         }
     }
-
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
-            //snackbarHostState.showSnackbar(it)
             scope.launch { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Short) }
             mercadilloViewModel.limpiarError()
         }
@@ -119,7 +115,6 @@ fun PantallaAltaMercadillo(
     fun guardar() {
         val saldoInicialDouble = saldoInicial.toDoubleOrNull()
         val importeSuscripcionDouble = if (esGratis) 0.0 else (importeSuscripcion.toDoubleOrNull() ?: 0.0)
-
         scope.launch {
             try {
                 if (esEdicion && mercadilloId != null) {
@@ -145,7 +140,15 @@ fun PantallaAltaMercadillo(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (esEdicion) "Editar Mercadillo" else "Nuevo Mercadillo", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = if (esEdicion)
+                            StringResourceManager.getString("alta_titulo_editar", currentLanguage).ifBlank { "Editar Mercadillo" }
+                        else
+                            StringResourceManager.getString("alta_titulo_nuevo", currentLanguage).ifBlank { "Nuevo Mercadillo" },
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -170,8 +173,23 @@ fun PantallaAltaMercadillo(
                     )
                 }
 
-                item { CampoTexto(valor = lugar, onValueChange = { lugar = it }, label = "Lugar", placeholder = "Ej: Plaza Mayor") }
-                item { CampoTexto(valor = organizador, onValueChange = { organizador = it }, label = "Organizador", placeholder = "Ej: Ayuntamiento") }
+                item {
+                    CampoTexto(
+                        valor = lugar,
+                        onValueChange = { lugar = it },
+                        label = StringResourceManager.getString("lugar", currentLanguage).ifBlank { "Lugar" },
+                        placeholder = StringResourceManager.getString("placeholder_lugar", currentLanguage).ifBlank { "Ej: Plaza Mayor" }
+                    )
+                }
+
+                item {
+                    CampoTexto(
+                        valor = organizador,
+                        onValueChange = { organizador = it },
+                        label = StringResourceManager.getString("organizador", currentLanguage).ifBlank { "Organizador" },
+                        placeholder = StringResourceManager.getString("placeholder_organizador", currentLanguage).ifBlank { "Ej: Ayuntamiento" }
+                    )
+                }
 
                 item {
                     ConfiguracionEconomica(
@@ -205,7 +223,8 @@ fun PantallaAltaMercadillo(
                         if (requiereConfirmacionSaldo) {
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                "Aviso: cambiar el saldo inicial de un mercadillo EN CURSO puede provocar descuadre.",
+                                StringResourceManager.getString("aviso_saldo_en_curso", currentLanguage)
+                                    .ifBlank { "Aviso: cambiar el saldo inicial de un mercadillo EN CURSO puede provocar descuadre." },
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodySmall
                             )
@@ -213,9 +232,9 @@ fun PantallaAltaMercadillo(
                     }
                 }
 
-                if (esEdicion && mercadilloParaEditar != null
-                    &&  (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2)
-                    ) {
+                if (esEdicion && mercadilloParaEditar != null &&
+                    (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2)
+                ) {
                     item {
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(
@@ -223,14 +242,19 @@ fun PantallaAltaMercadillo(
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                        ) { Text("Borrar mercadillo") }
+                        ) {
+                            Text(
+                                StringResourceManager.getString("borrar_mercadillo", currentLanguage)
+                                    .ifBlank { "Borrar mercadillo" }
+                            )
+                        }
                     }
                 }
 
                 item { Spacer(Modifier.height(24.dp)) }
             }
 
-            // Botonera
+            // Botonera inferior
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -239,21 +263,48 @@ fun PantallaAltaMercadillo(
                     onClick = {
                         if (esEdicion) mercadilloViewModel.limpiarMercadilloParaEditar()
                         mercadilloViewModel.recargarDatos()
-                        navController.popBackStack()
+                        navController.safePopBackStack()
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                ) { Text("Cancelar") }
+                ) {
+                    Text(StringResourceManager.getString("cancelar", currentLanguage).ifBlank { "Cancelar" })
+                }
 
                 Button(
-                    onClick = { if (requiereConfirmacionSaldo) mostrarConfirmCambioSaldo = true else guardar() },
+                    onClick = {
+                        if (requiereConfirmacionSaldo) {
+                            mostrarConfirmCambioSaldo = true
+                        } else {
+                            if (!esEdicion && ConfigurationManager.getIsPremium()) {
+                                scope.launch {
+                                    val guardado = saldoRepo.getUltimoNoConsumido()
+                                    if (guardado != null) {
+                                        saldoPendiente = guardado
+                                        mostrarDialogoSaldoGuardado = true
+                                    } else {
+                                        guardar()
+                                    }
+                                }
+                            } else {
+                                guardar()
+                            }
+                        }
+                    },
                     enabled = !uiState.loading && fecha.isNotBlank() && lugar.isNotBlank() && organizador.isNotBlank(),
                     modifier = Modifier.weight(1f)
                 ) {
                     if (uiState.loading) {
                         CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else Text(if (esEdicion) "Actualizar" else "Crear")
+                    } else {
+                        Text(
+                            if (esEdicion)
+                                StringResourceManager.getString("actualizar", currentLanguage).ifBlank { "Actualizar" }
+                            else
+                                StringResourceManager.getString("crear", currentLanguage).ifBlank { "Crear" }
+                        )
+                    }
                 }
             }
         }
@@ -282,34 +333,113 @@ fun PantallaAltaMercadillo(
                 currentLanguage = currentLanguage
             )
         }
-        if (mostrarConfirmCambioSaldo) {
+
+        // Diálogo: saldo guardado pendiente
+        if (mostrarDialogoSaldoGuardado && saldoPendiente != null) {
             AlertDialog(
-                onDismissRequest = { mostrarConfirmCambioSaldo = false },
-                title = { Text("Confirmar cambio de saldo") },
-                text = { Text("Has modificado el saldo inicial de un mercadillo EN CURSO. Esto puede provocar descuadre de caja.\n\n¿Quieres guardar igualmente?") },
-                confirmButton = {
-                    TextButton(onClick = { mostrarConfirmCambioSaldo = false; guardar() }) { Text("Guardar igualmente") }
+                onDismissRequest = { mostrarDialogoSaldoGuardado = false },
+                title = {
+                    Text(
+                        StringResourceManager.getString("saldo_pendiente_titulo", currentLanguage)
+                            .ifBlank { "Saldo pendiente" }
+                    )
                 },
-                dismissButton = { TextButton(onClick = { mostrarConfirmCambioSaldo = false }) { Text("Cancelar") } }
-            )
-        }
-        if (mostrarDialogoBorrado) {
-            AlertDialog(
-                onDismissRequest = { mostrarDialogoBorrado = false },
-                title = { Text("Confirmar borrado") },
-                text = { Text("¿Estás seguro de querer borrar el mercadillo?") },
+                text = {
+                    Text(
+                        StringResourceManager.getString("saldo_pendiente_texto", currentLanguage)
+                            .ifBlank { "Tienes un saldo guardado pendiente de asignar. ¿Quieres asignarlo a este mercadillo?" }
+                    )
+                },
                 confirmButton = {
                     TextButton(onClick = {
-                        mostrarDialogoBorrado = false
-                        mercadilloId?.let { mercadilloViewModel.borrarMercadillo(it) }
-                    }) { Text("Borrar") }
+                        mostrarDialogoSaldoGuardado = false
+                        scope.launch {
+                            saldoInicial = saldoPendiente!!.saldoInicialGuardado.toString()
+                            guardar()
+                            saldoRepo.borrarGuardado(saldoPendiente!!.idRegistro)
+                            saldoPendiente = null
+                        }
+                    }) { Text(StringResourceManager.getString("si", currentLanguage).ifBlank { "Sí" }) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { mostrarDialogoBorrado = false }) { Text("Cancelar") }
+                    TextButton(onClick = {
+                        mostrarDialogoSaldoGuardado = false
+                        guardar()
+                        saldoPendiente = null
+                    }) { Text(StringResourceManager.getString("no", currentLanguage).ifBlank { "No" }) }
                 }
             )
         }
 
+        // Diálogo: confirmar cambio de saldo (sin \n)
+        if (mostrarConfirmCambioSaldo) {
+            AlertDialog(
+                onDismissRequest = { mostrarConfirmCambioSaldo = false },
+                title = {
+                    Text(
+                        StringResourceManager.getString("confirmar_cambio_saldo_titulo", currentLanguage)
+                            .ifBlank { "Confirmar cambio de saldo" }
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            StringResourceManager.getString("confirmar_cambio_saldo_linea1", currentLanguage)
+                                .ifBlank { "Has modificado el saldo inicial de un mercadillo EN CURSO. Esto puede provocar descuadre de caja." }
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            StringResourceManager.getString("confirmar_cambio_saldo_linea2", currentLanguage)
+                                .ifBlank { "¿Quieres guardar igualmente?" }
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { mostrarConfirmCambioSaldo = false; guardar() }) {
+                        Text(
+                            StringResourceManager.getString("guardar_igualmente", currentLanguage)
+                                .ifBlank { "Guardar igualmente" }
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarConfirmCambioSaldo = false }) {
+                        Text(StringResourceManager.getString("cancelar", currentLanguage).ifBlank { "Cancelar" })
+                    }
+                }
+            )
+        }
+
+        // Diálogo: borrar mercadillo
+        if (mostrarDialogoBorrado) {
+            AlertDialog(
+                onDismissRequest = { mostrarDialogoBorrado = false },
+                title = {
+                    Text(
+                        StringResourceManager.getString("confirmar_borrado_titulo", currentLanguage)
+                            .ifBlank { "Confirmar borrado" }
+                    )
+                },
+                text = {
+                    Text(
+                        StringResourceManager.getString("confirmar_borrado_texto", currentLanguage)
+                            .ifBlank { "¿Estás seguro de querer borrar el mercadillo?" }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        mostrarDialogoBorrado = false
+                        mercadilloId?.let { mercadilloViewModel.borrarMercadillo(it) }
+                    }) {
+                        Text(StringResourceManager.getString("borrar", currentLanguage).ifBlank { "Borrar" })
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { mostrarDialogoBorrado = false }) {
+                        Text(StringResourceManager.getString("cancelar", currentLanguage).ifBlank { "Cancelar" })
+                    }
+                }
+            )
+        }
     }
 }
-

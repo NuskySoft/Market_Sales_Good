@@ -15,6 +15,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.*
 import es.nuskysoftware.marketsales.data.local.dao.*
+import es.nuskysoftware.marketsales.ui.pantallas.TAG
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -276,6 +277,11 @@ class AuthRepository(
         try {
             if (!isPremium) {
                 Log.i(TAG, "FREE → no se restaura. (Paywall en UI)")
+                try {
+                    deactivateAllUserData(uid)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error desactivando datos remotos para usuario FREE", e)
+                }
                 _syncState.value = SyncState.Done
                 setProgress(100, "Completado")
                 return@withContext
@@ -675,6 +681,68 @@ class AuthRepository(
         } else null
     }
 }
+
+/**
+ * Verifica el estado del usuario por defecto.
+ * Si Room está vacío para "usuario_default" y Firebase también,
+ * devuelve true para mostrar un aviso en la UI.
+ * Si Firebase contiene datos activos, los marca como inactivos y devuelve false.
+ */
+suspend fun shouldShowDefaultUserWarning(): Boolean {
+    val uid = "usuario_default"
+    val roomEmpty = isRoomEmptyForUser(uid)
+    if (!roomEmpty) return false
+
+    val fs = FirebaseFirestore.getInstance()
+    val catsSnap = fs.collection("categorias").whereEqualTo("userId", uid)
+        .whereEqualTo("activa", true).limit(1).get().await()
+    val artsSnap = fs.collection("articulos").whereEqualTo("userId", uid)
+        .whereEqualTo("activo", true).limit(1).get().await()
+    val mercSnap = fs.collection("mercadillos").whereEqualTo("userId", uid)
+        .whereEqualTo("activo", true).limit(1).get().await()
+    val recsSnap = fs.collection("recibos").whereEqualTo("idUsuario", uid)
+        .whereEqualTo("activo", true).limit(1).get().await()
+    val linsSnap = fs.collection("lineas_venta").whereEqualTo("idUsuario", uid)
+        .whereEqualTo("activo", true).limit(1).get().await()
+
+    val hasRemote = catsSnap.isNotEmpty() || artsSnap.isNotEmpty() ||
+            mercSnap.isNotEmpty() || recsSnap.isNotEmpty() || linsSnap.isNotEmpty()
+
+    if (hasRemote) {
+        try { deactivateAllUserData(uid) } catch (e: Exception) {
+            Log.e(TAG, "Error desactivando datos del usuario_default", e)
+        }
+        return false
+    }
+    return true
+}
+
+/**
+ * Marca como inactivos todos los documentos del usuario en Firebase.
+ */
+private suspend fun deactivateAllUserData(uid: String) {
+    val fs = FirebaseFirestore.getInstance()
+    val collections = listOf(
+        "categorias" to "activa",
+        "articulos" to "activo",
+        "mercadillos" to "activo",
+        "recibos" to "activo",
+        "lineas_venta" to "activo"
+    )
+    for ((col, field) in collections) {
+        val userField = if (col == "recibos" || col == "lineas_venta") "idUsuario" else "userId"
+        val snap = fs.collection(col)
+            .whereEqualTo(userField, uid)
+            .whereEqualTo(field, true)
+            .get().await()
+        if (snap.isEmpty) continue
+        val batch = fs.batch()
+        snap.documents.forEach { doc -> batch.update(doc.reference, field, false) }
+        batch.commit().await()
+    }
+}
+
+
 
 // ====== Soportes internos ======
 private data class RemoteBundle(

@@ -108,6 +108,10 @@ fun PantallaMercadillos(
 
     var isRefreshing by remember { mutableStateOf(false) }
 
+    var mostrarAvisoUsuarioDefault by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        mostrarAvisoUsuarioDefault = authViewModel.shouldShowDefaultUserWarning()
+    }
     // Mensajes
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
@@ -134,6 +138,23 @@ fun PantallaMercadillos(
         // Capitaliza adecuadamente según locale
         raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(localeForLang) else it.toString() } +
                 " ${calendarioState.ano}"
+    }
+
+    if (mostrarAvisoUsuarioDefault) {
+        AlertDialog(
+            onDismissRequest = { mostrarAvisoUsuarioDefault = false },
+            confirmButton = {
+                TextButton(onClick = { mostrarAvisoUsuarioDefault = false }) {
+                    Text(StringResourceManager.getString("entendido", currentLanguage))
+                }
+            },
+            title = {
+                Text(StringResourceManager.getString("default_user_warning_title", currentLanguage))
+            },
+            text = {
+                Text(StringResourceManager.getString("default_user_warning_message", currentLanguage))
+            }
+        )
     }
 
     PullToRefreshBox(

@@ -206,6 +206,8 @@ internal object EnglishStrings {
         "exit_confirm" -> "Exit"
         "available_markets" -> "Available Markets"
         "premium_required" -> "Requires Premium for full access"
+        "default_user_warning_title" -> "Important"
+        "default_user_warning_message" -> "You don't need to register to use the app, but if you don't register you can't become a premium user and if you change device you might lose all data."
         "see_details" -> "See details"
         "edit" -> "Edit"
         "menu" -> "Menu"

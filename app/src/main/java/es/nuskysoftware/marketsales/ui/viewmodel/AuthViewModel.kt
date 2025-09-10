@@ -247,5 +247,9 @@ class AuthViewModel(
             }
         }
     }
+    suspend fun shouldShowDefaultUserWarning(): Boolean {
+        return authRepository.shouldShowDefaultUserWarning()
+    }
 }
+
 

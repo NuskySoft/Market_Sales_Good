@@ -72,10 +72,10 @@ fun PantallaLogin(
     // Para forzar recomposición al cambiar idioma
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
-    // ===== Bootstrap usuario_default si Room está vacío =====
-    LaunchedEffect(Unit) {
-        DefaultBootstrapper.runIfNeeded(context.applicationContext)
-    }
+//    // ===== Bootstrap usuario_default si Room está vacío =====
+//    LaunchedEffect(Unit) {
+//        DefaultBootstrapper.runIfNeeded(context.applicationContext)
+//    }
 
     // ===== Mostrar aviso claro al cerrar sesión =====
     var prevAuthState by remember { mutableStateOf<AuthState?>(null) }

@@ -204,6 +204,8 @@ internal object SpanishStrings {
         "exit_confirm" -> "Salir"
         "available_markets" -> "Mercadillos Disponibles"
         "premium_required" -> "Requiere Premium para acceso completo"
+        "default_user_warning_title" -> "Important"
+        "default_user_warning_message" -> "You don't need to register to use the app, but if you don't register you can't become a premium user and if you change device you might lose all data."
         "see_details" -> "Ver detalles"
         "edit" -> "Editar"
         "menu" -> "Menú"

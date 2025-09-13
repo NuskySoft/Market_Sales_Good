@@ -29,7 +29,6 @@ android {
         }
         release {
             // TU App ID REAL (con ~)
-            manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-9343856188038526~1418564772"
             isMinifyEnabled = false
         }
     }
@@ -47,7 +46,7 @@ android {
 
     buildTypes {
         release {
-            manifestPlaceholders += mapOf()
+            manifestPlaceholders += mapOf("ADMOB_APP_ID" to "ca-app-pub-9343856188038526~1418564772")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

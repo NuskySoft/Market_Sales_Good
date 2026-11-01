@@ -39,6 +39,8 @@ fun PantallaAltaMercadillo(
     val mercadilloParaEditar by mercadilloViewModel.mercadilloParaEditar.collectAsState()
 
     val esEdicion = mercadilloId != null
+    val soloLectura = mercadilloParaEditar?.estado == EstadosMercadillo.Estado.CANCELADO.codigo
+    val camposHabilitados = !uiState.loading && (!esEdicion || mercadilloParaEditar != null) && !soloLectura
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -113,6 +115,7 @@ fun PantallaAltaMercadillo(
             )
 
     fun guardar() {
+        if (!camposHabilitados) return
         val saldoInicialDouble = saldoInicial.toDoubleOrNull()
         val importeSuscripcionDouble = if (esGratis) 0.0 else (importeSuscripcion.toDoubleOrNull() ?: 0.0)
         scope.launch {
@@ -142,7 +145,9 @@ fun PantallaAltaMercadillo(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (esEdicion)
+                        text = if (soloLectura)
+                            StringResourceManager.getString("alta_titulo_consultar", currentLanguage)
+                        else if (esEdicion)
                             StringResourceManager.getString("alta_titulo_editar", currentLanguage).ifBlank { "Editar Mercadillo" }
                         else
                             StringResourceManager.getString("alta_titulo_nuevo", currentLanguage).ifBlank { "Nuevo Mercadillo" },
@@ -164,12 +169,22 @@ fun PantallaAltaMercadillo(
             ) {
                 item { Spacer(Modifier.height(8.dp)) }
 
+                if (soloLectura) {
+                    item {
+                        Text(
+                            StringResourceManager.getString("estado_cancelado", currentLanguage),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
                 item {
                     CampoFecha(
                         fecha = fecha,
                         onFechaChange = { fecha = it },
                         onMostrarDatePicker = { mostrarDatePicker = true },
-                        enabled = !(esEdicion && enCursoFinal)
+                        enabled = camposHabilitados && !(esEdicion && enCursoFinal)
                     )
                 }
 
@@ -178,7 +193,8 @@ fun PantallaAltaMercadillo(
                         valor = lugar,
                         onValueChange = { lugar = it },
                         label = StringResourceManager.getString("lugar", currentLanguage).ifBlank { "Lugar" },
-                        placeholder = StringResourceManager.getString("placeholder_lugar", currentLanguage).ifBlank { "Ej: Plaza Mayor" }
+                        placeholder = StringResourceManager.getString("placeholder_lugar", currentLanguage).ifBlank { "Ej: Plaza Mayor" },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -187,7 +203,8 @@ fun PantallaAltaMercadillo(
                         valor = organizador,
                         onValueChange = { organizador = it },
                         label = StringResourceManager.getString("organizador", currentLanguage).ifBlank { "Organizador" },
-                        placeholder = StringResourceManager.getString("placeholder_organizador", currentLanguage).ifBlank { "Ej: Ayuntamiento" }
+                        placeholder = StringResourceManager.getString("placeholder_organizador", currentLanguage).ifBlank { "Ej: Ayuntamiento" },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -196,7 +213,8 @@ fun PantallaAltaMercadillo(
                         esGratis = esGratis,
                         onEsGratisChange = { esGratis = it },
                         importeSuscripcion = importeSuscripcion,
-                        onImporteSuscripcionChange = { importeSuscripcion = it }
+                        onImporteSuscripcionChange = { importeSuscripcion = it },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -204,7 +222,8 @@ fun PantallaAltaMercadillo(
                     ConfiguracionLogistica(
                         requiereMesa = requiereMesa, onRequiereMesaChange = { requiereMesa = it },
                         requiereCarpa = requiereCarpa, onRequiereCarpaChange = { requiereCarpa = it },
-                        hayPuntoLuz = hayPuntoLuz, onHayPuntoLuzChange = { hayPuntoLuz = it }
+                        hayPuntoLuz = hayPuntoLuz, onHayPuntoLuzChange = { hayPuntoLuz = it },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -213,13 +232,18 @@ fun PantallaAltaMercadillo(
                         horaInicio = horaInicio, onHoraInicioChange = { horaInicio = it },
                         horaFin = horaFin, onHoraFinChange = { horaFin = it },
                         onMostrarTimePickerInicio = { mostrarTimePickerInicio = true },
-                        onMostrarTimePickerFin = { mostrarTimePickerFin = true }
+                        onMostrarTimePickerFin = { mostrarTimePickerFin = true },
+                        enabled = camposHabilitados
                     )
                 }
 
                 item {
                     Column {
-                        CampoSaldoInicial(saldoInicial = saldoInicial, onSaldoInicialChange = { saldoInicial = it })
+                        CampoSaldoInicial(
+                            saldoInicial = saldoInicial,
+                            onSaldoInicialChange = { saldoInicial = it },
+                            enabled = camposHabilitados
+                        )
                         if (requiereConfirmacionSaldo) {
                             Spacer(Modifier.height(6.dp))
                             Text(
@@ -269,41 +293,43 @@ fun PantallaAltaMercadillo(
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                 ) {
-                    Text(StringResourceManager.getString("cancelar", currentLanguage).ifBlank { "Cancelar" })
+                    Text(StringResourceManager.getString(if (soloLectura) "volver" else "cancelar", currentLanguage))
                 }
 
-                Button(
-                    onClick = {
-                        if (requiereConfirmacionSaldo) {
-                            mostrarConfirmCambioSaldo = true
-                        } else {
-                            if (!esEdicion && ConfigurationManager.getIsPremium()) {
-                                scope.launch {
-                                    val guardado = saldoRepo.getUltimoNoConsumido()
-                                    if (guardado != null) {
-                                        saldoPendiente = guardado
-                                        mostrarDialogoSaldoGuardado = true
-                                    } else {
-                                        guardar()
-                                    }
-                                }
+                if (!soloLectura) {
+                    Button(
+                        onClick = {
+                            if (requiereConfirmacionSaldo) {
+                                mostrarConfirmCambioSaldo = true
                             } else {
-                                guardar()
+                                if (!esEdicion && ConfigurationManager.getIsPremium()) {
+                                    scope.launch {
+                                        val guardado = saldoRepo.getUltimoNoConsumido()
+                                        if (guardado != null) {
+                                            saldoPendiente = guardado
+                                            mostrarDialogoSaldoGuardado = true
+                                        } else {
+                                            guardar()
+                                        }
+                                    }
+                                } else {
+                                    guardar()
+                                }
                             }
+                        },
+                        enabled = camposHabilitados && fecha.isNotBlank() && lugar.isNotBlank() && organizador.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (uiState.loading) {
+                            CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary)
+                        } else {
+                            Text(
+                                if (esEdicion)
+                                    StringResourceManager.getString("actualizar", currentLanguage).ifBlank { "Actualizar" }
+                                else
+                                    StringResourceManager.getString("crear", currentLanguage).ifBlank { "Crear" }
+                            )
                         }
-                    },
-                    enabled = !uiState.loading && fecha.isNotBlank() && lugar.isNotBlank() && organizador.isNotBlank(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (uiState.loading) {
-                        CircularProgressIndicator(Modifier.size(16.dp), color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text(
-                            if (esEdicion)
-                                StringResourceManager.getString("actualizar", currentLanguage).ifBlank { "Actualizar" }
-                            else
-                                StringResourceManager.getString("crear", currentLanguage).ifBlank { "Crear" }
-                        )
                     }
                 }
             }

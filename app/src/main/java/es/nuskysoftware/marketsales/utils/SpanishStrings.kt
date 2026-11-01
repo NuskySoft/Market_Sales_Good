@@ -476,6 +476,7 @@ internal object SpanishStrings {
         "continuar_google" -> "Continuar con Google"
 
         // pantallas/alta/PantallaAltaMercadillo.kt
+        "alta_titulo_consultar" -> "Consultar Mercadillo"
         "alta_titulo_editar" -> "Editar Mercadillo"
         "alta_titulo_nuevo" -> "Nuevo Mercadillo"
         "lugar" -> "Lugar"

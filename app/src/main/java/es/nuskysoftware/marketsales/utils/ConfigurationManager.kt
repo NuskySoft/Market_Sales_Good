@@ -2,6 +2,7 @@ package es.nuskysoftware.marketsales.utils
 
 import android.content.ContentValues.TAG
 import android.util.Log
+import es.nuskysoftware.marketsales.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,7 +48,7 @@ object ConfigurationManager {
 
     private val _esPremium = MutableStateFlow(false)
     val esPremium: StateFlow<Boolean> = _esPremium.asStateFlow()
-    val versionAppValue= "1.0"
+    val versionAppValue: String = BuildConfig.VERSION_NAME
 
     /**
      * Toggle Premium para desarrollo - SIMPLIFICADO SIN PROTECCIONES

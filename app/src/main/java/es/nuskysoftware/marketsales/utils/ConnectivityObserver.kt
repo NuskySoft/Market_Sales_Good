@@ -10,26 +10,24 @@ import kotlinx.coroutines.flow.StateFlow
  * Observa el estado de la red (online/offline) usando ConnectivityManager
  * y expone un StateFlow<Boolean>.
  */
-class ConnectivityObserver(context: Context) {
+class ConnectivityObserver(context: Context) : java.io.Closeable {
 
     private val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     private val _isConnected = MutableStateFlow(isCurrentlyConnected())
     val isConnected: StateFlow<Boolean> = _isConnected
 
+    private val callback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) { _isConnected.value = true }
+        override fun onLost(network: Network) { _isConnected.value = isCurrentlyConnected() }
+    }
+
     init {
         val request = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .build()
-
-        cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                _isConnected.value = true
-            }
-            override fun onLost(network: Network) {
-                _isConnected.value = isCurrentlyConnected()
-            }
-        })
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).build()
+        cm.registerNetworkCallback(request, callback)
     }
+
+    override fun close() { cm.unregisterNetworkCallback(callback) }
 
     private fun isCurrentlyConnected(): Boolean {
         val n = cm.activeNetwork ?: return false

@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * ArticuloRepository V11 - Market Sales
@@ -30,8 +32,9 @@ import kotlinx.coroutines.tasks.await
  */
 class ArticuloRepository(
     context: Context,
-    private val database: AppDatabase = AppDatabase.getDatabase(context)
-) {
+    private val database: AppDatabase = AppDatabase.getDatabase(context),
+    observeNetwork: Boolean = true
+) : java.io.Closeable {
     private val articuloDao: ArticuloDao = database.articuloDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
@@ -41,11 +44,12 @@ class ArticuloRepository(
 
     companion object {
         private const val TAG = "ArticuloRepository"
+        private val uploadMutex = Mutex()
     }
 
     init {
         // Sincronización automática cuando volvemos online
-        repositoryScope.launch {
+        if (observeNetwork) repositoryScope.launch {
             connectivityObserver.isConnected.collect { online ->
                 if (online) {
                     val userId = ConfigurationManager.getCurrentUserId()
@@ -55,6 +59,16 @@ class ArticuloRepository(
                 }
             }
         }
+    }
+
+    override fun close() {
+        repositoryScope.cancel()
+        connectivityObserver.close()
+    }
+
+    /** Push only: a background stock retry must never pull a stale server snapshot. */
+    suspend fun sincronizarPendientesLocales(uid: String) {
+        if (DemoAccess.canSync(uid)) sincronizarArticulosNoSincronizados(uid)
     }
 
     // ========== OPERACIONES PRINCIPALES ==========
@@ -239,12 +253,13 @@ class ArticuloRepository(
     /**
      * Sincroniza un artículo específico con Firebase
      */
-    private suspend fun sincronizarArticuloConFirebase(articulo: ArticuloEntity) {
-        if (!DemoAccess.canSync(articulo.userId)) return
+    private suspend fun sincronizarArticuloConFirebase(snapshot: ArticuloEntity) = uploadMutex.withLock {
+        val articulo = articuloDao.getArticuloById(snapshot.idArticulo) ?: return@withLock
+        if (articulo.userId != snapshot.userId || !DemoAccess.canSync(articulo.userId)) return@withLock
         try {
             if (!connectivityObserver.isConnected.first()) {
                 Log.d(TAG, "⚠️ Sin conexión, artículo quedará pendiente de sincronización")
-                return
+                return@withLock
             }
 
             val datos = mapOf(
@@ -271,7 +286,7 @@ class ArticuloRepository(
                 .await()
 
             // Marcar como sincronizado en Room
-            articuloDao.marcarComoSincronizado(articulo.idArticulo)
+            articuloDao.marcarSnapshotSincronizado(articulo.idArticulo, articulo.userId, articulo.version, articulo.lastModified, articulo.stock)
             Log.d(TAG, "☁️ Artículo sincronizado con Firebase: ${articulo.nombre}")
 
         } catch (e: Exception) {

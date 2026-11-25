@@ -4,6 +4,9 @@ import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
 import androidx.room.withTransaction
+import es.nuskysoftware.marketsales.data.local.entity.StockMovementEntity
+import es.nuskysoftware.marketsales.work.StockMovementScheduler
+import kotlinx.coroutines.CancellationException
 import android.content.Context
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
@@ -25,7 +28,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class VentasRepository(context: Context, database: AppDatabase = AppDatabase.getDatabase(context)) {
+class VentasRepository(
+    context: Context,
+    database: AppDatabase = AppDatabase.getDatabase(context),
+    private val onLocalSaleCommitted: ((String) -> Unit)? = null
+) {
+    private val appContext = context.applicationContext
+
 
 //    private val database: AppDatabase = AppDatabase.getDatabase(context)
 //    private val recibosDao: RecibosDao = database.recibosDao()
@@ -69,10 +78,11 @@ class VentasRepository(context: Context, database: AppDatabase = AppDatabase.get
         metodoPago: String,
         total: Double
     ): Result<String> {
-        return try {
+        val userId = ConfigurationManager.getCurrentUserId() ?: return Result.failure(IllegalStateException("No owner"))
+        val isPremiumAtConfirmation = ConfigurationManager.getIsPremium() && !DemoAccess.isDemo()
+        val idRecibo = try {
             //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
-            val userId = ConfigurationManager.getCurrentUserId() ?: error("No owner")
-            val idRecibo = db.withTransaction {
+            db.withTransaction {
                 DemoAccess.requireOwner(userId)
                 val market = db.mercadilloDao().getMercadilloById(idMercadillo) ?: error("Market not found")
                 DemoAccess.requireOwner(market.userId)
@@ -138,15 +148,52 @@ class VentasRepository(context: Context, database: AppDatabase = AppDatabase.get
                 // --- Persistencia local (offline-first) ---
                 recibosDao.insertarRecibo(recibo)
                 lineasVentaDao.insertarLineas(lineasEntity)
+                // Capture the obligation in the SAME commit as the sale, not the stock update.
+                if (isPremiumAtConfirmation) {
+                    val movements = mutableListOf<StockMovementEntity>()
+                    for (line in lineasEntity) {
+                        val productId = line.idProducto
+                        if (line.tipoLinea == TipoLinea.PRODUCTO.name && productId != null) {
+                            val article = db.articuloDao().getArticuloById(productId)
+                            // If missing, retain the obligation for diagnosis/recovery rather than lose it.
+                            if (article == null || article.controlarStock) {
+                                movements += StockMovementEntity(
+                                    idMovimiento = "$idRecibo:${line.idLinea}",
+                                    idUsuario = userId, idRecibo = idRecibo, idArticulo = productId,
+                                    cantidad = line.cantidad, creadoEn = now
+                                )
+                            }
+                        }
+                    }
+                    db.stockMovementDao().enqueue(movements)
+                }
                 idRecibo
             }
-            // Return after local commit; network never delays confirming a sale.
-            if (DemoAccess.canSync(userId)) scope.launch { sincronizarPendientes() }
-
-            Result.success(idRecibo)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            // Only an unsuccessful LOCAL sale commit may be presented as a failed sale.
+            return Result.failure(failure)
         }
+
+        // Past this point the sale is final. No stock/network/scheduling failure may change it.
+        try {
+            if (onLocalSaleCommitted != null) {
+                onLocalSaleCommitted.invoke(idRecibo)
+            } else {
+                runCatching { StockMovementScheduler.request(appContext) }
+                    .onFailure { Log.w(TAG, "Sale saved; stock scheduling will retry on startup", it) }
+                scope.launch {
+                    runCatching { StockMovementProcessor(db).processPending() }
+                        .onFailure { Log.w(TAG, "Sale saved; stock remains pending", it) }
+                    runCatching { StockMovementScheduler.requestUpload(appContext) }
+                    if (DemoAccess.canSync(userId)) runCatching { sincronizarPendientes() }
+                }
+            }
+        } catch (failure: Exception) {
+            Log.w(TAG, "Sale already saved; post-commit work remains pending", failure)
+        }
+        return Result.success(idRecibo)
     }
 
     fun obtenerVentasMercadillo(idMercadillo: String): Flow<List<ReciboEntity>> =

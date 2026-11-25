@@ -1,17 +1,47 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaArqueoCaja.kt
 package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -25,6 +55,7 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,14 +69,16 @@ fun PantallaArqueoCaja(
     val ui by vm.ui.collectAsState()
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
-    // Gastos en efectivo reales desde Room
     val db = remember { AppDatabase.getDatabase(context) }
     var gastosEfectivo by remember { mutableStateOf(0.0) }
+
+    var totalBilletesInput by remember { mutableStateOf("") }
+    var totalMonedasInput by remember { mutableStateOf("") }
 
     LaunchedEffect(mercadilloId) {
         vm.cargar(mercadilloId)
         gastosEfectivo = withContext(Dispatchers.IO) {
-            db.lineasGastosDao().getTotalGastosPorMetodo(mercadilloId, "efectivo")
+            db.lineasGastosDao().getTotalGastosEfectivoDeCaja(mercadilloId)
         }
     }
 
@@ -56,11 +89,13 @@ fun PantallaArqueoCaja(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(StringResourceManager.getString("arqueo_caja", currentLanguage)) },
+                title = {
+                    Text(StringResourceManager.getString("arqueo_caja", currentLanguage))
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.safePopBackStack() }) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = StringResourceManager.getString("volver", currentLanguage)
                         )
                     }
@@ -69,23 +104,56 @@ fun PantallaArqueoCaja(
         }
     ) { pad ->
         when {
-            ui.loading -> Box(
-                Modifier.fillMaxSize().padding(pad),
-                contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+            ui.loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(pad),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
 
-            ui.error != null -> Box(
-                Modifier.fillMaxSize().padding(pad),
-                contentAlignment = Alignment.Center
-            ) { Text(ui.error!!, color = MaterialTheme.colorScheme.error) }
+            ui.error != null -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(pad),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = ui.error!!,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
 
             ui.mercadillo != null -> {
                 val m = ui.mercadillo!!
-                val resultado = m.saldoInicial + m.ventasEfectivo - gastosEfectivo
+                val resultadoEsperado = m.saldoInicial + m.ventasEfectivo - gastosEfectivo
+                val totalBilletes = parseImporte(totalBilletesInput)
+                val totalMonedas = parseImporte(totalMonedasInput)
+                val totalContado = totalBilletes + totalMonedas
+                val diferencia = totalContado - resultadoEsperado
                 val puedeConfirmar = (m.estado == 4) && !guardando
 
+                val estadoCajaTexto = when {
+                    abs(diferencia) < 0.009 -> {
+                        StringResourceManager.getString("caja_cuadra", currentLanguage)
+                    }
+
+                    diferencia > 0 -> {
+                        "${StringResourceManager.getString("caja_descuadra_positivo", currentLanguage)}: ${vm.fmtMoneda(diferencia)}"
+                    }
+
+                    else -> {
+                        "${StringResourceManager.getString("caja_descuadra_negativo", currentLanguage)}: ${vm.fmtMoneda(abs(diferencia))}"
+                    }
+                }
+
                 Column(
-                    Modifier
+                    modifier = Modifier
                         .padding(pad)
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
@@ -94,7 +162,7 @@ fun PantallaArqueoCaja(
                 ) {
                     Card {
                         Column(
-                            Modifier.padding(16.dp),
+                            modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             KeyValueLine(
@@ -112,36 +180,98 @@ fun PantallaArqueoCaja(
                             Divider()
                             KeyValueLine(
                                 label = StringResourceManager.getString("resultado_arqueo", currentLanguage),
-                                value = vm.fmtMoneda(resultado),
+                                value = vm.fmtMoneda(resultadoEsperado),
                                 bold = true
                             )
                         }
                     }
+
+                    Card {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = totalBilletesInput,
+                                onValueChange = { totalBilletesInput = sanitizeImporteInput(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = {
+                                    Text(StringResourceManager.getString("total_billetes", currentLanguage))
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            )
+
+                            OutlinedTextField(
+                                value = totalMonedasInput,
+                                onValueChange = { totalMonedasInput = sanitizeImporteInput(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = {
+                                    Text(StringResourceManager.getString("total_monedas", currentLanguage))
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                            )
+
+                            OutlinedTextField(
+                                value = vm.fmtMoneda(totalContado),
+                                onValueChange = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                label = {
+                                    Text(StringResourceManager.getString("total_contado", currentLanguage))
+                                },
+                                singleLine = true,
+                                readOnly = true
+                            )
+
+                            OutlinedTextField(
+                                value = estadoCajaTexto,
+                                onValueChange = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                label = {
+                                    Text(StringResourceManager.getString("estado_caja", currentLanguage))
+                                },
+                                singleLine = false,
+                                minLines = 2,
+                                readOnly = true
+                            )
+                        }
+                    }
+
                     Button(
                         onClick = { mostrarDialogo = true },
                         enabled = puedeConfirmar,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            if (guardando)
+                            text = if (guardando) {
                                 StringResourceManager.getString("guardando", currentLanguage)
-                            else
+                            } else {
                                 StringResourceManager.getString("confirmar_arqueo", currentLanguage)
+                            }
                         )
                     }
                 }
 
-                // Diálogo de confirmación
                 if (mostrarDialogo) {
                     AlertDialog(
                         onDismissRequest = { mostrarDialogo = false },
-                        title = { Text(StringResourceManager.getString("confirmar_arqueo", currentLanguage)) },
+                        title = {
+                            Text(StringResourceManager.getString("confirmar_arqueo", currentLanguage))
+                        },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(StringResourceManager.getString("confirmar_arqueo_aviso_unavez", currentLanguage))
                                 Text(StringResourceManager.getString("confirmar_arqueo_aviso_guardado", currentLanguage))
                                 Text(StringResourceManager.getString("confirmar_arqueo_aviso_premium", currentLanguage))
-                                Spacer(Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "${StringResourceManager.getString("total_contado", currentLanguage)}: ${vm.fmtMoneda(totalContado)}"
+                                )
+                                Text(
+                                    text = "${StringResourceManager.getString("estado_caja", currentLanguage)}: $estadoCajaTexto"
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Text(StringResourceManager.getString("confirmar_arqueo_pregunta", currentLanguage))
                             }
                         },
@@ -154,15 +284,17 @@ fun PantallaArqueoCaja(
                                         try {
                                             vm.confirmarArqueoCaja(
                                                 mercadilloId = mercadilloId,
-                                                saldoFinalCaja = resultado
+                                                saldoFinalCaja = totalContado
                                             )
-                                            navController.safePopBackStack() // volver a PantallaArqueo
+                                            navController.safePopBackStack()
                                         } finally {
                                             guardando = false
                                         }
                                     }
                                 }
-                            ) { Text(StringResourceManager.getString("confirmar", currentLanguage)) }
+                            ) {
+                                Text(StringResourceManager.getString("confirmar", currentLanguage))
+                            }
                         },
                         dismissButton = {
                             TextButton(onClick = { mostrarDialogo = false }) {
@@ -176,26 +308,53 @@ fun PantallaArqueoCaja(
     }
 }
 
-/* ====== UI helper local ====== */
-
 @Composable
-private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
+private fun KeyValueLine(
+    label: String,
+    value: String,
+    bold: Boolean = false
+) {
     Row(
-        Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            label,
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            value,
+            text = value,
             style = if (bold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
             fontWeight = if (bold) FontWeight.SemiBold else null
         )
     }
+}
+
+private fun sanitizeImporteInput(input: String): String {
+    val filtered = input.filter { it.isDigit() || it == ',' || it == '.' }
+    val normalized = filtered.replace('.', ',')
+    val firstCommaIndex = normalized.indexOf(',')
+
+    return if (firstCommaIndex >= 0) {
+        val integerPart = normalized.substring(0, firstCommaIndex)
+        val decimalPart = normalized
+            .substring(firstCommaIndex + 1)
+            .replace(",", "")
+            .take(2)
+        "$integerPart,$decimalPart"
+    } else {
+        normalized
+    }
+}
+
+private fun parseImporte(value: String): Double {
+    return value
+        .replace(".", "")
+        .replace(",", ".")
+        .toDoubleOrNull()
+        ?: 0.0
 }
 
 
@@ -220,6 +379,8 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModel
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModelFactory
+//import es.nuskysoftware.marketsales.utils.ConfigurationManager
+//import es.nuskysoftware.marketsales.utils.StringResourceManager
 //import es.nuskysoftware.marketsales.utils.safePopBackStack
 //import kotlinx.coroutines.Dispatchers
 //import kotlinx.coroutines.launch
@@ -235,15 +396,16 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //    val repo = remember { MercadilloRepository(context) }
 //    val vm: ArqueoViewModel = viewModel(factory = ArqueoViewModelFactory(context, repo))
 //    val ui by vm.ui.collectAsState()
+//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 //
-//    // Gastos en efectivo reales desde Room
+//    // Gastos en efectivo reales desde Room (solo los que descuentan de caja)
 //    val db = remember { AppDatabase.getDatabase(context) }
 //    var gastosEfectivo by remember { mutableStateOf(0.0) }
 //
 //    LaunchedEffect(mercadilloId) {
 //        vm.cargar(mercadilloId)
 //        gastosEfectivo = withContext(Dispatchers.IO) {
-//            db.lineasGastosDao().getTotalGastosPorMetodo(mercadilloId, "efectivo")
+//            db.lineasGastosDao().getTotalGastosEfectivoDeCaja(mercadilloId)
 //        }
 //    }
 //
@@ -254,10 +416,13 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //    Scaffold(
 //        topBar = {
 //            TopAppBar(
-//                title = { Text("Arqueo de caja") },
+//                title = { Text(StringResourceManager.getString("arqueo_caja", currentLanguage)) },
 //                navigationIcon = {
 //                    IconButton(onClick = { navController.safePopBackStack() }) {
-//                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+//                        Icon(
+//                            Icons.Default.ArrowBack,
+//                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
+//                        )
 //                    }
 //                }
 //            )
@@ -292,11 +457,24 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //                            Modifier.padding(16.dp),
 //                            verticalArrangement = Arrangement.spacedBy(12.dp)
 //                        ) {
-//                            KeyValueLine("Saldo inicial", vm.fmtMoneda(m.saldoInicial))
-//                            KeyValueLine("Ventas en efectivo", vm.fmtMoneda(m.ventasEfectivo))
-//                            KeyValueLine("Gastos en efectivo", vm.fmtMoneda(gastosEfectivo))
+//                            KeyValueLine(
+//                                label = StringResourceManager.getString("saldo_inicial", currentLanguage),
+//                                value = vm.fmtMoneda(m.saldoInicial)
+//                            )
+//                            KeyValueLine(
+//                                label = StringResourceManager.getString("ventas_en_efectivo", currentLanguage),
+//                                value = vm.fmtMoneda(m.ventasEfectivo)
+//                            )
+//                            KeyValueLine(
+//                                label = StringResourceManager.getString("gastos_en_efectivo", currentLanguage),
+//                                value = vm.fmtMoneda(gastosEfectivo)
+//                            )
 //                            Divider()
-//                            KeyValueLine("Resultado del arqueo", vm.fmtMoneda(resultado), bold = true)
+//                            KeyValueLine(
+//                                label = StringResourceManager.getString("resultado_arqueo", currentLanguage),
+//                                value = vm.fmtMoneda(resultado),
+//                                bold = true
+//                            )
 //                        }
 //                    }
 //                    Button(
@@ -304,7 +482,12 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //                        enabled = puedeConfirmar,
 //                        modifier = Modifier.fillMaxWidth()
 //                    ) {
-//                        Text(if (guardando) "Guardando…" else "Confirmar arqueo")
+//                        Text(
+//                            if (guardando)
+//                                StringResourceManager.getString("guardando", currentLanguage)
+//                            else
+//                                StringResourceManager.getString("confirmar_arqueo", currentLanguage)
+//                        )
 //                    }
 //                }
 //
@@ -312,14 +495,15 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //                if (mostrarDialogo) {
 //                    AlertDialog(
 //                        onDismissRequest = { mostrarDialogo = false },
-//                        title = { Text("Confirmar arqueo") },
+//                        title = { Text(StringResourceManager.getString("confirmar_arqueo", currentLanguage)) },
 //                        text = {
-//                            Text(
-//                                "El arqueo solo se puede confirmar una vez.\n" +
-//                                        "Se guardará el resultado del arqueo como saldo final de caja.\n" +
-//                                        "Los usuarios Premium podrán asignar ese saldo a un nuevo mercadillo o guardarlo para más adelante.\n\n" +
-//                                        "¿Estás seguro de querer confirmar el arqueo?"
-//                            )
+//                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_unavez", currentLanguage))
+//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_guardado", currentLanguage))
+//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_premium", currentLanguage))
+//                                Spacer(Modifier.height(6.dp))
+//                                Text(StringResourceManager.getString("confirmar_arqueo_pregunta", currentLanguage))
+//                            }
 //                        },
 //                        confirmButton = {
 //                            TextButton(
@@ -328,7 +512,6 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //                                    scope.launch {
 //                                        guardando = true
 //                                        try {
-//                                            // resultado = tu cálculo ya hecho (saldo inicial + ventas EF - gastos EF)
 //                                            vm.confirmarArqueoCaja(
 //                                                mercadilloId = mercadilloId,
 //                                                saldoFinalCaja = resultado
@@ -339,58 +522,15 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //                                        }
 //                                    }
 //                                }
-//                            ) { Text("Confirmar") }
+//                            ) { Text(StringResourceManager.getString("confirmar", currentLanguage)) }
 //                        },
 //                        dismissButton = {
-//                            TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") }
+//                            TextButton(onClick = { mostrarDialogo = false }) {
+//                                Text(StringResourceManager.getString("cancelar", currentLanguage))
+//                            }
 //                        }
 //                    )
 //                }
-////                if (mostrarDialogo) {
-////                    AlertDialog(
-////                        onDismissRequest = { if (!guardando) mostrarDialogo = false },
-////                        title = { Text("Confirmar arqueo") },
-////                        text = {
-////                            Text(
-////                                "El arqueo solo se puede confirmar una vez.\n" +
-////                                        "Se guardará el resultado del arqueo como saldo final de caja.\n" +
-////                                        "Los usuarios Premium podrán asignar ese saldo a un nuevo mercadillo o guardarlo para más adelante.\n\n" +
-////                                        "¿Quieres confirmar el arqueo?"
-////                            )
-////                        },
-////                        confirmButton = {
-////                            TextButton(
-////                                enabled = !guardando,
-////                                onClick = {
-////                                    guardando = true
-////                                    scope.launch {
-////                                        try {
-////                                            vm.confirmarArqueoCaja(
-////                                                mercadilloId = m.id,
-////                                                saldoFinalCaja = resultado
-////                                            )
-////                                            // Volver a PantallaArqueo
-////                                            // Si tu graf usa ruta "arqueo/caja/$id", hacemos popBack.
-////                                            // Si prefieres forzar recarga, puedes navegar a "arqueo/$id" con popUpTo.
-////                                            navController.popBackStack()
-////                                        } catch (e: Exception) {
-////                                            // Mantenemos el diseño: solo cerramos diálogo y dejamos el botón habilitado
-////                                        } finally {
-////                                            guardando = false
-////                                            mostrarDialogo = false
-////                                        }
-////                                    }
-////                                }
-////                            ) { Text("Sí, confirmar") }
-////                        },
-////                        dismissButton = {
-////                            TextButton(
-////                                enabled = !guardando,
-////                                onClick = { mostrarDialogo = false }
-////                            ) { Text("Cancelar") }
-////                        }
-////                    )
-////                }
 //            }
 //        }
 //    }
@@ -417,4 +557,6 @@ private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
 //        )
 //    }
 //}
+//
+//
 //

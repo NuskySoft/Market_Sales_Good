@@ -14,6 +14,9 @@ interface RecibosDao {
     @Query("DELETE FROM recibos WHERE idUsuario = :userId")
     suspend fun borrarPorUsuario(userId: String)
 
+    @Query("SELECT COUNT(*) FROM recibos WHERE idUsuario = :uid")
+    suspend fun contarPorUsuario(uid: String): Int
+
     @Upsert
     suspend fun upsert(recibo: ReciboEntity)
 

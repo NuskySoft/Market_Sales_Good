@@ -37,29 +37,3 @@ class AutoEstadoWorker(
     }
 }
 
-
-
-//package es.nuskysoftware.marketsales.work
-//
-//import android.content.Context
-//import androidx.work.CoroutineWorker
-//import androidx.work.WorkerParameters
-//import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
-//import es.nuskysoftware.marketsales.utils.ConfigurationManager
-//
-//class AutoEstadoWorker(
-//    context: Context,
-//    params: WorkerParameters
-//) : CoroutineWorker(context, params) {
-//    override suspend fun doWork(): Result {
-//        return try {
-//            val uid = ConfigurationManager.getCurrentUserId()
-//            if (!uid.isNullOrBlank()) {
-//                MercadilloRepository(applicationContext).actualizarEstadosAutomaticos(uid)
-//            }
-//            Result.success()
-//        } catch (_: Exception) {
-//            Result.retry()
-//        }
-//    }
-//}

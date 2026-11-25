@@ -524,6 +524,40 @@ class MercadilloViewModel(
         }
     }
 
+    // ===== FINALIZAR MERCADILLO EN CURSO (PUNTO 3) =====
+    fun finalizarMercadilloEnCurso(mercadilloId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(loading = true, error = null)
+            try {
+                val ok = repository.finalizarMercadilloEnCurso(mercadilloId)
+                if (ok) {
+                    // Actualizamos el mercadillo en memoria si coincide
+                    _mercadilloParaEditar.value = _mercadilloParaEditar.value?.let { actual ->
+                        if (actual.idMercadillo == mercadilloId) {
+                            actual.copy(
+                                estado = EstadosMercadillo.Estado.PENDIENTE_ARQUEO.codigo,
+                                pendienteArqueo = true
+                            )
+                        } else actual
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        loading = false,
+                        message = tr("mercadillo_actualizado_ok"),
+                        error = null
+                    )
+                    manager.refreshNow()
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        loading = false,
+                        error = tr("error_actualizando_mercadillo")
+                    )
+                }
+            } catch (e: Exception) {
+                fail(tr1("error_actualizando_mercadillo_detalle", e.message ?: "—"), e)
+            }
+        }
+    }
+
     // ===== Internos =====
     private fun puedeEditarMercadillo(mercadillo: MercadilloEntity): Pair<Boolean, String> {
         val est = EstadosMercadillo.Estado.fromCodigo(mercadillo.estado)

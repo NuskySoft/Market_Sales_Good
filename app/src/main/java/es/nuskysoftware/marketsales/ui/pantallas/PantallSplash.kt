@@ -39,7 +39,7 @@ fun PantallaSplash() {
             repo.actualizarEstadosAutomaticos(userId)
 
             // ✅ Precalcular/precargar próximos mercadillos
-            try { repo.getMercadillosDesdeHoy(userId) } catch (_: Exception) {}
+            try { repo.getProximosMercadillos(userId) } catch (_: Exception) {}
         }
     }
 

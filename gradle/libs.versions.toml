@@ -23,6 +23,7 @@ hiltAndroid = "2.57"
 foundation = "1.9.0"
 roomKtx = "2.7.2"
 benchmarkBaselineProfileGradlePlugin = "1.4.0"
+runtimeSaveable = "1.9.4"
 
 [libraries]
 # BOM de Compose
@@ -63,6 +64,7 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "roomKtx" }
 androidx-benchmark-baseline-profile-gradle-plugin = { group = "androidx.benchmark", name = "benchmark-baseline-profile-gradle-plugin", version.ref = "benchmarkBaselineProfileGradlePlugin" }
+androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

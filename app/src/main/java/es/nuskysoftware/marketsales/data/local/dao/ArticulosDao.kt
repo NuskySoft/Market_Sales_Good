@@ -24,6 +24,9 @@ interface ArticuloDao {
     @Query("DELETE FROM articulos WHERE userId = :userId")
     suspend fun borrarPorUsuario(userId: String)
 
+    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid")
+    suspend fun contarPorUsuario(uid: String): Int
+
     @Upsert
     suspend fun upsert(articulo: ArticuloEntity)
 

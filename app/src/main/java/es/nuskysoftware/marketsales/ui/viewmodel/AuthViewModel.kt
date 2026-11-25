@@ -1,4 +1,3 @@
-// app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AuthViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
 import android.util.Log
@@ -21,7 +20,6 @@ import kotlinx.coroutines.tasks.await
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
-    // ✅ Inyectamos también el repo de mercadillos para recalcular estados al finalizar restauración/sync
     private val mercadilloRepository: MercadilloRepository
 ) : ViewModel() {
 
@@ -29,15 +27,12 @@ class AuthViewModel(
 
     private val firebaseAuth = FirebaseAuth.getInstance()
 
-    // Estados expuestos
     val authState: StateFlow<AuthState> = authRepository.authState
     val currentUser: StateFlow<FirebaseUser?> = authRepository.currentUser
 
-    // Restauración Premium
     val restoreAllowed: StateFlow<Boolean?> get() = authRepository.restoreAllowed
     val restoreBlockMessage: StateFlow<String?> get() = authRepository.restoreBlockMessage
 
-    // ✅ Estado de sincronización y progreso (passthrough al repo)
     val syncState: StateFlow<SyncState> get() = authRepository.syncState
     val downloadProgress: StateFlow<Int> get() = authRepository.downloadProgress
     val downloadMessage: StateFlow<String> get() = authRepository.downloadMessage
@@ -46,7 +41,7 @@ class AuthViewModel(
         Log.d(TAG, "AuthViewModel inicializado")
         testAuthConnection()
 
-        // ✅ Cuando termina una descarga/merge (Done), recalculemos estados automáticos
+        // 🔁 Cuando termina una descarga/merge (Done), recalculamos estados automáticos
         viewModelScope.launch {
             syncState.collectLatest { state ->
                 if (state == SyncState.Done) {
@@ -59,8 +54,6 @@ class AuthViewModel(
                         } catch (e: Exception) {
                             Log.e(TAG, "❌ Error recalculando estados tras sync", e)
                         }
-                    } else {
-                        Log.d(TAG, "ℹ️ Sync Done pero sin usuario válido; se omite recalculo de estados")
                     }
                 }
             }
@@ -108,6 +101,8 @@ class AuthViewModel(
                         val uid = ConfigurationManager.getCurrentUserId()
                         if (!uid.isNullOrBlank()) {
                             viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
+                            // 🔹 Llamada a sincronización híbrida real (Room ↔ Firebase)
+                            authRepository.refreshUserConfiguration()
                         }
                     }
                     is AuthResult.Error   -> Log.e(TAG, "ViewModel: Error en login - ${result.message}")
@@ -125,12 +120,11 @@ class AuthViewModel(
                 when (val result = authRepository.signInWithGoogle(idToken)) {
                     is AuthResult.Success -> {
                         Log.d(TAG, "ViewModel: Google ok - ${result.user?.email}")
-                        Log.d(TAG, "ViewModel: Nombre - ${result.user?.displayName}")
-
-                        // Igual que en loginWithEmail: recalcular estados tras autenticación
                         val uid = result.user?.uid ?: ConfigurationManager.getCurrentUserId()
                         if (!uid.isNullOrBlank()) {
                             viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
+                            // 🔹 Llamada a sincronización híbrida real
+                            authRepository.refreshUserConfiguration()
                         }
                     }
                     is AuthResult.Error -> Log.e(TAG, "ViewModel: Error Google - ${result.message}")
@@ -151,6 +145,8 @@ class AuthViewModel(
                         val uid = ConfigurationManager.getCurrentUserId()
                         if (!uid.isNullOrBlank()) {
                             viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
+                            // 🔹 Refresca configuración tras logout (limpia cachés locales y estados)
+                            authRepository.refreshUserConfiguration()
                         }
                     }
                     is AuthResult.Error   -> Log.e(TAG, "ViewModel: Error logout - ${result.message}")
@@ -163,26 +159,17 @@ class AuthViewModel(
 
     fun isUserAuthenticated(): Boolean = authRepository.isUserAuthenticated()
 
-    fun clearAuthError() {
-        Log.d(TAG, "ViewModel: Limpiando errores de autenticación")
-    }
+    fun clearAuthError() { Log.d(TAG, "ViewModel: Limpiando errores de autenticación") }
 
     // ---------- PERFIL ----------
     suspend fun updateUserProfile(displayName: String, email: String): Boolean {
         return try {
             val user = firebaseAuth.currentUser ?: return false
-
-            val profileUpdates = UserProfileChangeRequest.Builder()
-                .setDisplayName(displayName)
-                .build()
-
+            val profileUpdates = UserProfileChangeRequest.Builder().setDisplayName(displayName).build()
             user.updateProfile(profileUpdates).await()
             user.reload().await()
-
-            if (user.email != email) { user.updateEmail(email).await() }
-
+            if (user.email != email) user.updateEmail(email).await()
             authRepository.updateUserProfileAndMarkDirty(user.uid, displayName, email)
-
             ConfigurationManager.updateUserConfiguration(
                 displayName = displayName,
                 usuarioEmail = email,
@@ -223,11 +210,11 @@ class AuthViewModel(
             }
         }
     }
+
     suspend fun shouldShowDefaultUserWarning(): Boolean {
         return authRepository.shouldShowDefaultUserWarning()
     }
 }
-
 
 
 //// app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AuthViewModel.kt
@@ -247,14 +234,9 @@ class AuthViewModel(
 //import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 //import es.nuskysoftware.marketsales.utils.ConfigurationManager
 //import kotlinx.coroutines.flow.StateFlow
+//import kotlinx.coroutines.flow.collectLatest
 //import kotlinx.coroutines.launch
 //import kotlinx.coroutines.tasks.await
-//import kotlinx.coroutines.flow.collectLatest
-//
-//import androidx.lifecycle.viewModelScope
-//import kotlinx.coroutines.launch
-//
-//
 //
 //class AuthViewModel(
 //    private val authRepository: AuthRepository,
@@ -340,10 +322,9 @@ class AuthViewModel(
 //            Log.d(TAG, "ViewModel: Iniciando login para $email")
 //            try {
 //                when (val result = authRepository.loginWithEmail(email, password)) {
-////                    is AuthResult.Success -> Log.d(TAG, "ViewModel: Login ok - ${result.user?.email}")
 //                    is AuthResult.Success -> {
 //                        Log.d(TAG, "ViewModel: Login ok - ${result.user?.email}")
-//                        val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
+//                        val uid = ConfigurationManager.getCurrentUserId()
 //                        if (!uid.isNullOrBlank()) {
 //                            viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
 //                        }
@@ -365,30 +346,13 @@ class AuthViewModel(
 //                        Log.d(TAG, "ViewModel: Google ok - ${result.user?.email}")
 //                        Log.d(TAG, "ViewModel: Nombre - ${result.user?.displayName}")
 //
-//                        fun signInWithGoogle(idToken: String) {
-//                            viewModelScope.launch {
-//                                Log.d(TAG, "ViewModel: Iniciando Google Auth")
-//                                try {
-//                                    when (val result = authRepository.signInWithGoogle(idToken)) {
-//                                        is AuthResult.Success -> {
-//                                            Log.d(TAG, "ViewModel: Google ok - ${result.user?.email}")
-//                                            Log.d(TAG, "ViewModel: Nombre - ${result.user?.displayName}")
-//
-//                                            // ✅ Igual que en loginWithEmail: recalcular estados tras autenticación
-//                                            val uid = result.user?.uid ?: es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
-//                                            if (!uid.isNullOrBlank()) {
-//                                                viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
-//                                            }
-//                                        }
-//                                        is AuthResult.Error   -> Log.e(TAG, "ViewModel: Error Google - ${result.message}")
-//                                    }
-//                                } catch (e: Exception) {
-//                                    Log.e(TAG, "ViewModel: Excepción no controlada en Google Auth", e)
-//                                }
-//                            }
+//                        // Igual que en loginWithEmail: recalcular estados tras autenticación
+//                        val uid = result.user?.uid ?: ConfigurationManager.getCurrentUserId()
+//                        if (!uid.isNullOrBlank()) {
+//                            viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
 //                        }
 //                    }
-//                    is AuthResult.Error   -> Log.e(TAG, "ViewModel: Error Google - ${result.message}")
+//                    is AuthResult.Error -> Log.e(TAG, "ViewModel: Error Google - ${result.message}")
 //                }
 //            } catch (e: Exception) {
 //                Log.e(TAG, "ViewModel: Excepción no controlada en Google Auth", e)
@@ -401,10 +365,9 @@ class AuthViewModel(
 //            Log.d(TAG, "ViewModel: Iniciando logout")
 //            try {
 //                when (val result = authRepository.logout()) {
-////                    is AuthResult.Success -> Log.d(TAG, "ViewModel: Logout ok")
 //                    is AuthResult.Success -> {
 //                        Log.d(TAG, "ViewModel: Logout ok")
-//                        val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
+//                        val uid = ConfigurationManager.getCurrentUserId()
 //                        if (!uid.isNullOrBlank()) {
 //                            viewModelScope.launch { mercadilloRepository.actualizarEstadosAutomaticos(uid) }
 //                        }
@@ -483,5 +446,3 @@ class AuthViewModel(
 //        return authRepository.shouldShowDefaultUserWarning()
 //    }
 //}
-//
-//

@@ -42,6 +42,9 @@ interface CategoriaDao {
     @Query("DELETE FROM categorias WHERE userId = :userId")
     suspend fun borrarPorUsuario(userId: String)
 
+    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid")
+    suspend fun contarPorUsuario(uid: String): Int
+
     // ========== CONSULTAS FILTRADAS POR USUARIO ==========
 
     /**

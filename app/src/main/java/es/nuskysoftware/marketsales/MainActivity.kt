@@ -56,6 +56,11 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 import es.nuskysoftware.marketsales.ads.AdsConsentManager
 import com.google.android.gms.ads.MobileAds
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+
 
 import com.google.firebase.Firebase
 import es.nuskysoftware.marketsales.ads.AdsInterstitialController   // ← mantiene import
@@ -65,8 +70,9 @@ import com.google.firebase.firestore.firestore
 
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaDebugDatos
 import es.nuskysoftware.marketsales.BuildConfig
-
-
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -76,6 +82,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 🔹 Sincronización híbrida (Room ↔ Firebase) al iniciar la app
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repo = es.nuskysoftware.marketsales.data.repository.AuthRepository(this@MainActivity)
+                repo.refreshUserConfiguration()
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error ejecutando sincronización inicial", e)
+            }
+        }
 
         // 1) Inicializa el gestor UMP
         AdsConsentManager.init(this)
@@ -149,11 +165,11 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             composable("mercadillos") { PantallaMercadillos(navController) }
 
             composable("login") {
-                PantallaLogin(onNavigateToMain = { navController.safePopBackStack() },
+                PantallaLogin(
+                    onNavigateToMain = { navController.safePopBackStack() },
                     navController = navController
-                    )
+                )
             }
-
 
             composable("splash_descarga") {
                 PantallaSplashDescarga(
@@ -293,22 +309,116 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
                 val totalFmt = backStackEntry.arguments?.getString("totalFmt") ?: ""
                 val activity = LocalContext.current as ComponentActivity
                 val gastosVM: es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel =
-                    viewModel(activity, factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(activity.applicationContext))
+                    viewModel(
+                        activity,
+                        factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(
+                            activity.applicationContext
+                        )
+                    )
+
+                val currentLanguage by ConfigurationManager.idioma.collectAsState()
+                var mostrarDialogoCaja by remember { mutableStateOf(false) }
 
                 PantallaMetodoPago(
                     totalFormateado = totalFmt,
                     onMetodoSeleccionado = { metodo ->
-                        val metodoStr = when (metodo) {
-                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.EFECTIVO -> "efectivo"
-                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.BIZUM -> "bizum"
-                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.TARJETA -> "tarjeta"
-                        }
-                        gastosVM.cargarGastos(mercadilloId, metodoStr) {
-                            navController.safePopBackStack(route = "mercadillos", inclusive = false)
+                        when (metodo) {
+                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.EFECTIVO -> {
+                                // Primero preguntamos si se descuenta de caja o no
+                                mostrarDialogoCaja = true
+                            }
+                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.BIZUM -> {
+                                val metodoStr = "bizum"
+                                gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+                                gastosVM.cargarGastos(mercadilloId, metodoStr) {
+                                    navController.safePopBackStack(
+                                        route = "mercadillos",
+                                        inclusive = false
+                                    )
+                                }
+                            }
+                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.TARJETA -> {
+                                val metodoStr = "tarjeta"
+                                gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+                                gastosVM.cargarGastos(mercadilloId, metodoStr) {
+                                    navController.safePopBackStack(
+                                        route = "mercadillos",
+                                        inclusive = false
+                                    )
+                                }
+                            }
                         }
                     },
                     onBack = { navController.safePopBackStack() }
                 )
+
+                if (mostrarDialogoCaja) {
+                    AlertDialog(
+                        onDismissRequest = { mostrarDialogoCaja = false },
+                        title = {
+                            Text(
+                                StringResourceManager.getString(
+                                    "gasto_efectivo_caja_titulo",
+                                    currentLanguage
+                                )
+                            )
+                        },
+                        text = {
+                            Text(
+                                StringResourceManager.getString(
+                                    "gasto_efectivo_caja_mensaje",
+                                    currentLanguage
+                                )
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    // Sí: descontar de caja
+                                    gastosVM.configurarDescontarDeCajaParaEfectivo(true)
+                                    val metodoStr = "efectivo"
+                                    gastosVM.cargarGastos(mercadilloId, metodoStr) {
+                                        navController.safePopBackStack(
+                                            route = "mercadillos",
+                                            inclusive = false
+                                        )
+                                    }
+                                    mostrarDialogoCaja = false
+                                }
+                            ) {
+                                Text(
+                                    StringResourceManager.getString(
+                                        "SI",
+                                        currentLanguage
+                                    )
+                                )
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = {
+                                    // No: no se descuenta de caja
+                                    gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+                                    val metodoStr = "efectivo"
+                                    gastosVM.cargarGastos(mercadilloId, metodoStr) {
+                                        navController.safePopBackStack(
+                                            route = "mercadillos",
+                                            inclusive = false
+                                        )
+                                    }
+                                    mostrarDialogoCaja = false
+                                }
+                            ) {
+                                Text(
+                                    StringResourceManager.getString(
+                                        "NO",
+                                        currentLanguage
+                                    )
+                                )
+                            }
+                        }
+                    )
+                }
             }
 
             // Enviar recibo
@@ -449,8 +559,6 @@ fun pingFirestoreProd() {
 }
 
 
-
-//// app/src/main/java/es/nuskysoftware/marketsales/MainActivity.kt
 //package es.nuskysoftware.marketsales
 //
 //import android.annotation.SuppressLint
@@ -508,11 +616,23 @@ fun pingFirestoreProd() {
 //import es.nuskysoftware.marketsales.utils.safePopBackStack
 //import es.nuskysoftware.marketsales.ads.AdsConsentManager
 //import com.google.android.gms.ads.MobileAds
+//
+//import androidx.compose.material3.AlertDialog
+//import androidx.compose.material3.Text
+//import androidx.compose.material3.TextButton
+//import es.nuskysoftware.marketsales.utils.StringResourceManager
+//
+//
 //import com.google.firebase.Firebase
 //import es.nuskysoftware.marketsales.ads.AdsInterstitialController   // ← mantiene import
 //
 //import com.google.firebase.auth.auth
 //import com.google.firebase.firestore.firestore
+//
+//import es.nuskysoftware.marketsales.ui.pantallas.PantallaDebugDatos
+//import es.nuskysoftware.marketsales.BuildConfig
+//
+//
 //
 //class MainActivity : ComponentActivity() {
 //
@@ -558,18 +678,27 @@ fun pingFirestoreProd() {
 //    val navController = rememberNavController()
 //    var showSplash by remember { mutableStateOf(true) }
 //
-//    // ▼▼ Mostrar interstitial en cada cambio de pantalla ▼▼
+//    // ▼▼ Mostrar interstitial en cada cambio de pantalla (GATE por premium resuelto) ▼▼
 //    val activity = LocalContext.current as? ComponentActivity
 //    val canRequestAds by AdsConsentManager.canRequestAds.collectAsState()
 //    val esPremium by ConfigurationManager.esPremium.collectAsState()
+//    val esPremiumReady by ConfigurationManager.esPremiumReady.collectAsState()
 //    val backStackEntry by navController.currentBackStackEntryAsState()
 //
-//    LaunchedEffect(backStackEntry?.destination?.route, canRequestAds, esPremium) {
-//        if (activity != null && canRequestAds && !esPremium) {
+//    LaunchedEffect(backStackEntry?.destination?.route, canRequestAds, esPremium, esPremiumReady) {
+//        val route = backStackEntry?.destination?.route ?: return@LaunchedEffect
+//        // Evitar pantallas delicadas y SOLO si premium ya está resuelto
+//        val avoidRoutes = setOf("login", "splash_descarga")
+//        if (activity != null && esPremiumReady && canRequestAds && !esPremium && route !in avoidRoutes) {
 //            AdsInterstitialController.maybeShow(activity)
 //        }
 //    }
-//    // ▲▲ Mostrar interstitial en cada cambio de pantalla ▲▲
+//
+//    // Si pasa a premium en caliente, limpia cualquier interstitial precargado
+//    LaunchedEffect(esPremium) {
+//        if (esPremium) AdsInterstitialController.dropPreloaded()
+//    }
+//    // ▲▲ Fin interstitial ▲▲
 //
 //    LaunchedEffect(Unit) {
 //        kotlinx.coroutines.delay(2000)
@@ -586,7 +715,17 @@ fun pingFirestoreProd() {
 //            composable("mercadillos") { PantallaMercadillos(navController) }
 //
 //            composable("login") {
-//                PantallaLogin(onNavigateToMain = { navController.safePopBackStack() })
+//                PantallaLogin(onNavigateToMain = { navController.safePopBackStack() },
+//                    navController = navController
+//                    )
+//            }
+//
+//
+//            composable("splash_descarga") {
+//                PantallaSplashDescarga(
+//                    navController = navController,
+//                    destinoDespues = "mercadillos"
+//                )
 //            }
 //
 //            composable("configuracion") { PantallaConfiguracion(navController) }
@@ -598,6 +737,13 @@ fun pingFirestoreProd() {
 //            composable("utilidades") { PantallaUtilidades(navController) }
 //            composable("saldos_pendientes") { PantallaSaldosPendientes(navController) }
 //            composable("datos_empresa") { PantallaDatosEmpresa(navController) }
+//
+//            // Pantalla de depuración para activar/desactivar datos (solo en compilaciones debug)
+//            if (BuildConfig.DEBUG) {
+//                composable("debug_datos") {
+//                    PantallaDebugDatos(navController)
+//                }
+//            }
 //
 //            composable("alta_mercadillo") { PantallaAltaMercadillo(navController) }
 //
@@ -713,23 +859,145 @@ fun pingFirestoreProd() {
 //                val totalFmt = backStackEntry.arguments?.getString("totalFmt") ?: ""
 //                val activity = LocalContext.current as ComponentActivity
 //                val gastosVM: es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel =
-//                    viewModel(activity, factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(activity.applicationContext))
+//                    viewModel(
+//                        activity,
+//                        factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(
+//                            activity.applicationContext
+//                        )
+//                    )
+//
+//                val currentLanguage by ConfigurationManager.idioma.collectAsState()
+//                var mostrarDialogoCaja by remember { mutableStateOf(false) }
 //
 //                PantallaMetodoPago(
 //                    totalFormateado = totalFmt,
 //                    onMetodoSeleccionado = { metodo ->
-//                        val metodoStr = when (metodo) {
-//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.EFECTIVO -> "efectivo"
-//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.BIZUM -> "bizum"
-//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.TARJETA -> "tarjeta"
-//                        }
-//                        gastosVM.cargarGastos(mercadilloId, metodoStr) {
-//                            navController.safePopBackStack(route = "mercadillos", inclusive = false)
+//                        when (metodo) {
+//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.EFECTIVO -> {
+//                                // Primero preguntamos si se descuenta de caja o no
+//                                mostrarDialogoCaja = true
+//                            }
+//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.BIZUM -> {
+//                                val metodoStr = "bizum"
+//                                gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+//                                gastosVM.cargarGastos(mercadilloId, metodoStr) {
+//                                    navController.safePopBackStack(
+//                                        route = "mercadillos",
+//                                        inclusive = false
+//                                    )
+//                                }
+//                            }
+//                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.TARJETA -> {
+//                                val metodoStr = "tarjeta"
+//                                gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+//                                gastosVM.cargarGastos(mercadilloId, metodoStr) {
+//                                    navController.safePopBackStack(
+//                                        route = "mercadillos",
+//                                        inclusive = false
+//                                    )
+//                                }
+//                            }
 //                        }
 //                    },
 //                    onBack = { navController.safePopBackStack() }
 //                )
+//
+//                if (mostrarDialogoCaja) {
+//                    AlertDialog(
+//                        onDismissRequest = { mostrarDialogoCaja = false },
+//                        title = {
+//                            Text(
+//                                StringResourceManager.getString(
+//                                    "gasto_efectivo_caja_titulo",
+//                                    currentLanguage
+//                                )
+//                            )
+//                        },
+//                        text = {
+//                            Text(
+//                                StringResourceManager.getString(
+//                                    "gasto_efectivo_caja_mensaje",
+//                                    currentLanguage
+//                                )
+//                            )
+//                        },
+//                        confirmButton = {
+//                            TextButton(
+//                                onClick = {
+//                                    // Sí: descontar de caja
+//                                    gastosVM.configurarDescontarDeCajaParaEfectivo(true)
+//                                    val metodoStr = "efectivo"
+//                                    gastosVM.cargarGastos(mercadilloId, metodoStr) {
+//                                        navController.safePopBackStack(
+//                                            route = "mercadillos",
+//                                            inclusive = false
+//                                        )
+//                                    }
+//                                    mostrarDialogoCaja = false
+//                                }
+//                            ) {
+//                                Text(
+//                                    StringResourceManager.getString(
+//                                        "SI",
+//                                        currentLanguage
+//                                    )
+//                                )
+//                            }
+//                        },
+//                        dismissButton = {
+//                            TextButton(
+//                                onClick = {
+//                                    // No: no se descuenta de caja
+//                                    gastosVM.configurarDescontarDeCajaParaEfectivo(false)
+//                                    val metodoStr = "efectivo"
+//                                    gastosVM.cargarGastos(mercadilloId, metodoStr) {
+//                                        navController.safePopBackStack(
+//                                            route = "mercadillos",
+//                                            inclusive = false
+//                                        )
+//                                    }
+//                                    mostrarDialogoCaja = false
+//                                }
+//                            ) {
+//                                Text(
+//                                    StringResourceManager.getString(
+//                                        "NO",
+//                                        currentLanguage
+//                                    )
+//                                )
+//                            }
+//                        }
+//                    )
+//                }
 //            }
+////            composable(
+////                route = "metodo_pago_gastos/{mercadilloId}/{totalFmt}",
+////                arguments = listOf(
+////                    navArgument("mercadilloId") { type = NavType.StringType },
+////                    navArgument("totalFmt") { type = NavType.StringType }
+////                )
+////            ) { backStackEntry ->
+////                val mercadilloId = backStackEntry.arguments?.getString("mercadilloId") ?: ""
+////                val totalFmt = backStackEntry.arguments?.getString("totalFmt") ?: ""
+////                val activity = LocalContext.current as ComponentActivity
+////                val gastosVM: es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel =
+////                    viewModel(activity, factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(activity.applicationContext))
+////
+////                PantallaMetodoPago(
+////                    totalFormateado = totalFmt,
+////                    onMetodoSeleccionado = { metodo ->
+////                        val metodoStr = when (metodo) {
+////                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.EFECTIVO -> "efectivo"
+////                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.BIZUM -> "bizum"
+////                            es.nuskysoftware.marketsales.ui.pantallas.MetodoPago.TARJETA -> "tarjeta"
+////                        }
+////                        gastosVM.cargarGastos(mercadilloId, metodoStr) {
+////                            navController.safePopBackStack(route = "mercadillos", inclusive = false)
+////                        }
+////                    },
+////                    onBack = { navController.safePopBackStack() }
+////                )
+////            }
 //
 //            // Enviar recibo
 //            composable(
@@ -867,5 +1135,4 @@ fun pingFirestoreProd() {
 //        .addOnSuccessListener { Log.d("MS-FB", "Ping Firestore PROD OK") }
 //        .addOnFailureListener { e -> Log.e("MS-FB", "Ping Firestore PROD FAIL", e) }
 //}
-//
 //

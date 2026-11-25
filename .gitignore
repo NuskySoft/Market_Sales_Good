@@ -13,3 +13,22 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Copias de otros proyectos dentro de esta carpeta
+/Market-Sales/
+/Market_Sales/
+
+# Archivos comprimidos
+*.rar
+*.zip
+
+# Archivos generados de Android
+**/build/
+.kotlin/
+app/release/
+
+# Claves de firma y configuracion local
+/keystore/
+*.jks
+*.keystore
+/.idea/deploymentTargetSelector.xml

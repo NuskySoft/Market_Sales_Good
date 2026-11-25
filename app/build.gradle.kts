@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.foundation)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.compose.runtime.saveable)
     //  implementation(libs.androidx.benchmark.baseline.profile.gradle.plugin)
 
     debugImplementation(libs.androidx.ui.tooling)

@@ -546,7 +546,7 @@ fun PantallaArticulos(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_list),
+                            painter = painterResource(id = R.drawable.ic_productos),
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)

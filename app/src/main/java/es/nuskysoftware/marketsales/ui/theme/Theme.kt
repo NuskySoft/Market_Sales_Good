@@ -10,31 +10,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
-// Esquema de colores claro con verde pastel suave
-//private val LightColorScheme = lightColorScheme(
-//    primary = VerdePrimario,
-//    onPrimary = BlancoTexto,
-//    secondary = VerdeSecundario,
-//    onSecondary = BlancoTexto,
-//    tertiary = VerdeTerciario,
-//    background = FondoClaro,
-//    surface = BlancoTexto,
-//    onBackground = NegroTexto,
-//    onSurface = NegroTexto
-//)
-//
-//// Esquema de colores oscuro con verde pastel suave adaptado
-//private val DarkColorScheme = darkColorScheme(
-//    primary = VerdePrimario,
-//    onPrimary = BlancoTexto,
-//    secondary = VerdeSecundario,
-//    onSecondary = BlancoTexto,
-//    tertiary = VerdeTerciario,
-//    background = NegroTexto,
-//    surface = GrisOscuro,
-//    onBackground = BlancoTexto,
-//    onSurface = BlancoTexto
-//)
 
 @Composable
 fun MarketSalesTheme(

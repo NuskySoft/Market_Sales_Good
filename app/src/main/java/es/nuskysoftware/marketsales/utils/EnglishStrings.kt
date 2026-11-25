@@ -676,6 +676,21 @@ internal object EnglishStrings {
         "importe_placeholder" -> "0.00"
         "config_logistica" -> "Logistics settings"
 
+        "finalizar_mercadillo" -> "Finish market"
+        "finalizar_mercadillo_mensaje" -> "This action is irreversible. The market will move to the cash-count pending state and you will no longer be able to register sales or expenses for it. Do you want to continue?"
+
+        "gasto_efectivo_caja_titulo" -> "Cash expense"
+        "gasto_efectivo_caja_mensaje" ->  "Do you want to subtract this expense from the market cash box?"
+
+        "total_billetes" -> "Total banknotes"
+        "total_monedas" -> "Total coins"
+        "total_contado" -> "Total counted"
+        "estado_caja" -> "Cash status"
+        "caja_cuadra" -> "The cash balances"
+        "caja_descuadra_positivo" -> "The cash is over by"
+        "caja_descuadra_negativo" -> "The cash is short by"
+
+        "saldo_inicial_opcional" -> "Initial Balance (optional)"
 
         else -> key
     }

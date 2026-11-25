@@ -1,3 +1,4 @@
+
 // app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/LineasVentaDao.kt
 package es.nuskysoftware.marketsales.data.local.dao
 
@@ -10,6 +11,10 @@ interface LineasVentaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<LineaVentaEntity>)
+
+    @Query("SELECT COUNT(*) FROM lineas_venta WHERE idUsuario = :uid")
+    suspend fun contarPorUsuario(uid: String): Int
+
 
     @Query("DELETE FROM lineas_venta WHERE idUsuario = :userId")
     suspend fun borrarPorUsuario(userId: String)

@@ -677,10 +677,21 @@ internal object SpanishStrings {
         "importe_placeholder" -> "0,00"
         "config_logistica" -> "Configuración Logística"
 
+        "finalizar_mercadillo" -> "Finalizar mercadillo"
+        "finalizar_mercadillo_mensaje" -> "Esta acción es irreversible. El mercadillo pasará a estado pendiente de arqueo y no podrás registrar más ventas ni gastos en él. ¿Deseas continuar?"
 
+        "gasto_efectivo_caja_titulo" -> "Gasto en efectivo"
+        "gasto_efectivo_caja_mensaje" -> "¿Quieres descontar este gasto de la caja del mercadillo?"
 
+        "total_billetes" -> "Total billetes"
+        "total_monedas" -> "Total monedas"
+        "total_contado" -> "Suma total"
+        "estado_caja" -> "Estado de la caja"
+        "caja_cuadra" -> "La caja cuadra"
+        "caja_descuadra_positivo" -> "La caja descuadra en positivo"
+        "caja_descuadra_negativo" -> "La caja descuadra en negativo"
 
-
+        "saldo_inicial_opcional" -> "Saldo Inicial (Opcional)"
 
         else -> key
     }

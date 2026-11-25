@@ -3,8 +3,10 @@ package es.nuskysoftware.marketsales.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.Index
+
 /**
- * LineaGastoEntity V15 - incorpora control de versión y sincronización.
+ * LineaGastoEntity V16 - incorpora control de versión, sincronización
+ * y flag para saber si el gasto en efectivo debe descontarse de caja.
  */
 @Entity(
     tableName = "LineasGastos",
@@ -14,14 +16,15 @@ import androidx.room.Index
         Index(name = "idx_gastos_usuario", value = ["idUsuario"])
     ]
 )
-data class  LineaGastoEntity(
+data class LineaGastoEntity(
     val idMercadillo: String,
     val idUsuario: String,
     val numeroLinea: String,   // zero-padded "0001"
     val descripcion: String,
     val importe: Double,       // siempre positivo
     val fechaHora: Long,
-    val formaPago: String,      // "efectivo" | "bizum" | "tarjeta"
+    val formaPago: String,     // "efectivo" | "bizum" | "tarjeta"
+    val descontarDeCaja: Boolean = true,   // ✅ nuevo: solo estos cuentan para arqueo de caja
     val version: Long = 1L,
     val lastModified: Long = System.currentTimeMillis(),
     val sincronizadoFirebase: Boolean = false,
@@ -36,6 +39,7 @@ data class  LineaGastoEntity(
         importe = 0.0,
         fechaHora = 0L,
         formaPago = "efectivo",
+        descontarDeCaja = true,
         version = 1L,
         lastModified = System.currentTimeMillis(),
         sincronizadoFirebase = false,
@@ -43,3 +47,50 @@ data class  LineaGastoEntity(
     )
 }
 
+
+
+//// app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/LineaGastoEntity.kt
+//package es.nuskysoftware.marketsales.data.local.entity
+//
+//import androidx.room.Entity
+//import androidx.room.Index
+///**
+// * LineaGastoEntity V15 - incorpora control de versión y sincronización.
+// */
+//@Entity(
+//    tableName = "LineasGastos",
+//    primaryKeys = ["idMercadillo", "numeroLinea"],
+//    indices = [
+//        Index(name = "idx_gastos_mercadillo", value = ["idMercadillo"]),
+//        Index(name = "idx_gastos_usuario", value = ["idUsuario"])
+//    ]
+//)
+//data class  LineaGastoEntity(
+//    val idMercadillo: String,
+//    val idUsuario: String,
+//    val numeroLinea: String,   // zero-padded "0001"
+//    val descripcion: String,
+//    val importe: Double,       // siempre positivo
+//    val fechaHora: Long,
+//    val formaPago: String,      // "efectivo" | "bizum" | "tarjeta"
+//    val version: Long = 1L,
+//    val lastModified: Long = System.currentTimeMillis(),
+//    val sincronizadoFirebase: Boolean = false,
+//    val activo: Boolean = true
+//) {
+//    @Suppress("unused")
+//    constructor() : this(
+//        idMercadillo = "",
+//        idUsuario = "",
+//        numeroLinea = "",
+//        descripcion = "",
+//        importe = 0.0,
+//        fechaHora = 0L,
+//        formaPago = "efectivo",
+//        version = 1L,
+//        lastModified = System.currentTimeMillis(),
+//        sincronizadoFirebase = false,
+//        activo = true
+//    )
+//}
+//

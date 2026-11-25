@@ -70,20 +70,48 @@ class ArqueoViewModel(
                     ?: run {
                         _ui.value = _ui.value.copy(
                             loading = false,
-                            error = StringResourceManager.getString("mercadillo_no_encontrado", lang)
+                            error = StringResourceManager.getString(
+                                "mercadillo_no_encontrado",
+                                lang
+                            )
                         )
                         return@launch
                     }
 
                 // Ventas por método (desde Recibos)
-                val ventasEf = withContext(Dispatchers.IO) { repository.getTotalVentasPorMetodo(mercadilloId, "EFECTIVO") }
-                val ventasBi = withContext(Dispatchers.IO) { repository.getTotalVentasPorMetodo(mercadilloId, "BIZUM") }
-                val ventasTa = withContext(Dispatchers.IO) { repository.getTotalVentasPorMetodo(mercadilloId, "TARJETA") }
+                val ventasEf = withContext(Dispatchers.IO) {
+                    repository.getTotalVentasPorMetodo(
+                        mercadilloId,
+                        "EFECTIVO"
+                    )
+                }
+                val ventasBi = withContext(Dispatchers.IO) {
+                    repository.getTotalVentasPorMetodo(
+                        mercadilloId,
+                        "BIZUM"
+                    )
+                }
+                val ventasTa = withContext(Dispatchers.IO) {
+                    repository.getTotalVentasPorMetodo(
+                        mercadilloId,
+                        "TARJETA"
+                    )
+                }
 
                 // Destinos para "Asignar saldo" (estados 1 y 2 del usuario actual)
                 val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
-                val destinos1 = withContext(Dispatchers.IO) { repository.getMercadillosDeUsuarioPorEstadoSnapshot(userId, 1) }
-                val destinos2 = withContext(Dispatchers.IO) { repository.getMercadillosDeUsuarioPorEstadoSnapshot(userId, 2) }
+                val destinos1 = withContext(Dispatchers.IO) {
+                    repository.getMercadillosDeUsuarioPorEstadoSnapshot(
+                        userId,
+                        1
+                    )
+                }
+                val destinos2 = withContext(Dispatchers.IO) {
+                    repository.getMercadillosDeUsuarioPorEstadoSnapshot(
+                        userId,
+                        2
+                    )
+                }
 
                 _ui.value = UiState(
                     loading = false,
@@ -149,11 +177,21 @@ class ArqueoViewModel(
     }
 
     // ===== Helpers de formato para UI =====
+//    fun fmtMoneda(value: Double): String {
+//        val nf = NumberFormat.getCurrencyInstance(Locale.getDefault())
+//        val simbolo = (ConfigurationManager.moneda.value.split(" ").firstOrNull() ?: "€")
+//        val raw = nf.format(value)
+//        return if (!raw.startsWith(simbolo)) raw.replace(Regex("^[^\\d-]+"), "$simbolo ") else raw
+//    }
+//}
+
     fun fmtMoneda(value: Double): String {
-        val nf = NumberFormat.getCurrencyInstance(Locale.getDefault())
-        val simbolo = (ConfigurationManager.moneda.value.split(" ").firstOrNull() ?: "€")
-        val raw = nf.format(value)
-        return if (!raw.startsWith(simbolo)) raw.replace(Regex("^[^\\d-]+"), "$simbolo ") else raw
+        // Obtiene el símbolo configurado (por ejemplo "€" o "$")
+        val simbolo = ConfigurationManager.moneda.value.ifBlank { "€" }
+        val texto = String.format("%.2f", kotlin.math.abs(value))
+
+        // Formato uniforme: € -3.40 o € 3.40
+        return "$simbolo ${if (value < 0) "-$texto" else texto}"
     }
 }
 

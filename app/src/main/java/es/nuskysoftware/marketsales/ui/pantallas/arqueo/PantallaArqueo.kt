@@ -3,8 +3,9 @@ package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -41,8 +42,8 @@ fun PantallaArqueo(
 
     LaunchedEffect(mercadilloId) { vm.cargar(mercadilloId) }
     val ui by vm.ui.collectAsState()
-    val scope = rememberCoroutineScope()
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -72,6 +73,7 @@ fun PantallaArqueo(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(pad)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -116,14 +118,17 @@ fun PantallaArqueo(
                         label = StringResourceManager.getString("saldo_inicial", currentLanguage),
                         value = vm.fmtMoneda(data.saldoInicial)
                     )
-                    Row(
+
+                    // 💡 Antes era Row: ahora lo separamos en Column para apilar
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.End
                     ) {
                         EstadoChip(data.estado, currentLanguage)
                         OutlinedButton(
                             onClick = { navController.navigate("resumen/$mercadilloId") },
+                            modifier = Modifier.wrapContentWidth(),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                         ) {
                             Text(
@@ -144,7 +149,6 @@ fun PantallaArqueo(
                         fontWeight = FontWeight.SemiBold
                     )
 
-                    // Fila 1: Bizum / Tarjeta
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -161,7 +165,6 @@ fun PantallaArqueo(
                         )
                     }
 
-                    // Fila 2: Efectivo / Total
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -187,52 +190,55 @@ fun PantallaArqueo(
             val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
 
             ElevatedCard(shape = RoundedCornerShape(16.dp)) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(16.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item {
-                        Text(
-                            StringResourceManager.getString("acciones", currentLanguage),
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    Text(
+                        StringResourceManager.getString("acciones", currentLanguage),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Button(
+                        onClick = { navController.navigate("arqueo/caja/$mercadilloId") },
+                        enabled = puedeArqueo,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(StringResourceManager.getString("realizar_arqueo", currentLanguage))
                     }
-                    item {
-                        Button(
-                            onClick = { navController.navigate("arqueo/caja/$mercadilloId") },
-                            enabled = puedeArqueo,
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(StringResourceManager.getString("realizar_arqueo", currentLanguage)) }
+
+                    Button(
+                        onClick = { navController.navigate("arqueo/resultado/$mercadilloId") },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(StringResourceManager.getString("resultado_mercadillo", currentLanguage))
                     }
-                    item {
-                        Button(
-                            onClick = { navController.navigate("arqueo/resultado/$mercadilloId") },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(StringResourceManager.getString("resultado_mercadillo", currentLanguage)) }
+
+                    Button(
+                        onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
+                        enabled = puedeAsignar,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(StringResourceManager.getString("asignar_saldo", currentLanguage))
                     }
-                    item {
-                        Button(
-                            onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
-                            enabled = puedeAsignar,
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(StringResourceManager.getString("asignar_saldo", currentLanguage)) }
-                    }
-                    item {
-                        OutlinedButton(
-                            onClick = {
-                                scope.launch {
-                                    val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
-                                    if (!uid.isNullOrBlank()) {
-                                        es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
-                                            .actualizarEstadosAutomaticos(uid)
-                                    }
-                                    navController.safePopBackStack()
+
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch {
+                                val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
+                                if (!uid.isNullOrBlank()) {
+                                    es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
+                                        .actualizarEstadosAutomaticos(uid)
                                 }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) { Text(StringResourceManager.getString("cerrar", currentLanguage)) }
+                                navController.safePopBackStack()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(StringResourceManager.getString("cerrar", currentLanguage))
                     }
                 }
             }
@@ -322,13 +328,15 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 }
 
 
+
 //// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaArqueo.kt
 //package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 //
 //import androidx.compose.foundation.background
 //import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.lazy.LazyColumn
 //import androidx.compose.foundation.shape.RoundedCornerShape
+//import androidx.compose.foundation.verticalScroll
+//import androidx.compose.foundation.rememberScrollState
 //import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.ArrowBack
 //import androidx.compose.material3.*
@@ -345,6 +353,7 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModel
 //import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModelFactory
 //import es.nuskysoftware.marketsales.utils.ConfigurationManager
+//import es.nuskysoftware.marketsales.utils.StringResourceManager
 //import es.nuskysoftware.marketsales.utils.safePopBackStack
 //import kotlinx.coroutines.launch
 //
@@ -364,15 +373,19 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //
 //    LaunchedEffect(mercadilloId) { vm.cargar(mercadilloId) }
 //    val ui by vm.ui.collectAsState()
+//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
 //    val scope = rememberCoroutineScope()
 //
 //    Scaffold(
 //        topBar = {
 //            TopAppBar(
-//                title = { Text("Arqueo") },
+//                title = { Text(StringResourceManager.getString("arqueo", currentLanguage)) },
 //                navigationIcon = {
 //                    IconButton(onClick = { navController.safePopBackStack() }) {
-//                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+//                        Icon(
+//                            Icons.Default.ArrowBack,
+//                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
+//                        )
 //                    }
 //                }
 //            )
@@ -391,6 +404,7 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //            modifier = Modifier
 //                .fillMaxSize()
 //                .padding(pad)
+//                .verticalScroll(rememberScrollState())   // 👈 scroll en toda la pantalla
 //                .padding(16.dp),
 //            verticalArrangement = Arrangement.spacedBy(16.dp)
 //        ) {
@@ -401,7 +415,10 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //            val data = ui.mercadillo ?: run {
 //                ElevatedCard(shape = RoundedCornerShape(16.dp)) {
 //                    Column(Modifier.padding(16.dp)) {
-//                        Text("Cargando datos de mercadillo…", style = MaterialTheme.typography.bodyMedium)
+//                        Text(
+//                            StringResourceManager.getString("cargando_datos_mercadillo", currentLanguage),
+//                            style = MaterialTheme.typography.bodyMedium
+//                        )
 //                    }
 //                }
 //                return@Column
@@ -424,19 +441,28 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //
 //                    Text(data.organizador, style = MaterialTheme.typography.bodyMedium)
 //                    Spacer(Modifier.height(8.dp))
-//                    InfoRow("Suscripción", vm.fmtMoneda(data.importeSuscripcion))
-//                    InfoRow("Saldo inicial", vm.fmtMoneda(data.saldoInicial))
+//                    InfoRow(
+//                        label = StringResourceManager.getString("importe_suscripcion", currentLanguage),
+//                        value = vm.fmtMoneda(data.importeSuscripcion)
+//                    )
+//                    InfoRow(
+//                        label = StringResourceManager.getString("saldo_inicial", currentLanguage),
+//                        value = vm.fmtMoneda(data.saldoInicial)
+//                    )
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.SpaceBetween,
 //                        verticalAlignment = Alignment.CenterVertically
 //                    ) {
-//                        EstadoChip(data.estado)
+//                        EstadoChip(data.estado, currentLanguage)
 //                        OutlinedButton(
 //                            onClick = { navController.navigate("resumen/$mercadilloId") },
 //                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
 //                        ) {
-//                            Text("Resumen Mercadillo", style = MaterialTheme.typography.labelLarge)
+//                            Text(
+//                                StringResourceManager.getString("resumen_mercadillo", currentLanguage),
+//                                style = MaterialTheme.typography.labelLarge
+//                            )
 //                        }
 //                    }
 //                }
@@ -445,37 +471,39 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //            // ===== Ventas (rejilla 2x2) =====
 //            ElevatedCard(shape = RoundedCornerShape(16.dp)) {
 //                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-//                    Text("Ventas", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+//                    Text(
+//                        StringResourceManager.getString("ventas", currentLanguage),
+//                        style = MaterialTheme.typography.titleSmall,
+//                        fontWeight = FontWeight.SemiBold
+//                    )
 //
-//                    // Fila 1: Bizum / Tarjeta
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.spacedBy(12.dp)
 //                    ) {
 //                        MetricCard(
-//                            title = "Bizum",
+//                            title = StringResourceManager.getString("bizum", currentLanguage),
 //                            valueText = vm.fmtMoneda(data.ventasBizum),
 //                            modifier = Modifier.weight(1f)
 //                        )
 //                        MetricCard(
-//                            title = "Tarjeta",
+//                            title = StringResourceManager.getString("tarjeta", currentLanguage),
 //                            valueText = vm.fmtMoneda(data.ventasTarjeta),
 //                            modifier = Modifier.weight(1f)
 //                        )
 //                    }
 //
-//                    // Fila 2: Efectivo / Total (Total destacado)
 //                    Row(
 //                        modifier = Modifier.fillMaxWidth(),
 //                        horizontalArrangement = Arrangement.spacedBy(12.dp)
 //                    ) {
 //                        MetricCard(
-//                            title = "Efectivo",
+//                            title = StringResourceManager.getString("efectivo", currentLanguage),
 //                            valueText = vm.fmtMoneda(data.ventasEfectivo),
 //                            modifier = Modifier.weight(1f)
 //                        )
 //                        MetricCard(
-//                            title = "Total",
+//                            title = StringResourceManager.getString("total", currentLanguage),
 //                            valueText = vm.fmtMoneda(data.totalVentas),
 //                            emphasized = true,
 //                            modifier = Modifier.weight(1f)
@@ -486,57 +514,59 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //
 //            // ===== Acciones =====
 //            val puedeArqueo = data.estado == 4
-////            val puedeAsignar = data.estado == 5
 //            val esPremium = remember { ConfigurationManager.isPremium() }
 //            val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
 //
 //            ElevatedCard(shape = RoundedCornerShape(16.dp)) {
-//                LazyColumn(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    verticalArrangement = Arrangement.spacedBy(12.dp),
-//                    contentPadding = PaddingValues(16.dp)
+//                Column(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(16.dp),
+//                    verticalArrangement = Arrangement.spacedBy(12.dp)
 //                ) {
-//                    item {
-//                        Text(
-//                            "Acciones",
-//                            style = MaterialTheme.typography.titleSmall,
-//                            fontWeight = FontWeight.SemiBold
-//                        )
+//                    Text(
+//                        StringResourceManager.getString("acciones", currentLanguage),
+//                        style = MaterialTheme.typography.titleSmall,
+//                        fontWeight = FontWeight.SemiBold
+//                    )
+//
+//                    Button(
+//                        onClick = { navController.navigate("arqueo/caja/$mercadilloId") },
+//                        enabled = puedeArqueo,
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text(StringResourceManager.getString("realizar_arqueo", currentLanguage))
 //                    }
-//                    item {
-//                        Button(
-//                            onClick = { navController.navigate("arqueo/caja/$mercadilloId") },
-//                            enabled = puedeArqueo,
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) { Text("Realizar arqueo") }
+//
+//                    Button(
+//                        onClick = { navController.navigate("arqueo/resultado/$mercadilloId") },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text(StringResourceManager.getString("resultado_mercadillo", currentLanguage))
 //                    }
-//                    item {
-//                        Button(
-//                            onClick = { navController.navigate("arqueo/resultado/$mercadilloId") },
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) { Text("Resultado del mercadillo") }
+//
+//                    Button(
+//                        onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
+//                        enabled = puedeAsignar,
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text(StringResourceManager.getString("asignar_saldo", currentLanguage))
 //                    }
-//                    item {
-//                        Button(
-//                            onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
-//                            enabled = puedeAsignar,
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) { Text("Asignar saldo") }
-//                    }
-//                    item {
-//                        OutlinedButton(
-//                            onClick = {
-//                                scope.launch {
-//                                    val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
-//                                    if (!uid.isNullOrBlank()) {
-//                                        es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
-//                                            .actualizarEstadosAutomaticos(uid)
-//                                    }
-//                                    navController.safePopBackStack()
+//
+//                    OutlinedButton(
+//                        onClick = {
+//                            scope.launch {
+//                                val uid = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
+//                                if (!uid.isNullOrBlank()) {
+//                                    es.nuskysoftware.marketsales.data.repository.MercadilloRepository(context)
+//                                        .actualizarEstadosAutomaticos(uid)
 //                                }
-//                            },
-//                            modifier = Modifier.fillMaxWidth()
-//                        ) { Text("Cerrar") }
+//                                navController.safePopBackStack()
+//                            }
+//                        },
+//                        modifier = Modifier.fillMaxWidth()
+//                    ) {
+//                        Text(StringResourceManager.getString("cerrar", currentLanguage))
 //                    }
 //                }
 //            }
@@ -591,13 +621,30 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //}
 //
 //@Composable
-//private fun EstadoChip(estado: Int) {
-//    val (bg, txt, label) = when (estado) {
-//        4 -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, "Pendiente de arqueo")
-//        5 -> Triple(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, "Pendiente de asignar saldo")
-//        6 -> Triple(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, "Cerrado")
-//        else -> Triple(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, "—")
+//private fun EstadoChip(estado: Int, currentLanguage: String) {
+//    val (bg, txt, labelKey) = when (estado) {
+//        4 -> Triple(
+//            MaterialTheme.colorScheme.tertiaryContainer,
+//            MaterialTheme.colorScheme.onTertiaryContainer,
+//            "estado_pendiente_arqueo"
+//        )
+//        5 -> Triple(
+//            MaterialTheme.colorScheme.primaryContainer,
+//            MaterialTheme.colorScheme.onPrimaryContainer,
+//            "estado_pendiente_asignar_saldo"
+//        )
+//        6 -> Triple(
+//            MaterialTheme.colorScheme.secondaryContainer,
+//            MaterialTheme.colorScheme.onSecondaryContainer,
+//            "estado_cerrado_completo"
+//        )
+//        else -> Triple(
+//            MaterialTheme.colorScheme.surfaceVariant,
+//            MaterialTheme.colorScheme.onSurfaceVariant,
+//            "guion_largo"
+//        )
 //    }
+//    val label = StringResourceManager.getString(labelKey, currentLanguage)
 //    Box(
 //        modifier = Modifier
 //            .clip(RoundedCornerShape(12.dp))
@@ -607,4 +654,3 @@ private fun EstadoChip(estado: Int, currentLanguage: String) {
 //        Text(label, color = txt, style = MaterialTheme.typography.labelMedium)
 //    }
 //}
-//

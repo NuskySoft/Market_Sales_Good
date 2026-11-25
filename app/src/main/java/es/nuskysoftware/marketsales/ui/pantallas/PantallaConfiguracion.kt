@@ -361,16 +361,18 @@ private fun TarjetaInformacionCuenta(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
+
+            // 🔹 En lugar de Row, usamos Column para apilar título y etiqueta
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = StringResourceManager.getString("informacion_cuenta", language),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = when {
@@ -379,7 +381,7 @@ private fun TarjetaInformacionCuenta(
                             else -> Color(0xFF90EE90)
                         }
                     ),
-                    modifier = Modifier.padding(4.dp)
+                    modifier = Modifier.wrapContentWidth()
                 ) {
                     Text(
                         text = when {
@@ -394,12 +396,15 @@ private fun TarjetaInformacionCuenta(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = email,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
+
             Text(
                 text = StringResourceManager
                     .getString("app_version", language)

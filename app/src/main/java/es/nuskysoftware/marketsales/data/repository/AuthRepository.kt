@@ -11,6 +11,7 @@ import com.google.firebase.firestore.SetOptions
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.auth.ktx.auth
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.*
 import es.nuskysoftware.marketsales.data.local.dao.*
@@ -45,6 +46,8 @@ sealed class SyncState {
 class AuthRepository(
     val context: Context
 ) {
+    private fun text(key: String) = StringResourceManager.getString(key, ConfigurationManager.idioma.value)
+
     private val firebaseAuth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
@@ -177,7 +180,7 @@ class AuthRepository(
 
         isLoadingConfiguration = true
         _syncState.value = SyncState.Checking
-        setProgress(0, "Preparando…")
+        setProgress(0, text("sync_preparando"))
 
         try {
             Log.d(TAG, "🔄 Cargando configuración HÍBRIDA para usuario: $usuarioUid")
@@ -205,7 +208,7 @@ class AuthRepository(
                 } else {
                     _restoreAllowed.value = false
                     _restoreBlockMessage.value =
-                        "Para recuperar tus datos en este dispositivo necesitas el plan Premium."
+                        text("restauracion_requiere_premium")
                 }
 
                 handlePostLoginDataSync(usuarioUid, isPremium = userEntity.esPremium)
@@ -219,9 +222,9 @@ class AuthRepository(
                     planUsuario = "FREE",
                 )
                 _restoreAllowed.value = false
-                _restoreBlockMessage.value = "No se pudo cargar la configuración. Intenta de nuevo."
+                _restoreBlockMessage.value = text("configuracion_no_cargada")
                 _syncState.value = SyncState.Done
-                setProgress(100, "Completado")
+                setProgress(100, text("sync_completado"))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error real cargando configuración híbrida", e)
@@ -233,8 +236,8 @@ class AuthRepository(
                 planUsuario = "FREE",
             )
             _restoreAllowed.value = false
-            _restoreBlockMessage.value = "No se pudo cargar la configuración. Intenta de nuevo."
-            _syncState.value = SyncState.Error(e.message ?: "Error de sincronización")
+            _restoreBlockMessage.value = text("configuracion_no_cargada")
+            _syncState.value = SyncState.Error(e.message ?: text("error_en_sincronizacion"))
             setProgress(0, "Error")
         } finally {
             isLoadingConfiguration = false
@@ -246,7 +249,7 @@ class AuthRepository(
             Log.d(TAG, "🔄 handlePostLoginDataSync uid=$uid, isPremium=$isPremium")
 
             _syncState.value = SyncState.Checking
-            setProgress(0, "Comprobando datos locales…")
+            setProgress(0, text("sync_comprobando_local"))
 
             val empty = isRoomEmptyForUser(uid)
 
@@ -261,18 +264,18 @@ class AuthRepository(
                         "FREE + Room vacío → no se descargan datos desde Firebase (solo aviso Premium en la UI)."
                     )
                     _syncState.value = SyncState.Done
-                    setProgress(100, "Completado")
+                    setProgress(100, text("sync_completado"))
                     return@withContext
                 } else {
                     // PREMIUM + Room vacío → bootstrap completo desde Firebase
                     Log.i(TAG, "PREMIUM + Room vacío → bootstrap completo desde Firebase.")
                     _syncState.value = SyncState.Downloading
-                    setProgress(10, "Descargando datos del usuario…")
+                    setProgress(10, text("sync_descargando_usuario"))
 
                     bootstrapFromFirebase(uid)
 
                     _syncState.value = SyncState.Done
-                    setProgress(100, "Completado")
+                    setProgress(100, text("sync_completado"))
                     return@withContext
                 }
             }
@@ -285,7 +288,7 @@ class AuthRepository(
             if (hasPendingLocal) {
                 Log.i(TAG, "🔁 Hay cambios locales pendientes → subiendo a Firebase…")
                 _syncState.value = SyncState.Uploading
-                setProgress(10, "Subiendo cambios locales…")
+                setProgress(10, text("sync_subiendo"))
                 pushLocalPendings(uid)
             } else {
                 Log.d(TAG, "✅ No hay cambios locales pendientes.")
@@ -293,7 +296,7 @@ class AuthRepository(
 
             // 2.2 Comparar Room ↔ Firebase para ver si falta algo por bajar
             _syncState.value = SyncState.Checking
-            setProgress(20, "Comprobando registros remotos…")
+            setProgress(20, text("sync_comprobando_remoto"))
 
             val localCounts = mapOf(
                 "categorias"    to categoriaDao.contarPorUsuario(uid),
@@ -354,25 +357,25 @@ class AuthRepository(
             if (diferencias) {
                 Log.i(TAG, "🔄 Se encontraron diferencias → descargando datos que faltan desde Firebase…")
                 _syncState.value = SyncState.Downloading
-                setProgress(40, "Descargando datos que faltan…")
+                setProgress(40, text("sync_descargando_faltantes"))
 
                 // Esto incluye CATEGORÍAS, ARTÍCULOS, MERCADILLOS, RECIBOS, GASTOS y LÍNEAS
                 pullAllFromFirebaseMerge(uid)
 
                 _syncState.value = SyncState.Done
-                setProgress(100, "Completado")
+                setProgress(100, text("sync_completado"))
             } else {
                 Log.i(
                     TAG,
                     "🟩 Los datos locales ya cubren lo que hay en Firebase. No se descarga nada."
                 )
                 _syncState.value = SyncState.Done
-                setProgress(100, "Completado")
+                setProgress(100, text("sync_completado"))
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error en handlePostLoginDataSync", e)
-            _syncState.value = SyncState.Error(e.message ?: "Error de sincronización")
+            _syncState.value = SyncState.Error(e.message ?: text("error_en_sincronizacion"))
             setProgress(0, "Error")
         }
     }
@@ -409,7 +412,7 @@ class AuthRepository(
 
     private suspend fun bootstrapFromFirebase(uid: String) = withContext(Dispatchers.IO) {
         val remote = fetchAllFromFirebase(uid)
-        setProgress(90, "Guardando en la base de datos…")
+        setProgress(90, text("sync_guardando"))
         db.withTransaction {
             categoriaDao.upsertAll(remote.categorias)
             articuloDao.upsertAll(remote.articulos)
@@ -431,7 +434,7 @@ class AuthRepository(
 
     private suspend fun replaceAllFromFirebase(uid: String) = withContext(Dispatchers.IO) {
         val remote = fetchAllFromFirebase(uid)
-        setProgress(90, "Guardando en la base de datos…")
+        setProgress(90, text("sync_guardando"))
         db.withTransaction {
             categoriaDao.borrarPorUsuario(uid)
             articuloDao.borrarPorUsuario(uid)
@@ -457,7 +460,7 @@ class AuthRepository(
 
     private suspend fun pullAllFromFirebaseMerge(uid: String) = withContext(Dispatchers.IO) {
         val remote = fetchAllFromFirebase(uid)
-        setProgress(90, "Guardando en la base de datos…")
+        setProgress(90, text("sync_guardando"))
         db.withTransaction {
             categoriaDao.upsertAll(remote.categorias)
             articuloDao.upsertAll(remote.articulos)
@@ -505,7 +508,7 @@ class AuthRepository(
     private suspend fun fetchAllFromFirebase(uid: String): RemoteBundle = withContext(Dispatchers.IO) {
         Log.d(TAG, "📥 Descargando datos TOP-LEVEL para uid=$uid")
 
-        setProgress(10, "Descargando categorías…")
+        setProgress(10, text("sync_categorias"))
         val cats = try {
             colCategorias(firestore, uid)
                 .whereEqualTo("userId", uid)
@@ -515,7 +518,7 @@ class AuthRepository(
             Log.e(TAG, "Error descargando categorías", e); emptyList()
         }
 
-        setProgress(30, "Descargando artículos…")
+        setProgress(30, text("sync_articulos"))
         val arts = try {
             colArticulos(firestore, uid)
                 .whereEqualTo("userId", uid)
@@ -525,7 +528,7 @@ class AuthRepository(
             Log.e(TAG, "Error descargando artículos", e); emptyList()
         }
 
-        setProgress(45, "Descargando mercadillos…")
+        setProgress(45, text("sync_mercadillos"))
         val mercs = try {
             colMercadillos(firestore, uid)
                 .whereEqualTo("userId", uid)
@@ -535,7 +538,7 @@ class AuthRepository(
             Log.e(TAG, "Error descargando mercadillos", e); emptyList()
         }
 
-        setProgress(60, "Descargando recibos…")
+        setProgress(60, text("sync_recibos"))
         val recs = try {
             colRecibos(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
@@ -545,7 +548,7 @@ class AuthRepository(
             Log.e(TAG, "Error descargando recibos", e); emptyList()
         }
 
-        setProgress(70, "Descargando gastos…")
+        setProgress(70, text("sync_gastos"))
         val gastos = try {
             colLineasGastos(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
@@ -555,7 +558,7 @@ class AuthRepository(
             Log.e(TAG, "Error descargando gastos", e); emptyList()
         }
 
-        setProgress(80, "Descargando líneas de venta…")
+        setProgress(80, text("sync_lineas"))
         val lineas = try {
             colLineasVenta(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
@@ -599,13 +602,13 @@ class AuthRepository(
             _authState.value = AuthState.Authenticated(user)
             AuthResult.Success(user)
         } else {
-            val error = "Error: Usuario nulo después del registro"
+            val error = text("auth_usuario_nulo_registro")
             Log.e(TAG, error)
             _authState.value = AuthState.Error(error)
             AuthResult.Error(error)
         }
     } catch (e: Exception) {
-        val errorMessage = "Error en registro: ${e.message}"
+        val errorMessage = text("auth_error_registro").replace("{0}", e.message.orEmpty())
         Log.e(TAG, errorMessage, e)
         _authState.value = AuthState.Error(errorMessage)
         AuthResult.Error(errorMessage)
@@ -634,18 +637,18 @@ class AuthRepository(
             _authState.value = AuthState.Authenticated(user)
             AuthResult.Success(user)
         } else {
-            val error = "Error: Usuario nulo después del login"
+            val error = text("auth_usuario_nulo_login")
             Log.e(TAG, error)
             _authState.value = AuthState.Error(error)
             AuthResult.Error(error)
         }
     } catch (e: Exception) {
         val errorMessage = when (e.message) {
-            "The email address is badly formatted." -> "Email inválido"
-            "The password is invalid or the user does not have a password." -> "Contraseña incorrecta"
-            "There is no user record corresponding to this identifier. The user may have been deleted." -> "Usuario no encontrado"
-            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> "Error de conexión"
-            else -> "Error en login: ${e.message}"
+            "The email address is badly formatted." -> text("email_invalido")
+            "The password is invalid or the user does not have a password." -> text("auth_password_incorrecta")
+            "There is no user record corresponding to this identifier. The user may have been deleted." -> text("auth_usuario_no_encontrado")
+            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> text("auth_error_conexion")
+            else -> text("auth_error_login").replace("{0}", e.message.orEmpty())
         }
         Log.e(TAG, errorMessage, e)
         _authState.value = AuthState.Error(errorMessage)
@@ -676,16 +679,16 @@ class AuthRepository(
             _authState.value = AuthState.Authenticated(user)
             AuthResult.Success(user)
         } else {
-            val error = "Error: Usuario nulo después de Google Auth"
+            val error = text("auth_usuario_nulo_google")
             Log.e(TAG, error)
             _authState.value = AuthState.Error(error)
             AuthResult.Error(error)
         }
     } catch (e: Exception) {
         val errorMessage = when (e.message) {
-            "An internal error has occurred. [ INVALID_IDP_RESPONSE ]" -> "Error de autenticación con Google"
-            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> "Error de conexión"
-            else -> "Error en Google Auth: ${e.message}"
+            "An internal error has occurred. [ INVALID_IDP_RESPONSE ]" -> text("auth_google_invalido")
+            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> text("auth_error_conexion")
+            else -> text("auth_error_google").replace("{0}", e.message.orEmpty())
         }
         Log.e(TAG, errorMessage, e)
         _authState.value = AuthState.Error(errorMessage)
@@ -706,7 +709,7 @@ class AuthRepository(
         _authState.value = AuthState.Unauthenticated
         AuthResult.Success(null)
     } catch (e: Exception) {
-        val errorMessage = "Error al cerrar sesión: ${e.message}"
+        val errorMessage = text("auth_error_logout").replace("{0}", e.message.orEmpty())
         Log.e(TAG, errorMessage, e)
         _authState.value = AuthState.Error(errorMessage)
         AuthResult.Error(errorMessage)
@@ -806,7 +809,7 @@ class AuthRepository(
         } else {
             _restoreAllowed.value = false
             _restoreBlockMessage.value =
-                "Para recuperar tus datos en este dispositivo necesitas el plan Premium."
+                text("restauracion_requiere_premium")
         }
         Log.d(TAG, "✅ Estado Premium actualizado: $esPremium")
         true

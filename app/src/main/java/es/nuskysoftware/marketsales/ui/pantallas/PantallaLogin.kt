@@ -123,12 +123,12 @@ fun PantallaLogin(
             if (!token.isNullOrEmpty()) {
                 authViewModel.signInWithGoogle(token)
             } else {
-                errorMessage = "Google no entregó ID Token (clientId/SHA-1/proyecto de esta variante)."
+                errorMessage = StringResourceManager.getString("google_sin_token", currentLanguage)
                 showError = true
             }
         } catch (e: com.google.android.gms.common.api.ApiException) {
             android.util.Log.e(TAG, "GSI FAILED status=${e.statusCode}", e) // 10=DEVELOPER_ERROR
-            errorMessage = "Google Sign-In falló: ${e.statusCode}"
+            errorMessage = StringResourceManager.getString("google_login_error_codigo", currentLanguage).replace("{0}", e.statusCode.toString())
             showError = true
         }
     }
@@ -298,7 +298,7 @@ fun PantallaLogin(
                                 Icon(
                                     imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                     contentDescription = if (isPasswordVisible)
-                                        "Ocultar contraseña" else "Mostrar contraseña"
+                                        StringResourceManager.getString("ocultar_contrasena", currentLanguage) else StringResourceManager.getString("mostrar_contrasena", currentLanguage)
                                 )
                             }
                         },

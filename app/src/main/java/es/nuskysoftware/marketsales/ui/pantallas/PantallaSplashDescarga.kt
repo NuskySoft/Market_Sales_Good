@@ -55,9 +55,9 @@ fun PantallaSplashDescarga(
 
             val esPremium = ConfigurationManager.getIsPremium()
             if (esPremium) {
-                mensaje = "Descargando datos de Firebase…"
+                mensaje = StringResourceManager.getString("descargando_firebase", currentLanguage)
                 FullBootstrapper.runIfNeeded(context, userId)
-                mensaje = "Listo."
+                mensaje = StringResourceManager.getString("descarga_lista", currentLanguage)
                 cargando = false
                 navController.navigate(destinoDespues) {
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
@@ -117,18 +117,18 @@ fun PantallaSplashDescarga(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Existen datos en la nube para este usuario. Para poder descargarlos necesitas ser usuario Premium. \n\n¿Deseas hacerte Premium? Si eliges que no, los datos de la nube se borrarán.",
+                    text = StringResourceManager.getString("restauracion_premium_pregunta", currentLanguage),
                     textAlign = TextAlign.Center
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(onClick = {
                         navController.navigate("suscripcion")
-                    }) { Text("Sí, hacerme Premium") }
+                    }) { Text(StringResourceManager.getString("si_hacerme_premium", currentLanguage)) }
                     Button(onClick = {
                         scope.launch {
                             mostrarMensajeFree = false
                             cargando = true
-                            mensaje = "Borrando datos de la nube…"
+                            mensaje = StringResourceManager.getString("borrando_nube", currentLanguage)
                             try {
                                 val uid = ConfigurationManager.getCurrentUserId()
                                 if (!uid.isNullOrBlank()) {
@@ -142,7 +142,7 @@ fun PantallaSplashDescarga(
                                 launchSingleTop = true
                             }
                         }
-                    }) { Text("No, borrar datos") }
+                    }) { Text(StringResourceManager.getString("no_borrar_datos", currentLanguage)) }
                 }
             }
         } else if (error != null) {

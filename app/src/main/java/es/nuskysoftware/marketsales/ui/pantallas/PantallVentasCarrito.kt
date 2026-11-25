@@ -133,7 +133,7 @@ fun PantallaVentasCarrito(
 
                                 // Eliminar (texto no visible en pantalla; se mantiene literal)
                                 IconButton(onClick = { vm.eliminarLinea(linea.id) }) {
-                                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Eliminar")
+                                    Icon(imageVector = Icons.Default.Delete, contentDescription = StringResourceManager.getString("eliminar", currentLanguage))
                                 }
                             }
                         }

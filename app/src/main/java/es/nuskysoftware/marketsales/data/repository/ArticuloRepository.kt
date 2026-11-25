@@ -92,7 +92,7 @@ class ArticuloRepository(
         fotoUri: String? = null
     ): String = withContext(Dispatchers.IO) {
         val userId = ConfigurationManager.getCurrentUserId()
-            ?: throw IllegalStateException("No se puede crear artículo sin usuario")
+            ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_articulo", ConfigurationManager.idioma.value))
 
         Log.d(TAG, "🔄 Creando artículo para usuario: $userId")
 

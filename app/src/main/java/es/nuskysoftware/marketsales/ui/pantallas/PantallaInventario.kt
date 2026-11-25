@@ -32,7 +32,7 @@ fun PantallaInventario(
                     IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
-                            contentDescription = "Atrás" // accesibilidad; no visible, se deja literal
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage) // accesibilidad; no visible, se deja literal
                         )
                     }
                 },

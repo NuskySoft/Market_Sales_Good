@@ -83,13 +83,13 @@ class MercadilloRepository(
         saldoInicial: Double? = null
     ): String = withContext(Dispatchers.IO) {
         val userId = ConfigurationManager.getCurrentUserId()
-            ?: throw IllegalStateException("No se puede crear mercadillo sin usuario")
+            ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_mercadillo", ConfigurationManager.idioma.value))
 
         val esPremium = ConfigurationManager.getIsPremium()
         if (!esPremium) {
             val yaHayEseDia = mercadilloDao.existeMercadilloEnFecha(userId, fecha)
             if (yaHayEseDia) throw IllegalArgumentException(
-                "Los usuarios FREE solo pueden crear un mercadillo por día. Actualiza a Premium para crear múltiples mercadillos."
+                es.nuskysoftware.marketsales.utils.StringResourceManager.getString("limite_free_mercadillos", ConfigurationManager.idioma.value)
             )
         }
 

@@ -54,7 +54,7 @@ fun CampoEstadoDebug(
         Spacer(Modifier.height(4.dp))
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
             OutlinedTextField(
-                value = "${estadoSeleccionado.codigo} - ${estadoSeleccionado.descripcion}",
+                value = "${estadoSeleccionado.codigo} - ${EstadosMercadillo.obtenerDescripcion(estadoSeleccionado, currentLanguage)}",
                 onValueChange = { }, readOnly = true,
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 colors = OutlinedTextFieldDefaults.colors(
@@ -66,7 +66,7 @@ fun CampoEstadoDebug(
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 EstadosMercadillo.obtenerTodosLosEstados().forEach { estado ->
                     DropdownMenuItem(
-                        text = { Text("${estado.codigo} - ${estado.descripcion}") },
+                        text = { Text("${estado.codigo} - ${EstadosMercadillo.obtenerDescripcion(estado, currentLanguage)}") },
                         onClick = { estadoSeleccionado = estado; onEstadoChange(estado); expanded = false }
                     )
                 }

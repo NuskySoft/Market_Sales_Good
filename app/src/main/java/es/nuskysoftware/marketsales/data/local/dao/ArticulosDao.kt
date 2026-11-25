@@ -100,6 +100,10 @@ interface ArticuloDao {
     @Query("SELECT version FROM articulos WHERE idArticulo = :id")
     suspend fun getArticuloVersion(id: String): Long?
 
+    // A stock adjustment during upload must remain dirty for another upload.
+    @Query("UPDATE articulos SET sincronizadoFirebase = 1 WHERE idArticulo = :id AND userId = :owner AND version = :version AND lastModified = :modified AND stock IS :stock")
+    suspend fun marcarSnapshotSincronizado(id: String, owner: String, version: Long, modified: Long, stock: Int?)
+
     // ========== UTILIDADES ==========
 
     /**

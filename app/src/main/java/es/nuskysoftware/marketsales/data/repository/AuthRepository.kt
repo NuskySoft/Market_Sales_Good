@@ -146,6 +146,10 @@ class AuthRepository(
         firebaseAuth.addAuthStateListener { auth ->
             val current = auth.currentUser
             if (current == null) ConfigurationManager.logout()
+            if (current != null) {
+                runCatching { es.nuskysoftware.marketsales.work.StockMovementScheduler.start(context.applicationContext) }
+                    .onFailure { Log.w(TAG, "Unable to schedule stock retry", it) }
+            }
             _currentUser.value = current
             if (current == null || _authState.value !is AuthState.Loading) {
                 _authState.value = if (current != null) AuthState.Authenticated(current) else AuthState.Unauthenticated

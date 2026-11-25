@@ -1,5 +1,15 @@
 # Historial de versiones
 
+## 2.3 — 2026-11-25
+
+- F07: guarda movimientos pendientes de stock en la misma transacción que el ticket y sus líneas. Un fallo posterior no invalida la venta.
+- Aplica cada descuento y su confirmación en una transacción independiente; reintenta en segundo plano y al abrir la app, también sin conexión.
+- Serializa subidas de artículos y confirma únicamente el estado enviado para no perder descuentos que entren durante una subida.
+- Room 18 → 19: añade la tabla de movimientos sin borrar datos ni reprocesar ventas antiguas. No admite volver a una base de datos anterior borrándola.
+- Incluye pruebas instrumentadas de recuperación, concurrencia y migración; pendientes de ejecutar en Android.
+- F11 de la versión 2.2 validada por el usuario.
+
+
 ## 2.2 — 2026-11-25
 
 - F11: al confirmar una venta Premium, descuenta los productos con control de stock independientemente de la pestaña seleccionada.

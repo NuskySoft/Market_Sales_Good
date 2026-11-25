@@ -24,3 +24,5 @@
 
 - Antes de cambiar una regla de negocio: explicar comportamiento actual, ejemplo y propuesta; confirmar la intención con el usuario. No tratar todos los hallazgos de la auditoría como defectos demostrados.
 - Regla F11 confirmada: en cuenta Premium, descontar las líneas PRODUCTO con artículo que controle stock, independientemente de la pestaña seleccionada. Los conceptos manuales no descuentan existencias. No ampliar el control de stock a gratuito o Demo.
+
+- Regla F07 confirmada: una venta confirmada nunca se convierte en fallida por stock o red. Guardar la obligación de stock junto al ticket y aplicar descuento + confirmación en otra transacción, con reintentos persistentes y sin dobles descuentos. No recalcular ventas antiguas ni cambiar abonos.

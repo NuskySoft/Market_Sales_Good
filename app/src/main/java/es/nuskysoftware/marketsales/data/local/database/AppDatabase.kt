@@ -21,9 +21,10 @@ import es.nuskysoftware.marketsales.data.local.entity.*
         LineaVentaEntity::class,
         LineaGastoEntity::class,
         SaldoGuardadoEntity::class, // v12
-        EmpresaEntity::class        // v14
+        EmpresaEntity::class,       // v14
+        StockMovementEntity::class  // v19
     ],
-    version = 18,                  // ⬅️ SUBE A 18
+    version = 19,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,11 +39,29 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lineasGastosDao(): LineasGastosDao
     abstract fun saldoGuardadoDao(): SaldoGuardadoDao
     abstract fun empresaDao(): EmpresaDao
+    abstract fun stockMovementDao(): StockMovementDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
 
-        // ... (todas tus migraciones anteriores exactamente igual) ...
+        // Additive migration. Never infer movements from old sales: their stock may already be applied.
+        val MIGRATION_18_19 = object : Migration(18, 19) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS stock_movements (
+                        idMovimiento TEXT NOT NULL PRIMARY KEY,
+                        idUsuario TEXT NOT NULL,
+                        idRecibo TEXT NOT NULL,
+                        idArticulo TEXT NOT NULL,
+                        cantidad INTEGER NOT NULL,
+                        creadoEn INTEGER NOT NULL,
+                        aplicado INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_stock_movements_aplicado ON stock_movements(aplicado)")
+            }
+        }
+
 
         // ✅ 16 -> 17: añade columna 'descontarDeCaja' a LineasGastos
         private val MIGRATION_16_17 = object : Migration(16, 17) {
@@ -106,9 +125,9 @@ abstract class AppDatabase : RoomDatabase() {
                         //MIGRATION_14_15,
                         //MIGRATION_15_16,
                         MIGRATION_16_17,
-                        MIGRATION_17_18   // ⬅️ NUEVA MIGRACIÓN
+                        MIGRATION_17_18,
+                        MIGRATION_18_19
                     )
-                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                     .also { INSTANCE = it }
             }

@@ -214,12 +214,13 @@ class VentasViewModel(
     // ---------- Finalizar venta ----------
     fun finalizarVenta(metodoPago: MetodoPago) {
         val s = _uiState.value
+        if (s.loading) return
         if (s.lineasTicket.isEmpty()) { mostrarError(t("no_hay_lineas_vender")); return }
         if (s.totalTicket <= 0.0) { mostrarError(t("total_mayor_cero")); return }
         if (mercadilloId.isBlank()) { mostrarError(t("mercadillo_no_inicializado")); return }
 
+        _uiState.value = s.copy(loading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = s.copy(loading = true, error = null)
             try {
                 val resultado = repository.guardarVenta(
                     idMercadillo = mercadilloId,
@@ -228,18 +229,7 @@ class VentasViewModel(
                     total = s.totalTicket
                 )
                 if (resultado.isSuccess) {
-                    if (ConfigurationManager.getIsPremium()) {
-                        s.lineasTicket.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.idProducto != null }
-                            .forEach { linea ->
-                                try {
-                                    val articulo = articuloRepository.getArticuloById(linea.idProducto!!)
-                                    if (articulo != null && articulo.controlarStock) {
-                                        val nuevoStock = (articulo.stock ?: 0) - linea.cantidad
-                                        articuloRepository.actualizarArticulo(articulo.copy(stock = nuevoStock))
-                                    }
-                                } catch (_: Exception) { }
-                            }
-                    }
+                    // Stock belongs to the durable sale outbox. Never discount here as well.
                     CarritoCache.clear(mercadilloId)
                     limpiarVenta()
                 } else {

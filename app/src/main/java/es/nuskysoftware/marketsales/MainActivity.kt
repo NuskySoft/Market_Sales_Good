@@ -84,6 +84,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        runCatching { es.nuskysoftware.marketsales.work.StockMovementScheduler.start(applicationContext) }
+            .onFailure { Log.w(TAG, "Stock retry will be scheduled on next startup", it) }
+
 
         // 🔹 Sincronización híbrida (Room ↔ Firebase) al iniciar la app
         CoroutineScope(Dispatchers.IO).launch {

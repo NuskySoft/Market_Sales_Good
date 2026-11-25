@@ -321,7 +321,7 @@ fun PantallaAltaMercadillo(
                     }
                 }
 
-                if (esEdicion && mercadilloParaEditar != null &&
+                if (!es.nuskysoftware.marketsales.utils.DemoAccess.isDemo() && esEdicion && mercadilloParaEditar != null &&
                     (mercadilloParaEditar!!.estado == 1 || mercadilloParaEditar!!.estado == 2)
                 ) {
                     item {

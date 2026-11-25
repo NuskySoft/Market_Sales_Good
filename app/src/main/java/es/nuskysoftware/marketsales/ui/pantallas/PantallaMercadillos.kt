@@ -114,7 +114,7 @@ fun PantallaMercadillos(
     // - Si hay usuario real => nunca mostrar.
     // Suponemos que el invitado es "usuario_default" o null.
     val currentUserId = remember { ConfigurationManager.getCurrentUserId() }
-    val isInvitado = currentUserId == null || currentUserId == "usuario_default"
+    val isInvitado = currentUserId == null || currentUserId == es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
 
     // TODO: implementar en ConfigurationManager una persistencia tipo:
     // ConfigurationManager.hasSeenDefaultUserWarning (StateFlow<Boolean>) + setSeenDefaultUserWarning(true)

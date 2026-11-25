@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/UserRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
+
 
 import android.content.ContentValues.TAG
 import android.content.Context
@@ -210,6 +212,7 @@ class UserRepository(
      * Sincroniza usuario completo con Firebase
      */
     private fun sincronizarUsuarioConFirebase(user: UserEntity) {
+        if (!DemoAccess.canSync(user.uid)) return
         try {
             val datos = mapOf(
                 "uid" to user.uid,

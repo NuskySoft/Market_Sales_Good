@@ -1,6 +1,9 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/ArticuloRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
 
+
+import androidx.room.withTransaction
 import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,12 +29,15 @@ import kotlinx.coroutines.tasks.await
  * - Filtrado por usuario: Cada usuario solo ve sus datos
  */
 class ArticuloRepository(
-    context: Context
+    context: Context,
+    private val database: AppDatabase = AppDatabase.getDatabase(context)
 ) {
-    private val articuloDao: ArticuloDao = AppDatabase.getDatabase(context).articuloDao()
+    private val articuloDao: ArticuloDao = database.articuloDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val localDb = database
 
     companion object {
         private const val TAG = "ArticuloRepository"
@@ -112,11 +118,15 @@ class ArticuloRepository(
 
         try {
             // 1. GUARDAR EN ROOM PRIMERO (respuesta inmediata)
-            articuloDao.insertArticulo(nuevoArticulo)
+            localDb.withTransaction {
+                DemoAccess.requireOwner(userId)
+                DemoAccess.checkLimit("articulos", articuloDao.contarDemo(userId))
+                articuloDao.insertArticulo(nuevoArticulo)
+            }
             Log.d(TAG, "✅ Artículo guardado en Room: ${nuevoArticulo.nombre}")
 
             // 2. INTENTAR SINCRONIZAR CON FIREBASE
-            sincronizarArticuloConFirebase(nuevoArticulo)
+            repositoryScope.launch { sincronizarArticuloConFirebase(nuevoArticulo) }
 
             return@withContext nuevoArticulo.idArticulo
 
@@ -131,6 +141,7 @@ class ArticuloRepository(
      */
     suspend fun actualizarArticulo(articulo: ArticuloEntity): Boolean = withContext(Dispatchers.IO) {
         try {
+            DemoAccess.requireOwner(articulo.userId)
             val articuloActualizado = articulo.copy(
                 version = articulo.version + 1,
                 lastModified = System.currentTimeMillis(),
@@ -142,7 +153,7 @@ class ArticuloRepository(
             Log.d(TAG, "✅ Artículo actualizado en Room: ${articuloActualizado.nombre}")
 
             // 2. INTENTAR SINCRONIZAR CON FIREBASE
-            sincronizarArticuloConFirebase(articuloActualizado)
+            repositoryScope.launch { sincronizarArticuloConFirebase(articuloActualizado) }
 
             true
         } catch (e: Exception) {
@@ -156,6 +167,7 @@ class ArticuloRepository(
      */
     suspend fun eliminarArticulo(articulo: ArticuloEntity): Boolean = withContext(Dispatchers.IO) {
         try {
+            DemoAccess.requireOwner(articulo.userId)
             // 1. ELIMINAR DE ROOM PRIMERO
             articuloDao.deleteArticulo(articulo)
             Log.d(TAG, "✅ Artículo eliminado de Room: ${articulo.nombre}")
@@ -183,6 +195,8 @@ class ArticuloRepository(
      * Obtiene datos híbridos: combina lo mejor de Room y Firebase
      */
     suspend fun getHybridArticulos(userId: String): List<ArticuloEntity> = withContext(Dispatchers.IO) {
+        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext articuloDao.getArticulosByUser(userId).first()
+
         try {
             // 1. Verificar cambios pendientes en Room
             val articulosNoSincronizados = articuloDao.getArticulosNoSincronizadosByUser(userId)
@@ -226,6 +240,7 @@ class ArticuloRepository(
      * Sincroniza un artículo específico con Firebase
      */
     private suspend fun sincronizarArticuloConFirebase(articulo: ArticuloEntity) {
+        if (!DemoAccess.canSync(articulo.userId)) return
         try {
             if (!connectivityObserver.isConnected.first()) {
                 Log.d(TAG, "⚠️ Sin conexión, artículo quedará pendiente de sincronización")
@@ -269,6 +284,7 @@ class ArticuloRepository(
      * Elimina artículo de Firebase
      */
     private suspend fun eliminarArticuloDeFirebase(articuloId: String) {
+        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
         try {
             if (connectivityObserver.isConnected.first()) {
                 firestore.collection("articulos")
@@ -303,6 +319,7 @@ class ArticuloRepository(
      * Descarga artículos desde Firebase
      */
     private suspend fun descargarArticulosDesdeFirebase(userId: String): List<ArticuloEntity> {
+        if (!DemoAccess.canSync(userId)) return emptyList()
         return try {
             val snapshot = firestore.collection("articulos")
                 .whereEqualTo("userId", userId)

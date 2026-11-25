@@ -22,7 +22,7 @@ class AutoEstadoWorker(
     override suspend fun doWork(): Result {
         return try {
             val uid = ConfigurationManager.getCurrentUserId()
-            if (uid.isNullOrBlank() || uid == "usuario_default") {
+            if (uid.isNullOrBlank() || uid == es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID) {
                 Log.d(TAG, "Sin usuario válido; no se aplican autoestados")
                 Result.success()
             } else {

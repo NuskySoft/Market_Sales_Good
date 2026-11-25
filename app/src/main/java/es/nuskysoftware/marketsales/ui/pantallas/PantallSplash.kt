@@ -33,7 +33,7 @@ fun PantallaSplash() {
     LaunchedEffect(Unit) {
         scope.launch {
             val repo = MercadilloRepository(context)
-            val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+            val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
 
             // Estados automáticos primero
             repo.actualizarEstadosAutomaticos(userId)

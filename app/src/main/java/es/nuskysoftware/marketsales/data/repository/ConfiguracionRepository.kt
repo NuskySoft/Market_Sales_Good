@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/ConfiguracionRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
+
 
 import android.content.Context
 import android.util.Log
@@ -61,6 +63,7 @@ class ConfiguracionRepository(
      * Obtiene la configuración actual
      */
     suspend fun getConfiguracion(): ConfiguracionEntity? = withContext(Dispatchers.IO) {
+        if (DemoAccess.isDemo()) return@withContext ConfiguracionEntity()
         configuracionDao.getConfiguracionSync()
     }
 
@@ -72,7 +75,7 @@ class ConfiguracionRepository(
         if (existente == null) {
             val porDefecto = ConfiguracionEntity(
                 moneda = ConfigurationManager.getMoneda(),
-                usuarioLogueado = "usuario_default",
+                usuarioLogueado = es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID,
                 ultimoDispositivo = android.os.Build.MODEL,
                 fechaUltimaSync = dateFormat.format(Date())
             )
@@ -91,6 +94,7 @@ class ConfiguracionRepository(
      * Actualiza el idioma (común a todos los usuarios)
      */
     suspend fun updateIdioma(idioma: String) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered()
         configuracionDao.updateIdioma(idioma)
         sincronizarCampoEspecifico("idioma", idioma)
     }
@@ -99,6 +103,7 @@ class ConfiguracionRepository(
      * Actualiza el tema oscuro (común a todos los usuarios)
      */
     suspend fun updateTemaOscuro(esTemaOscuro: Boolean) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered()
         configuracionDao.updateTemaOscuro(esTemaOscuro)
         sincronizarCampoEspecifico("temaOscuro", esTemaOscuro)
     }
@@ -107,6 +112,7 @@ class ConfiguracionRepository(
      * Actualiza la fuente (común a todos los usuarios)
      */
     suspend fun updateFuente(fuente: String) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered()
         configuracionDao.updateFuente(fuente)
         sincronizarCampoEspecifico("fuente", fuente)
     }
@@ -115,6 +121,7 @@ class ConfiguracionRepository(
      * Actualiza la moneda (común a todos los usuarios)
      */
     suspend fun updateMoneda(moneda: String) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered()
         configuracionDao.updateMoneda(moneda)
         sincronizarCampoEspecifico("moneda", moneda)
     }
@@ -157,6 +164,7 @@ class ConfiguracionRepository(
      * Sincroniza la configuración completa con Firebase
      */
     private fun sincronizarConFirebase(config: ConfiguracionEntity) {
+        if (!DemoAccess.canSync(config.usuarioLogueado)) return
         try {
             val datos = mapOf(
                 "idioma" to config.idioma,
@@ -198,6 +206,7 @@ class ConfiguracionRepository(
      * Sincroniza un campo específico con Firebase
      */
     private suspend fun sincronizarCampoEspecifico(campo: String, valor: Any) {
+        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
         try {
             val datos = mapOf(
                 campo to valor,
@@ -226,6 +235,7 @@ class ConfiguracionRepository(
         }
     }
     suspend fun getHybridConfiguracion(): ConfiguracionEntity? = withContext(Dispatchers.IO) {
+        if (DemoAccess.isDemo()) return@withContext ConfiguracionEntity()
         try {
             // 1. Verificar si hay cambios pendientes en Room
             val roomConfig = configuracionDao.getConfiguracionSync()

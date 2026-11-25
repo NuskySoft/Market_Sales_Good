@@ -24,7 +24,7 @@ data class ConfiguracionEntity(
     val temaOscuro: Boolean = false,         // Común a todos
 
     // ========== USUARIO ACTUAL ==========
-    val usuarioLogueado: String = "usuario_default",  // UID actual o "usuario_default"
+    val usuarioLogueado: String = es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID,  // UID actual o es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
 
     // ========== CAMPOS LEGACY (mantener para compatibilidad) ==========
     val numeroVersion: String = "V10.0",
@@ -58,4 +58,4 @@ val ConfiguracionEntity.modoOscuro: Boolean
  * Indica si es usuario por defecto
  */
 val ConfiguracionEntity.isUsuarioDefault: Boolean
-    get() = this.usuarioLogueado == "usuario_default"
+    get() = this.usuarioLogueado == es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID

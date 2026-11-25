@@ -36,7 +36,7 @@ fun PantallaGastos(
 ) {
     val activity = LocalContext.current as ComponentActivity
     val gastosViewModel: GastosViewModel =
-        viewModel(activity, factory = GastosViewModelFactory(activity.applicationContext))
+        viewModel(activity, key = "gastos-${es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()}", factory = GastosViewModelFactory(activity.applicationContext))
 
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     var selectedTab by rememberSaveable { mutableStateOf(0) }

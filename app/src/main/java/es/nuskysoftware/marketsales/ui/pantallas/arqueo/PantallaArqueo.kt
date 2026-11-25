@@ -185,7 +185,7 @@ fun PantallaArqueo(
             }
 
             // ===== Acciones =====
-            val puedeArqueo = data.estado == 4
+            val puedeArqueo = data.estado == 4 || es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()
             val esPremium = remember { ConfigurationManager.isPremium() }
             val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
 
@@ -219,7 +219,7 @@ fun PantallaArqueo(
 
                     Button(
                         onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
-                        enabled = puedeAsignar,
+                        enabled = puedeAsignar && !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(StringResourceManager.getString("asignar_saldo", currentLanguage))

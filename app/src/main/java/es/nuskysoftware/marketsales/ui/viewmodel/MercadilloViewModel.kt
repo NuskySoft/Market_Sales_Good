@@ -148,7 +148,7 @@ class MercadilloViewModel(
                 val m = repository.getMercadilloById(mercadilloId)
                 if (m != null) {
                     // Consultar un cancelado no equivale a editarlo: conserva su ficha.
-                    if (m.estado != EstadosMercadillo.Estado.CANCELADO.codigo) {
+                    if (!es.nuskysoftware.marketsales.utils.DemoAccess.isDemo() && m.estado != EstadosMercadillo.Estado.CANCELADO.codigo) {
                         val puede = puedeEditarMercadillo(m)
                         if (!puede.first) { fail(puede.second); return@launch }
                     }
@@ -474,7 +474,7 @@ class MercadilloViewModel(
     fun puedeRecibirVentas(mercadillo: MercadilloEntity): Boolean {
         val estado = EstadosMercadillo.Estado.fromCodigo(mercadillo.estado)
             ?: EstadosMercadillo.Estado.PROGRAMADO_PARCIAL
-        return EstadosMercadillo.puedeRecibirVentas(estado)
+        return es.nuskysoftware.marketsales.utils.AppModePolicy.canSell(es.nuskysoftware.marketsales.utils.DemoAccess.mode(), EstadosMercadillo.puedeRecibirVentas(estado))
     }
 
     fun puedeSerCancelado(mercadillo: MercadilloEntity, tieneVentas: Boolean): Boolean {
@@ -494,7 +494,7 @@ class MercadilloViewModel(
         viewModelScope.launch {
             Log.d(TAG, "🔄 Recargando datos…")
             val userId = ConfigurationManager.getCurrentUserId()
-            if (userId != null && userId != "usuario_default") {
+            if (userId != null && userId != es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID) {
                 repository.actualizarEstadosAutomaticos(userId)
             }
             manager.refreshNow()

@@ -1,6 +1,9 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/CategoriaRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
 
+
+import androidx.room.withTransaction
 import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
@@ -26,12 +29,15 @@ import kotlinx.coroutines.tasks.await
  * - Filtrado por usuario: Cada usuario solo ve sus datos
  */
 class CategoriaRepository(
-    context: Context
+    context: Context,
+    private val database: AppDatabase = AppDatabase.getDatabase(context)
 ) {
-    private val categoriaDao: CategoriaDao = AppDatabase.getDatabase(context).categoriaDao()
+    private val categoriaDao: CategoriaDao = database.categoriaDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val localDb = database
 
     companion object {
         private const val TAG = "CategoriaRepository"
@@ -88,11 +94,15 @@ class CategoriaRepository(
 
         try {
             // 1. GUARDAR EN ROOM PRIMERO (respuesta inmediata)
-            categoriaDao.insertCategoria(nuevaCategoria)
+            localDb.withTransaction {
+                DemoAccess.requireOwner(userId)
+                DemoAccess.checkLimit("categorias", categoriaDao.contarDemo(userId))
+                categoriaDao.insertCategoria(nuevaCategoria)
+            }
             Log.d(TAG, "✅ Categoría guardada en Room: ${nuevaCategoria.nombre}")
 
             // 2. INTENTAR SINCRONIZAR CON FIREBASE
-            sincronizarCategoriaConFirebase(nuevaCategoria)
+            repositoryScope.launch { sincronizarCategoriaConFirebase(nuevaCategoria) }
 
             return@withContext nuevaCategoria.idCategoria
 
@@ -107,6 +117,7 @@ class CategoriaRepository(
      */
     suspend fun actualizarCategoria(categoria: CategoriaEntity): Boolean = withContext(Dispatchers.IO) {
         try {
+            DemoAccess.requireOwner(categoria.userId)
             val categoriaActualizada = categoria.copy(
                 version = categoria.version + 1,
                 lastModified = System.currentTimeMillis(),
@@ -118,7 +129,7 @@ class CategoriaRepository(
             Log.d(TAG, "✅ Categoría actualizada en Room: ${categoriaActualizada.nombre}")
 
             // 2. INTENTAR SINCRONIZAR CON FIREBASE
-            sincronizarCategoriaConFirebase(categoriaActualizada)
+            repositoryScope.launch { sincronizarCategoriaConFirebase(categoriaActualizada) }
 
             true
         } catch (e: Exception) {
@@ -132,6 +143,7 @@ class CategoriaRepository(
      */
     suspend fun eliminarCategoria(categoria: CategoriaEntity): Boolean = withContext(Dispatchers.IO) {
         try {
+            DemoAccess.requireOwner(categoria.userId)
             // 1. ELIMINAR DE ROOM PRIMERO
             categoriaDao.deleteCategoria(categoria)
             Log.d(TAG, "✅ Categoría eliminada de Room: ${categoria.nombre}")
@@ -159,6 +171,8 @@ class CategoriaRepository(
      * Obtiene datos híbridos: combina lo mejor de Room y Firebase
      */
     suspend fun getHybridCategorias(userId: String): List<CategoriaEntity> = withContext(Dispatchers.IO) {
+        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext categoriaDao.getCategoriasByUser(userId).first()
+
         try {
             // 1. Verificar cambios pendientes en Room
             val categoriasNoSincronizadas = categoriaDao.getCategoriasNoSincronizadasByUser(userId)
@@ -202,6 +216,7 @@ class CategoriaRepository(
      * Sincroniza una categoría específica con Firebase
      */
     private suspend fun sincronizarCategoriaConFirebase(categoria: CategoriaEntity) {
+        if (!DemoAccess.canSync(categoria.userId)) return
         try {
             if (!connectivityObserver.isConnected.first()) {
                 Log.d(TAG, "⚠️ Sin conexión, categría quedará pendiente de sincronización")
@@ -239,6 +254,7 @@ class CategoriaRepository(
      * Elimina categoría de Firebase
      */
     private suspend fun eliminarCategoriaDeFirebase(categoriaId: String) {
+        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
         try {
             if (connectivityObserver.isConnected.first()) {
                 firestore.collection("categorias")
@@ -273,6 +289,7 @@ class CategoriaRepository(
      * Descarga categorías desde Firebase
      */
     private suspend fun descargarCategoriasDesdeFirebase(userId: String): List<CategoriaEntity> {
+        if (!DemoAccess.canSync(userId)) return emptyList()
         return try {
             val snapshot = firestore.collection("categorias")
                 .whereEqualTo("userId", userId)

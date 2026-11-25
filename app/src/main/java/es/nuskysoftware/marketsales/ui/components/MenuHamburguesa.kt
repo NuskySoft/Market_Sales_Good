@@ -52,7 +52,9 @@ fun MenuHamburguesa(
 
     // Versión V10 (localizado)
     val vtext = ConfigurationManager.versionAppValue
-    val versionText = if (esPremium) {
+    val versionText = if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+        StringResourceManager.getString("version_demo", currentLanguage)
+    } else if (esPremium) {
         "${StringResourceManager.getString("premium", currentLanguage)} $vtext"
         } else {
         "${StringResourceManager.getString("free", currentLanguage)} $vtext"
@@ -170,11 +172,12 @@ fun MenuHamburguesa(
                     MenuOption(
                         iconRes = R.drawable.ic_utilidades,
                         title = StringResourceManager.getString("utilidades", currentLanguage),
+                        enabled = !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo(),
                         onClick = {
                             scope.launch { drawerState.close() }
                             // Abre la pantalla de utilidades; si el usuario no es premium
                             // las opciones se mostrarán deshabilitadas con un mensaje informativo
-                            navController.navigate("utilidades")
+                            if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_solo_registrados") else navController.navigate("utilidades")
                         }
                     )
                 }
@@ -194,7 +197,7 @@ fun MenuHamburguesa(
                             title = StringResourceManager.getString("perfil", currentLanguage),
                             onClick = {
                                 scope.launch { drawerState.close() }
-                                navController.navigate("perfil")
+                                if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_solo_registrados") else navController.navigate("perfil")
                             }
                         )
                     }
@@ -279,19 +282,20 @@ fun MenuHamburguesa(
     private fun MenuOption(
         iconRes: Int,
         title: String,
-        onClick: () -> Unit
+        onClick: () -> Unit,
+        enabled: Boolean = true
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onClick() }
+                .clickable(enabled = enabled) { onClick() }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 painter = painterResource(id = iconRes),
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.onSurface,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f),
                 modifier = Modifier.size(24.dp)
             )
 
@@ -300,7 +304,7 @@ fun MenuHamburguesa(
             Text(
                 text = title,
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.38f),
                 fontWeight = FontWeight.Medium
             )
         }

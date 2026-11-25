@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RecibosDao {
+    @Query("SELECT COUNT(*) FROM recibos WHERE idUsuario = :uid")
+    suspend fun contarDemo(uid: String): Int
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<ReciboEntity>)

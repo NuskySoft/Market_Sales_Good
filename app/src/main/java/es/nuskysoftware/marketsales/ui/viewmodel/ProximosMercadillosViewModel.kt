@@ -38,7 +38,7 @@ class ProximosMercadillosViewModel(
         viewModelScope.launch {
             _ui.value = UiState(loading = true)
             try {
-                val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+                val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
                 val lista = withContext(Dispatchers.IO) {
                     // 🔁 Antes: repository.getMercadillosDesdeHoy(userId)
                     // Ahora: usamos el nuevo método que filtra por fecha correctamente

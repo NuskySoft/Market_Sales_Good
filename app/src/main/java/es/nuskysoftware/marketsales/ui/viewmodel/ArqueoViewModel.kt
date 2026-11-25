@@ -99,7 +99,7 @@ class ArqueoViewModel(
                 }
 
                 // Destinos para "Asignar saldo" (estados 1 y 2 del usuario actual)
-                val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+                val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
                 val destinos1 = withContext(Dispatchers.IO) {
                     repository.getMercadillosDeUsuarioPorEstadoSnapshot(
                         userId,

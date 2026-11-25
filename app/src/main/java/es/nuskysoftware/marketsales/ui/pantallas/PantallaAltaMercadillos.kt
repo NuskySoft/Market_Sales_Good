@@ -39,6 +39,8 @@ fun PantallaAltaMercadillo(
     val mercadilloParaEditar by mercadilloViewModel.mercadilloParaEditar.collectAsState()
 
     val esEdicion = mercadilloId != null
+    val soloLectura = mercadilloParaEditar?.estado == EstadosMercadillo.Estado.CANCELADO.codigo
+    val camposHabilitados = !uiState.loading && (!esEdicion || mercadilloParaEditar != null) && !soloLectura
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -140,6 +142,7 @@ fun PantallaAltaMercadillo(
     }
 
     fun guardar() {
+        if (!camposHabilitados) return
         val saldoInicialDouble = parseDoubleFlexible(saldoInicial)
         val importeSuscripcionDouble =
             if (esGratis) 0.0 else (parseDoubleFlexible(importeSuscripcion) ?: 0.0)
@@ -195,9 +198,11 @@ fun PantallaAltaMercadillo(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (esEdicion)
-                            StringResourceManager.getString("alta_titulo_editar", currentLanguage)
-                                .ifBlank { "Editar Mercadillo" }
+                        text = if (soloLectura)
+                            StringResourceManager.getString("alta_titulo_consultar", currentLanguage)
+                                .ifBlank { "Consultar Mercadillo" }
+                        else if (esEdicion)
+                            StringResourceManager.getString("alta_titulo_editar", currentLanguage).ifBlank { "Editar Mercadillo" }
                         else
                             StringResourceManager.getString("alta_titulo_nuevo", currentLanguage)
                                 .ifBlank { "Nuevo Mercadillo" },
@@ -225,12 +230,22 @@ fun PantallaAltaMercadillo(
             ) {
                 item { Spacer(Modifier.height(8.dp)) }
 
+                if (soloLectura) {
+                    item {
+                        Text(
+                            StringResourceManager.getString("estado_cancelado", currentLanguage),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
                 item {
                     CampoFecha(
                         fecha = fecha,
                         onFechaChange = { fecha = it },
                         onMostrarDatePicker = { mostrarDatePicker = true },
-                        enabled = !(esEdicion && enCursoFinal)
+                        enabled = camposHabilitados && !(esEdicion && enCursoFinal)
                     )
                 }
 
@@ -238,10 +253,9 @@ fun PantallaAltaMercadillo(
                     CampoTexto(
                         valor = lugar,
                         onValueChange = { lugar = it },
-                        label = StringResourceManager.getString("lugar", currentLanguage)
-                            .ifBlank { "Lugar" },
-                        placeholder = StringResourceManager.getString("placeholder_lugar", currentLanguage)
-                            .ifBlank { "Ej: Plaza Mayor" }
+                        label = StringResourceManager.getString("lugar", currentLanguage).ifBlank { "Lugar" },
+                        placeholder = StringResourceManager.getString("placeholder_lugar", currentLanguage).ifBlank { "Ej: Plaza Mayor" },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -249,10 +263,9 @@ fun PantallaAltaMercadillo(
                     CampoTexto(
                         valor = organizador,
                         onValueChange = { organizador = it },
-                        label = StringResourceManager.getString("organizador", currentLanguage)
-                            .ifBlank { "Organizador" },
-                        placeholder = StringResourceManager.getString("placeholder_organizador", currentLanguage)
-                            .ifBlank { "Ej: Ayuntamiento" }
+                        label = StringResourceManager.getString("organizador", currentLanguage).ifBlank { "Organizador" },
+                        placeholder = StringResourceManager.getString("placeholder_organizador", currentLanguage).ifBlank { "Ej: Ayuntamiento" },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -261,18 +274,17 @@ fun PantallaAltaMercadillo(
                         esGratis = esGratis,
                         onEsGratisChange = { esGratis = it },
                         importeSuscripcion = importeSuscripcion,
-                        onImporteSuscripcionChange = { importeSuscripcion = it }
+                        onImporteSuscripcionChange = { importeSuscripcion = it },
+                        enabled = camposHabilitados
                     )
                 }
 
                 item {
                     ConfiguracionLogistica(
-                        requiereMesa = requiereMesa,
-                        onRequiereMesaChange = { requiereMesa = it },
-                        requiereCarpa = requiereCarpa,
-                        onRequiereCarpaChange = { requiereCarpa = it },
-                        hayPuntoLuz = hayPuntoLuz,
-                        onHayPuntoLuzChange = { hayPuntoLuz = it }
+                        requiereMesa = requiereMesa, onRequiereMesaChange = { requiereMesa = it },
+                        requiereCarpa = requiereCarpa, onRequiereCarpaChange = { requiereCarpa = it },
+                        hayPuntoLuz = hayPuntoLuz, onHayPuntoLuzChange = { hayPuntoLuz = it },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -283,7 +295,8 @@ fun PantallaAltaMercadillo(
                         horaFin = horaFin,
                         onHoraFinChange = { horaFin = it },
                         onMostrarTimePickerInicio = { mostrarTimePickerInicio = true },
-                        onMostrarTimePickerFin = { mostrarTimePickerFin = true }
+                        onMostrarTimePickerFin = { mostrarTimePickerFin = true },
+                        enabled = camposHabilitados
                     )
                 }
 
@@ -291,7 +304,8 @@ fun PantallaAltaMercadillo(
                     Column {
                         CampoSaldoInicial(
                             saldoInicial = saldoInicial,
-                            onSaldoInicialChange = { saldoInicial = it }
+                            onSaldoInicialChange = { saldoInicial = it },
+                            enabled = camposHabilitados
                         )
                         if (requiereConfirmacionSaldo) {
                             Spacer(Modifier.height(6.dp))
@@ -351,49 +365,51 @@ fun PantallaAltaMercadillo(
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
                 ) {
                     Text(
-                        StringResourceManager.getString("cancelar", currentLanguage)
-                            .ifBlank { "Cancelar" }
+                        StringResourceManager.getString(if (soloLectura) "volver" else "cancelar", currentLanguage)
+                            .ifBlank { if (soloLectura) "Volver" else "Cancelar" }
                     )
                 }
 
-                Button(
-                    onClick = {
-                        // La confirmación de cambio de saldo EN_CURSO la gestiona ahora el ViewModel
-                        // (uiState.pedirConfirmacionCambioSaldo). Aquí solo disparamos guardar.
-                        if (!esEdicion && ConfigurationManager.getIsPremium()) {
-                            scope.launch {
-                                val guardado = saldoRepo.getUltimoNoConsumido()
-                                if (guardado != null) {
-                                    saldoPendiente = guardado
-                                    mostrarDialogoSaldoGuardado = true
-                                } else {
-                                    guardar()
+                if (!soloLectura) {
+                    Button(
+                        onClick = {
+                            // La confirmación de cambio de saldo EN_CURSO la gestiona ahora el ViewModel
+                            // (uiState.pedirConfirmacionCambioSaldo). Aquí solo disparamos guardar.
+                            if (!esEdicion && ConfigurationManager.getIsPremium()) {
+                                scope.launch {
+                                    val guardado = saldoRepo.getUltimoNoConsumido()
+                                    if (guardado != null) {
+                                        saldoPendiente = guardado
+                                        mostrarDialogoSaldoGuardado = true
+                                    } else {
+                                        guardar()
+                                    }
                                 }
+                            } else {
+                                guardar()
                             }
+                        },
+                        enabled = camposHabilitados &&
+                                fecha.isNotBlank() &&
+                                lugar.isNotBlank() &&
+                                organizador.isNotBlank(),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (uiState.loading) {
+                            CircularProgressIndicator(
+                                Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                         } else {
-                            guardar()
+                            Text(
+                                if (esEdicion)
+                                    StringResourceManager.getString("actualizar", currentLanguage)
+                                        .ifBlank { "Actualizar" }
+                                else
+                                    StringResourceManager.getString("crear", currentLanguage)
+                                        .ifBlank { "Crear" }
+                            )
                         }
-                    },
-                    enabled = !uiState.loading &&
-                            fecha.isNotBlank() &&
-                            lugar.isNotBlank() &&
-                            organizador.isNotBlank(),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (uiState.loading) {
-                        CircularProgressIndicator(
-                            Modifier.size(16.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                    } else {
-                        Text(
-                            if (esEdicion)
-                                StringResourceManager.getString("actualizar", currentLanguage)
-                                    .ifBlank { "Actualizar" }
-                            else
-                                StringResourceManager.getString("crear", currentLanguage)
-                                    .ifBlank { "Crear" }
-                        )
                     }
                 }
             }

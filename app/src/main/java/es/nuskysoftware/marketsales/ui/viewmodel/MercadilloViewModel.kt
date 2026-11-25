@@ -147,8 +147,11 @@ class MercadilloViewModel(
             try {
                 val m = repository.getMercadilloById(mercadilloId)
                 if (m != null) {
-                    val puede = puedeEditarMercadillo(m)
-                    if (!puede.first) { fail(puede.second); return@launch }
+                    // Consultar un cancelado no equivale a editarlo: conserva su ficha.
+                    if (m.estado != EstadosMercadillo.Estado.CANCELADO.codigo) {
+                        val puede = puedeEditarMercadillo(m)
+                        if (!puede.first) { fail(puede.second); return@launch }
+                    }
                     _mercadilloParaEditar.value = m
                 } else {
                     fail(tr("mercadillo_no_encontrado")); return@launch

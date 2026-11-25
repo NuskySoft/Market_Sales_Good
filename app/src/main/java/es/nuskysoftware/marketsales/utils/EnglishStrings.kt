@@ -480,6 +480,7 @@ internal object EnglishStrings {
         "continuar_google" -> "Continue with Google"
 
         // screens/alta/PantallaAltaMercadillo.kt
+        "alta_titulo_consultar" -> "Market Day Details"
         "alta_titulo_editar" -> "Edit Market Day"
         "alta_titulo_nuevo" -> "New Market Day"
         "lugar" -> "Place"

@@ -113,7 +113,8 @@ fun CampoTexto(
     valor: String,
     onValueChange: (String) -> Unit,
     label: String,
-    placeholder: String
+    placeholder: String,
+    enabled: Boolean = true
 ) {
     // El label/placeholder llegan ya localizados desde el llamador
     Column {
@@ -121,6 +122,7 @@ fun CampoTexto(
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
             value = valor,
+            enabled = enabled,
             onValueChange = onValueChange,
             placeholder = { Text(placeholder) },
             modifier = Modifier.fillMaxWidth()
@@ -133,7 +135,8 @@ fun ConfiguracionEconomica(
     esGratis: Boolean,
     onEsGratisChange: (Boolean) -> Unit,
     importeSuscripcion: String,
-    onImporteSuscripcionChange: (String) -> Unit
+    onImporteSuscripcionChange: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val moneda by ConfigurationManager.moneda.collectAsState()
@@ -144,7 +147,7 @@ fun ConfiguracionEconomica(
         Text(t("config_economica"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Switch(checked = esGratis, onCheckedChange = onEsGratisChange)
+            Switch(checked = esGratis, onCheckedChange = onEsGratisChange, enabled = enabled)
             Spacer(Modifier.width(8.dp))
             Text(t("mercadillo_gratuito"))
         }
@@ -152,6 +155,7 @@ fun ConfiguracionEconomica(
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = importeSuscripcion,
+                enabled = enabled,
                 onValueChange = onImporteSuscripcionChange,
                 label = { Text(t("importe_suscripcion") + " (${simboloMoneda})") },
                 placeholder = { Text(t("importe_placeholder")) },
@@ -168,7 +172,8 @@ fun ConfiguracionLogistica(
     requiereCarpa: Boolean,
     onRequiereCarpaChange: (Boolean) -> Unit,
     hayPuntoLuz: Boolean,
-    onHayPuntoLuzChange: (Boolean) -> Unit
+    onHayPuntoLuzChange: (Boolean) -> Unit,
+    enabled: Boolean = true
 ) {
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
@@ -177,15 +182,15 @@ fun ConfiguracionLogistica(
         Text(t("config_logistica"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = requiereMesa, onCheckedChange = onRequiereMesaChange)
+            Checkbox(checked = requiereMesa, onCheckedChange = onRequiereMesaChange, enabled = enabled)
             Text(t("requiere_mesa"))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = requiereCarpa, onCheckedChange = onRequiereCarpaChange)
+            Checkbox(checked = requiereCarpa, onCheckedChange = onRequiereCarpaChange, enabled = enabled)
             Text(t("requiere_carpa"))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = hayPuntoLuz, onCheckedChange = onHayPuntoLuzChange)
+            Checkbox(checked = hayPuntoLuz, onCheckedChange = onHayPuntoLuzChange, enabled = enabled)
             Text(t("hay_punto_luz"))
         }
     }
@@ -198,7 +203,8 @@ fun ConfiguracionHorarios(
     horaFin: String,
     onHoraFinChange: (String) -> Unit,
     onMostrarTimePickerInicio: () -> Unit,
-    onMostrarTimePickerFin: () -> Unit
+    onMostrarTimePickerFin: () -> Unit,
+    enabled: Boolean = true
 ) {
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     fun t(k: String) = StringResourceManager.getString(k, currentLanguage)
@@ -211,13 +217,14 @@ fun ConfiguracionHorarios(
                 Text(t("hora_inicio"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                 OutlinedTextField(
                     value = horaInicio,
+                    enabled = enabled,
                     onValueChange = onHoraInicioChange,
                     placeholder = { Text(t("formato_hora_hint")) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onMostrarTimePickerInicio() },
+                        .clickable(enabled = enabled) { onMostrarTimePickerInicio() },
                     readOnly = true,
-                    trailingIcon = { IconButton(onClick = onMostrarTimePickerInicio) { Text("🕐", fontSize = 18.sp) } }
+                    trailingIcon = { IconButton(onClick = onMostrarTimePickerInicio, enabled = enabled) { Text("🕐", fontSize = 18.sp) } }
                 )
             }
             Spacer(Modifier.width(8.dp))
@@ -225,13 +232,14 @@ fun ConfiguracionHorarios(
                 Text(t("hora_fin"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
                 OutlinedTextField(
                     value = horaFin,
+                    enabled = enabled,
                     onValueChange = onHoraFinChange,
                     placeholder = { Text(t("formato_hora_hint")) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onMostrarTimePickerFin() },
+                        .clickable(enabled = enabled) { onMostrarTimePickerFin() },
                     readOnly = true,
-                    trailingIcon = { IconButton(onClick = onMostrarTimePickerFin) { Text("🕐", fontSize = 18.sp) } }
+                    trailingIcon = { IconButton(onClick = onMostrarTimePickerFin, enabled = enabled) { Text("🕐", fontSize = 18.sp) } }
                 )
             }
         }
@@ -241,7 +249,8 @@ fun ConfiguracionHorarios(
 @Composable
 fun CampoSaldoInicial(
     saldoInicial: String,
-    onSaldoInicialChange: (String) -> Unit
+    onSaldoInicialChange: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
     val moneda by ConfigurationManager.moneda.collectAsState()
@@ -253,6 +262,7 @@ fun CampoSaldoInicial(
         Spacer(Modifier.height(4.dp))
         OutlinedTextField(
             value = saldoInicial,
+            enabled = enabled,
             onValueChange = onSaldoInicialChange,
             placeholder = { Text(t("importe_placeholder")) },
             modifier = Modifier.fillMaxWidth(),

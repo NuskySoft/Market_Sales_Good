@@ -1,5 +1,8 @@
 package es.nuskysoftware.marketsales.ui.composables
 
+import androidx.compose.runtime.collectAsState
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -78,9 +81,10 @@ fun IconoCarritoGrande(
     modifier: Modifier = Modifier,
     tint: Color = Color.Black
 ) {
+    val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     Icon(
         imageVector = IconoCarritoCustom,
-        contentDescription = "Carrito de compras",
+        contentDescription = StringResourceManager.getString("carrito_compras", currentLanguage),
         modifier = modifier,
         tint = tint
     )

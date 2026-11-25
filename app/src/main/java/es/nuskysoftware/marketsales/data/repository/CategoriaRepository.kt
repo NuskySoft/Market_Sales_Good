@@ -74,7 +74,7 @@ class CategoriaRepository(
         orden: Int = 0
     ): String = withContext(Dispatchers.IO) {
         val userId = ConfigurationManager.getCurrentUserId()
-            ?: throw IllegalStateException("No se puede crear categoría sin usuario")
+            ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_categoria", ConfigurationManager.idioma.value))
 
         Log.d(TAG, "🔄 Creando categoría para usuario: $userId")
 

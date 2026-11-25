@@ -21,6 +21,7 @@ import es.nuskysoftware.marketsales.data.local.entity.isPremium
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaConfiguracion
 import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
@@ -31,6 +32,7 @@ fun MenuLateral(
     onCloseDrawer: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     val context = LocalContext.current
     val configuracion by configuracionViewModel.configuracion.collectAsState()
 
@@ -50,10 +52,10 @@ fun MenuLateral(
         AlertDialog(
             onDismissRequest = { mostrarDialogoLogout = false },
             title = {
-                Text(StringResourceManager.getString("logout_title", "Cerrar Sesión"))
+                Text(StringResourceManager.getString("cerrar_sesion", currentLanguage))
             },
             text = {
-                Text(StringResourceManager.getString("logout_message", "¿Estás seguro de que deseas cerrar sesión?"))
+                Text(StringResourceManager.getString("logout_message", currentLanguage))
             },
             confirmButton = {
                 TextButton(
@@ -63,7 +65,7 @@ fun MenuLateral(
                     }
                 ) {
                     Text(
-                        StringResourceManager.getString("logout_confirm", "Cerrar Sesión"),
+                        StringResourceManager.getString("cerrar_sesion", currentLanguage),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -72,7 +74,7 @@ fun MenuLateral(
                 TextButton(
                     onClick = { mostrarDialogoLogout = false }
                 ) {
-                    Text(StringResourceManager.getString("cancel", "Cancelar"))
+                    Text(StringResourceManager.getString("cancelar", currentLanguage))
                 }
             }
         )
@@ -82,10 +84,10 @@ fun MenuLateral(
         AlertDialog(
             onDismissRequest = { mostrarDialogoSalir = false },
             title = {
-                Text(StringResourceManager.getString("exit_title", "Salir de la App"))
+                Text(StringResourceManager.getString("salir", currentLanguage))
             },
             text = {
-                Text(StringResourceManager.getString("exit_message", "¿Estás seguro de que deseas salir de Market Sales?"))
+                Text(StringResourceManager.getString("exit_message", currentLanguage))
             },
             confirmButton = {
                 TextButton(
@@ -95,7 +97,7 @@ fun MenuLateral(
                     }
                 ) {
                     Text(
-                        StringResourceManager.getString("exit_confirm", "Salir"),
+                        StringResourceManager.getString("exit_confirm", currentLanguage),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -104,7 +106,7 @@ fun MenuLateral(
                 TextButton(
                     onClick = { mostrarDialogoSalir = false }
                 ) {
-                    Text(StringResourceManager.getString("cancel", "Cancelar"))
+                    Text(StringResourceManager.getString("cancelar", currentLanguage))
                 }
             }
         )
@@ -161,7 +163,7 @@ fun MenuLateral(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = StringResourceManager.getString("premium", "Premium"),
+                                    text = StringResourceManager.getString("premium", currentLanguage),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                                         fontWeight = FontWeight.Medium
@@ -169,7 +171,7 @@ fun MenuLateral(
                                 )
                             } else {
                                 Text(
-                                    text = StringResourceManager.getString("free", "Gratuito"),
+                                    text = StringResourceManager.getString("free", currentLanguage),
                                     style = MaterialTheme.typography.bodySmall.copy(
                                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                                     )
@@ -178,7 +180,7 @@ fun MenuLateral(
                         }
                     } else {
                         Text(
-                            text = StringResourceManager.getString("not_authenticated", "No autenticado"),
+                            text = StringResourceManager.getString("not_authenticated", currentLanguage),
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                             )
@@ -192,7 +194,7 @@ fun MenuLateral(
             // Opciones del menú
             MenuLateralItem(
                 icon = Icons.Default.Home,
-                texto = StringResourceManager.getString("home", "Inicio"),
+                texto = StringResourceManager.getString("home", currentLanguage),
                 onClick = {
                     onCloseDrawer()
                 }
@@ -200,7 +202,7 @@ fun MenuLateral(
 
             MenuLateralItem(
                 icon = Icons.Default.ShoppingCart,
-                texto = StringResourceManager.getString("markets", "Mercadillos"),
+                texto = StringResourceManager.getString("markets", currentLanguage),
                 onClick = {
                     onCloseDrawer()
                 }
@@ -209,7 +211,7 @@ fun MenuLateral(
             if (configuracion?.isPremium == true) {
                 MenuLateralItem(
                     icon = Icons.Default.Add,
-                    texto = StringResourceManager.getString("add_market", "Añadir Mercadillo"),
+                    texto = StringResourceManager.getString("nuevo_mercadillo", currentLanguage),
                     onClick = {
                         onCloseDrawer()
                         // TODO: Navegar a añadir mercadillo
@@ -218,7 +220,7 @@ fun MenuLateral(
 
                 MenuLateralItem(
                     icon = Icons.Default.Star,
-                    texto = StringResourceManager.getString("premium_features", "Funciones Premium"),
+                    texto = StringResourceManager.getString("premium_features", currentLanguage),
                     onClick = {
                         onCloseDrawer()
                         // TODO: Mostrar funciones premium
@@ -227,7 +229,7 @@ fun MenuLateral(
             } else {
                 MenuLateralItem(
                     icon = Icons.Default.Star,
-                    texto = "🚀 ${StringResourceManager.getString("upgrade_premium", "Actualizar a Premium")}",
+                    texto = "🚀 ${StringResourceManager.getString("go_premium", currentLanguage)}",
                     onClick = {
                         onCloseDrawer()
                         // TODO: Mostrar pantalla de upgrade
@@ -239,7 +241,7 @@ fun MenuLateral(
 
             MenuLateralItem(
                 icon = Icons.Default.Settings,
-                texto = StringResourceManager.getString("configuration", "Configuración"),
+                texto = StringResourceManager.getString("configuracion", currentLanguage),
                 onClick = {
                     // ✅ TODO: Implementar navegación a configuración
                     onCloseDrawer()
@@ -248,7 +250,7 @@ fun MenuLateral(
 
             MenuLateralItem(
                 icon = Icons.Default.Info,
-                texto = StringResourceManager.getString("about", "Acerca de"),
+                texto = StringResourceManager.getString("about", currentLanguage),
                 onClick = {
                     onCloseDrawer()
                     // TODO: Mostrar información de la app
@@ -263,7 +265,7 @@ fun MenuLateral(
             if (currentUser != null) {
                 MenuLateralItem(
                     icon = Icons.Default.ExitToApp,
-                    texto = StringResourceManager.getString("logout", "Cerrar Sesión"),
+                    texto = StringResourceManager.getString("cerrar_sesion", currentLanguage),
                     onClick = {
                         mostrarDialogoLogout = true
                     },
@@ -273,7 +275,7 @@ fun MenuLateral(
 
             MenuLateralItem(
                 icon = Icons.Default.Close,
-                texto = StringResourceManager.getString("exit_app", "Salir de la App"),
+                texto = StringResourceManager.getString("salir", currentLanguage),
                 onClick = {
                     mostrarDialogoSalir = true
                 },

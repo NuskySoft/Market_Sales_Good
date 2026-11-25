@@ -48,7 +48,7 @@ fun PantallaLogoutSplash(
                 // Icono grande opcional (usa ic_logout si lo tienes)
                 Icon(
                     painter = painterResource(id = es.nuskysoftware.marketsales.R.drawable.ic_logout),
-                    contentDescription = "Sesión cerrada",
+                    contentDescription = StringResourceManager.getString("sesion_cerrada", currentLanguage),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(64.dp)
                 )

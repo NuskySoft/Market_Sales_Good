@@ -6,17 +6,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.StringResourceManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.google.firebase.firestore.FirebaseFirestore
-import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @Composable
 fun PantallaDebugDatos(navController: NavController) {
+    val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     val scope = rememberCoroutineScope()
     var mensaje by remember { mutableStateOf<String?>(null) }
 
@@ -36,9 +38,9 @@ fun PantallaDebugDatos(navController: NavController) {
                         doc.reference.update(campo, activo).await()
                     }
                 }
-                mensaje = "Datos actualizados"
+                mensaje = StringResourceManager.getString("datos_actualizados", currentLanguage)
             } catch (e: Exception) {
-                mensaje = "Error: ${e.message}"
+                mensaje = StringResourceManager.getString("error_detalle", currentLanguage).replace("{0}", e.message.orEmpty())
             }
         }
     }
@@ -50,14 +52,14 @@ fun PantallaDebugDatos(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Button(onClick = { cambiarActivo(true) }) { Text("Activar datos") }
+        Button(onClick = { cambiarActivo(true) }) { Text(StringResourceManager.getString("activar_datos", currentLanguage)) }
         Spacer(Modifier.height(8.dp))
-        Button(onClick = { cambiarActivo(false) }) { Text("Desactivar datos") }
+        Button(onClick = { cambiarActivo(false) }) { Text(StringResourceManager.getString("desactivar_datos", currentLanguage)) }
         mensaje?.let { texto ->
             Spacer(Modifier.height(16.dp))
             Text(texto, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { navController.popBackStack() }) { Text("Volver") }
+        Button(onClick = { navController.popBackStack() }) { Text(StringResourceManager.getString("volver", currentLanguage)) }
     }
 }

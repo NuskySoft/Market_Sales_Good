@@ -217,7 +217,7 @@ fun MenuHamburguesa(
                     item {
                         MenuOption(
                             iconRes = R.drawable.ic_utilidades,
-                            title = "Debug datos",
+                            title = StringResourceManager.getString("debug_datos", currentLanguage),
                             onClick = {
                                 scope.launch { drawerState.close() }
                                 navController.navigate("debug_datos")

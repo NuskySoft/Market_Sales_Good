@@ -94,7 +94,7 @@ fun PantallaEnviarRecibo(
 
             Spacer(Modifier.height(8.dp))
             Text(
-                StringResourceManager.getString("metodo_pago", currentLanguage).replace("{metodo}", metodo.uppercase()),
+                StringResourceManager.getString("metodo_pago", currentLanguage).replace("{metodo}", StringResourceManager.getString(when (metodo.lowercase()) { "efectivo" -> "metodo_efectivo"; "bizum" -> "metodo_bizum"; "tarjeta" -> "metodo_tarjeta"; else -> "metodo_pago" }, currentLanguage)),
                 fontSize = 14.sp
             )
 

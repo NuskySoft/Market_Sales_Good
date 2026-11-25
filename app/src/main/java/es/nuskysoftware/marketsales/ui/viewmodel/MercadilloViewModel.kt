@@ -517,7 +517,7 @@ class MercadilloViewModel(
                 )
                 val ok = repository.actualizarMercadillo(actualizado)
                 if (ok) {
-                    _uiState.value = _uiState.value.copy(message = tr1("estado_cambiado_a", nuevoEstado.descripcion))
+                    _uiState.value = _uiState.value.copy(message = tr1("estado_cambiado_a", EstadosMercadillo.obtenerDescripcion(nuevoEstado, lang)))
                     Log.d(TAG, "🔧 DEBUG: Estado cambiado -> ${nuevoEstado.descripcion}")
                     manager.refreshNow()
                 } else fail(tr("error_cambiando_estado"))
@@ -572,7 +572,7 @@ class MercadilloViewModel(
             EstadosMercadillo.Estado.PENDIENTE_ARQUEO,
             EstadosMercadillo.Estado.PENDIENTE_ASIGNAR_SALDO,
             EstadosMercadillo.Estado.CERRADO_COMPLETO,
-            EstadosMercadillo.Estado.CANCELADO -> false to tr1("no_modificar_estado", est.descripcion)
+            EstadosMercadillo.Estado.CANCELADO -> false to tr1("no_modificar_estado", EstadosMercadillo.obtenerDescripcion(est, lang))
         }
     }
 

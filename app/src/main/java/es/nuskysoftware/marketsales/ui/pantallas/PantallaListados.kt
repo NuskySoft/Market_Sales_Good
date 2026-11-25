@@ -32,7 +32,7 @@ fun PantallaListados(
                     IconButton(onClick = { navController?.safePopBackStack() }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_arrow_left),
-                            contentDescription = "Atrás" // accesibilidad; no visible en UI
+                            contentDescription = StringResourceManager.getString("volver", currentLanguage) // accesibilidad; no visible en UI
                         )
                     }
                 },

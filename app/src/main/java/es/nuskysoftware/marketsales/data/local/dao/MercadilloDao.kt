@@ -417,7 +417,7 @@ interface MercadilloDao {
 
     @Query("""
         SELECT COUNT(*) 
-        FROM categorias 
+        FROM mercadillos
         WHERE userId = :uid
     """)
     suspend fun contarPorUsuario(uid: String): Int

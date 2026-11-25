@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 2.1 — 2026-11-25
+
+- F03: corrige contarPorUsuario de MercadilloDao para contar mercadillos del propietario, en lugar de categorías.
+- Añade prueba Room con cantidades distintas de categorías y mercadillos y aislamiento entre propietarios.
+- La Demo 2.0 ha sido probada por el usuario e incorporada a master; respaldo backup/v2.0-validada.
+- Room permanece en 18; no se cambia el esquema ni se modifican datos existentes.
+
+
 ## 2.0 — 2026-11-25
 
 - Separa Demo local, cuenta gratuita y Premium; conserva cuentas y sesión persistente.

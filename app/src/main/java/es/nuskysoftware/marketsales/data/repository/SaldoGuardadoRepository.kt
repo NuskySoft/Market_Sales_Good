@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/SaldoGuardadoRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
+
 
 import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,11 +21,12 @@ class SaldoGuardadoRepository(context: Context) {
     private val connectivity = ConnectivityObserver(context)
 
     suspend fun getUltimoNoConsumido(): SaldoGuardadoEntity? = withContext(Dispatchers.IO) {
-        val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+        val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
         dao.getUltimoNoConsumido(userId)
     }
 
     suspend fun reemplazarGuardado(item: SaldoGuardadoEntity) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
         val userId = item.idUsuario
         val previo = dao.getUltimoNoConsumido(userId)
         if (previo != null) dao.deleteById(previo.idRegistro) // ✅ idRegistro existe en la Entity
@@ -32,11 +35,13 @@ class SaldoGuardadoRepository(context: Context) {
     }
 
     suspend fun marcarConsumido(id: String) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
         dao.marcarConsumido(id)
         sincronizar(id)
     }
 
     suspend fun borrarGuardado(id: String) = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
         dao.deleteById(id)
         try {
             firestore.collection("saldosGuardados").document(id).delete().await()
@@ -44,6 +49,7 @@ class SaldoGuardadoRepository(context: Context) {
     }
 
     private suspend fun sincronizar(id: String) {
+        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
         try {
             if (!connectivity.isConnected.first()) return
             val userId = ConfigurationManager.getCurrentUserId() ?: return

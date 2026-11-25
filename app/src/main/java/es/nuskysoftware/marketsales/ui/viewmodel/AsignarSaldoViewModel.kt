@@ -88,7 +88,7 @@ class AsignarSaldoViewModel(
                 val dao = db.mercadilloDao()
                 val origen = dao.getMercadilloById(mercadilloIdOrigen)
 
-                val userId = origen?.userId ?: ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+                val userId = origen?.userId ?: ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
                 val e1 = dao.getMercadillosByUserAndEstado(userId, 1).first()
                 val e2 = dao.getMercadillosByUserAndEstado(userId, 2).first()
 
@@ -264,6 +264,9 @@ class AsignarSaldoViewModel(
 
     /** Persistencia de Paso 3. Llama desde el botón Aceptar del diálogo de confirmación. */
     fun confirmarYPersistir(navController: androidx.navigation.NavController) {
+        if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+            es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_sin_asignar_saldo"); return
+        }
         val d = _ui.value.dialogoIntermedio
         if (d.modo == null) return
 
@@ -277,7 +280,7 @@ class AsignarSaldoViewModel(
                         // 1) Guardar/replace en tabla control
                         val item = SaldoGuardadoEntity(
                             idRegistro = UUID.randomUUID().toString(),
-                            idUsuario = origen.userId ?: (ConfigurationManager.getCurrentUserId() ?: "usuario_default"),
+                            idUsuario = origen.userId ?: (ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID),
                             idMercadilloOrigen = origen.idMercadillo,
                             fechaMercadillo = origen.fecha,
                             lugarMercadillo = origen.lugar,

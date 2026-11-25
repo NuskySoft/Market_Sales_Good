@@ -758,6 +758,18 @@ internal object EnglishStrings {
         "sesion_cerrada" -> "Signed out"
         "redirigiendo_al_inicio" -> "Returning to the home screen…"
         "limite_free_mercadillos" -> "Free users can only create one market day per day. Upgrade to Premium to create multiple market days."
+        "version_demo" -> "Demo Version"
+        "demo_crear_cuenta" -> "Create free account"
+        "demo_solo_registrados" -> "This option is only available to registered users. Create a free account to continue."
+        "demo_abonos_registrados" -> "Refunds are only available to registered users. Create a free account to use them."
+        "demo_sin_asignar_saldo" -> "The demo allows expenses and cash reconciliation, but not balance allocation."
+        "demo_no_borrar_mercadillo" -> "The market cannot be deleted in the demo version."
+        "demo_limite_mercadillos" -> "The demo allows a maximum of 1 market. Create a free account to continue."
+        "demo_limite_categorias" -> "The demo allows a maximum of 1 category. Create a free account to continue."
+        "demo_limite_articulos" -> "The demo allows a maximum of 1 product. Create a free account to continue."
+        "demo_limite_ventas" -> "You have reached the demo limit of 10 sales. Create a free account to continue."
+        "demo_cuenta_nueva_titulo" -> "Demo data stays separate"
+        "demo_cuenta_nueva_aviso" -> "A new account starts from scratch. Demo data is never transferred to an account, including Premium. Signing in to an existing account uses that account’s data."
         else -> key
     }
 }

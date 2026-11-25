@@ -23,7 +23,8 @@ object FullBootstrapper {
     private const val TAG = "FullBootstrapper"
 
     suspend fun runIfNeeded(context: Context, rawUserId: String?): Boolean {
-        val uid = (rawUserId ?: "").ifBlank { "usuario_default" }
+        if (!DemoAccess.canSync(rawUserId) || !ConfigurationManager.getIsPremium()) return false
+        val uid = (rawUserId ?: "").ifBlank { es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID }
 
         val db = AppDatabase.getDatabase(context)
         val categoriaDao   = db.categoriaDao()

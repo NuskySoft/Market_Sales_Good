@@ -1,5 +1,16 @@
 # Historial de versiones
 
+## 2.0 — 2026-11-25
+
+- Separa Demo local, cuenta gratuita y Premium; conserva cuentas y sesión persistente.
+- Demo: 1 mercadillo, 1 categoría, 1 artículo y 10 tickets; permite ventas en cualquier estado, gastos y arqueo.
+- Bloquea abonos, borrado del mercadillo, asignación de saldo, Perfil, Utilidades y cambios de configuración en Demo.
+- Añade aviso fijo y acceso a registro/login; confirma que los datos Demo no se trasladan a las cuentas.
+- Excluye Demo de sincronización y recuperación, y conserva el derecho Premium de restauración en instalaciones vacías.
+- Guarda límite de tickets, cabecera y líneas en una transacción local, con identificadores únicos y subida en segundo plano.
+- Room continúa en versión 18; no se eliminan ni reasignan datos de cuentas.
+
+
 ## 1.2 — 2026-11-25
 
 - Completa claves de traducción en español e inglés para Utilidades, Perfil, empresa y pagos.

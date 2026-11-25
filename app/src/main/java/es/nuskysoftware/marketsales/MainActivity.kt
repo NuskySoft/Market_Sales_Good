@@ -10,6 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
+import es.nuskysoftware.marketsales.ui.components.DemoChrome
+import es.nuskysoftware.marketsales.ui.components.DemoRestricted
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
@@ -114,7 +116,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NavigationSystem(configuracionViewModel)
+                    val owner by ConfigurationManager.usuarioLogueado.collectAsState()
+                    key(owner) { NavigationSystem(configuracionViewModel) }
                 }
             }
         }
@@ -138,7 +141,7 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
     LaunchedEffect(backStackEntry?.destination?.route, canRequestAds, esPremium, esPremiumReady) {
         val route = backStackEntry?.destination?.route ?: return@LaunchedEffect
         // Evitar pantallas delicadas y SOLO si premium ya está resuelto
-        val avoidRoutes = setOf("login", "splash_descarga")
+        val avoidRoutes = setOf("login", "registro", "splash_descarga")
         if (activity != null && esPremiumReady && canRequestAds && !esPremium && route !in avoidRoutes) {
             AdsInterstitialController.maybeShow(activity)
         }
@@ -155,6 +158,7 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
         showSplash = false
     }
 
+    DemoChrome(navController, ready = !showSplash) {
     if (showSplash) {
         PantallaSplash()
     } else {
@@ -163,6 +167,10 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             composable("logout") { PantallaLogoutSplash(navController) }
 
             composable("mercadillos") { PantallaMercadillos(navController) }
+
+            composable("registro") {
+                PantallaLogin(navController = navController, initialRegister = true)
+            }
 
             composable("login") {
                 PantallaLogin(
@@ -179,19 +187,19 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             }
 
             composable("configuracion") { PantallaConfiguracion(navController) }
-            composable("perfil") { PantallaPerfil(navController) }
+            composable("perfil") { DemoRestricted(navController) { PantallaPerfil(navController) } }
             composable("categorias") { PantallaCategorias(navController) }
             composable("articulos") { PantallaArticulos(navController) }
-            composable("inventario") { es.nuskysoftware.marketsales.ui.pantallas.PantallaInventario(navController) }
-            composable("listados") { es.nuskysoftware.marketsales.ui.pantallas.PantallaListados(navController) }
-            composable("utilidades") { PantallaUtilidades(navController) }
-            composable("saldos_pendientes") { PantallaSaldosPendientes(navController) }
-            composable("datos_empresa") { PantallaDatosEmpresa(navController) }
+            composable("inventario") { DemoRestricted(navController) { es.nuskysoftware.marketsales.ui.pantallas.PantallaInventario(navController) } }
+            composable("listados") { DemoRestricted(navController) { es.nuskysoftware.marketsales.ui.pantallas.PantallaListados(navController) } }
+            composable("utilidades") { DemoRestricted(navController) { PantallaUtilidades(navController) } }
+            composable("saldos_pendientes") { DemoRestricted(navController) { PantallaSaldosPendientes(navController) } }
+            composable("datos_empresa") { DemoRestricted(navController) { PantallaDatosEmpresa(navController) } }
 
             // Pantalla de depuración para activar/desactivar datos (solo en compilaciones debug)
             if (BuildConfig.DEBUG) {
                 composable("debug_datos") {
-                    PantallaDebugDatos(navController)
+                    DemoRestricted(navController) { PantallaDebugDatos(navController) }
                 }
             }
 
@@ -289,7 +297,7 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             ) { backStackEntry ->
                 val activity = LocalContext.current as ComponentActivity
                 val gastosVM: es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel =
-                    viewModel(activity, factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(activity.applicationContext))
+                    viewModel(activity, key = "gastos-${ConfigurationManager.getCurrentUserId()}", factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(activity.applicationContext))
 
                 es.nuskysoftware.marketsales.ui.pantallas.gastos.PantallaGastosCarrito(
                     navController = navController,
@@ -311,6 +319,7 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
                 val gastosVM: es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModel =
                     viewModel(
                         activity,
+                        key = "gastos-${ConfigurationManager.getCurrentUserId()}",
                         factory = es.nuskysoftware.marketsales.ui.viewmodel.GastosViewModelFactory(
                             activity.applicationContext
                         )
@@ -501,6 +510,7 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             // Subgrafo Arqueo
             addArqueoGraph(navController)
         }
+    }
     }
 }
 

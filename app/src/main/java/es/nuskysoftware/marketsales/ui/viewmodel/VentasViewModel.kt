@@ -68,6 +68,7 @@ class VentasViewModel(
     private fun persistirSiProcede() {
         if (mercadilloId.isBlank()) return
         val s = _uiState.value
+        if (s.loading) return
         if (s.lineasTicket.isEmpty()) {
             CarritoCache.clear(mercadilloId)
         } else {

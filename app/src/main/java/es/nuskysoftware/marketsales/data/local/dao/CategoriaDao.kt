@@ -15,6 +15,9 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CategoriaDao {
+    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid")
+    suspend fun contarDemo(uid: String): Int
+
 
     // ========== OPERACIONES BÁSICAS ==========
 

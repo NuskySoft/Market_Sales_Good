@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface MercadilloDao {
+    @Query("SELECT COUNT(*) FROM mercadillos WHERE userId = :uid")
+    suspend fun contarDemo(uid: String): Int
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<MercadilloEntity>)

@@ -35,7 +35,11 @@ fun PantallaSplashDescarga(
 
     LaunchedEffect(Unit) {
         try {
-            val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+            if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+                navController.navigate(destinoDespues) { popUpTo(navController.graph.startDestinationId) { inclusive = true } }
+                return@LaunchedEffect
+            }
+            val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
             val repo = MercadilloRepository(context)
             val roomVacio = repo.isRoomEmptyForUser(userId)
             val hayRemotos = try {

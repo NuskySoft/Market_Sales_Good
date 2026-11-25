@@ -46,7 +46,7 @@ class AuthViewModel(
             syncState.collectLatest { state ->
                 if (state == SyncState.Done) {
                     val uid = ConfigurationManager.getCurrentUserId()
-                    if (!uid.isNullOrBlank() && uid != "usuario_default") {
+                    if (!uid.isNullOrBlank() && uid != es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID) {
                         try {
                             Log.d(TAG, "🔄 Sync Done → recalculando estados automáticos para $uid…")
                             mercadilloRepository.actualizarEstadosAutomaticos(uid)
@@ -173,6 +173,8 @@ class AuthViewModel(
             ConfigurationManager.updateUserConfiguration(
                 displayName = displayName,
                 usuarioEmail = email,
+                usuarioId = user.uid,
+                planUsuario = if (ConfigurationManager.getIsPremium()) "PREMIUM" else "FREE",
                 isAuthenticated = true
             )
             true

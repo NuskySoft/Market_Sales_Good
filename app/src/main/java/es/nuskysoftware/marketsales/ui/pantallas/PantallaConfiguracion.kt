@@ -177,6 +177,7 @@ fun PantallaConfiguracion(
                             }
                             Switch(
                                 checked = isDarkTheme,
+                                enabled = !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo(),
                                 onCheckedChange = { nuevoValor ->
                                     scope.launch {
                                         authRepo.updateConfiguration(temaOscuro = nuevoValor)

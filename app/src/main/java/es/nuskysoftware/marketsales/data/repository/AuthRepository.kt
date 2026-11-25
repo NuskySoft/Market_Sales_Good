@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
+
 
 import android.content.Context
 import android.util.Log
@@ -120,6 +122,7 @@ class AuthRepository(
         _authState.value = if (user != null) AuthState.Authenticated(user) else AuthState.Unauthenticated
 
         if (user != null) {
+            if (ConfigurationManager.getCurrentUserId() != user.uid) ConfigurationManager.login(user.uid, user.email, user.displayName)
             Log.d(TAG, "Usuario existente detectado: ${user.email}")
             repoScope.launch {
                 try {
@@ -137,14 +140,16 @@ class AuthRepository(
             }
         } else {
             ConfigurationManager.logout()
-            Log.d(TAG, "No hay usuario - ConfigurationManager en estado logout")
+            Log.d(TAG, "No hay usuario - ConfigurationManager en estado demo")
         }
 
         firebaseAuth.addAuthStateListener { auth ->
             val current = auth.currentUser
+            if (current == null) ConfigurationManager.logout()
             _currentUser.value = current
-            _authState.value =
-                if (current != null) AuthState.Authenticated(current) else AuthState.Unauthenticated
+            if (current == null || _authState.value !is AuthState.Loading) {
+                _authState.value = if (current != null) AuthState.Authenticated(current) else AuthState.Unauthenticated
+            }
         }
 
         Log.d(TAG, "AuthRepository inicializado - Usuario actual: ${user?.email ?: "null"}")
@@ -173,6 +178,7 @@ class AuthRepository(
     }
 
     private suspend fun loadUserConfigurationHybrid(usuarioUid: String) {
+        if (!DemoAccess.canSync(usuarioUid)) return
         if (isLoadingConfiguration) {
             Log.d(TAG, "Ya se está cargando configuración, omitiendo")
             return
@@ -188,6 +194,7 @@ class AuthRepository(
             val configEntity = configuracionRepository.getConfiguracion()
             configuracionRepository.setUsuarioLogueado(usuarioUid)
             val userEntity = userRepository.getUserById(usuarioUid)
+            if (!DemoAccess.canSync(usuarioUid)) return
 
             if (configEntity != null && userEntity != null) {
                 ConfigurationManager.updateUserConfiguration(
@@ -227,6 +234,7 @@ class AuthRepository(
                 setProgress(100, text("sync_completado"))
             }
         } catch (e: Exception) {
+            if (!DemoAccess.canSync(usuarioUid)) return
             Log.e(TAG, "Error real cargando configuración híbrida", e)
             ConfigurationManager.updateUserConfiguration(
                 usuarioId = usuarioUid,
@@ -245,6 +253,7 @@ class AuthRepository(
     }
 
     suspend fun handlePostLoginDataSync(uid: String, isPremium: Boolean) = withContext(Dispatchers.IO) {
+        if (!DemoAccess.canSync(uid)) return@withContext
         try {
             Log.d(TAG, "🔄 handlePostLoginDataSync uid=$uid, isPremium=$isPremium")
 
@@ -478,6 +487,7 @@ class AuthRepository(
     }
 
     private suspend fun pushLocalPendings(uid: String) {
+        if (!DemoAccess.canSync(uid)) return
         val cats = categoriaDao.getCategoriasNoSincronizadasByUser(uid)
         cats.forEach { c ->
             colCategorias(firestore, uid).document(c.idCategoria).set(c.toMap(), SetOptions.merge())
@@ -699,7 +709,7 @@ class AuthRepository(
         Log.d(TAG, "Cerrando sesión...")
         _authState.value = AuthState.Loading
         firebaseAuth.signOut()
-        configuracionRepository.setUsuarioLogueado("usuario_default")
+        configuracionRepository.setUsuarioLogueado(es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID)
         ConfigurationManager.logout()
         _restoreAllowed.value = null
         _restoreBlockMessage.value = null
@@ -740,6 +750,7 @@ class AuthRepository(
     }
 
     suspend fun loadUserConfiguration(usuarioUid: String, esPremium: Boolean) {
+        if (!DemoAccess.canSync(usuarioUid)) return
         try {
             val configEntity = configuracionRepository.getConfiguracion()
             configuracionRepository.setUsuarioLogueado(usuarioUid)
@@ -833,38 +844,11 @@ class AuthRepository(
         } else null
     }
 
-    suspend fun shouldShowDefaultUserWarning(): Boolean {
-        val uid = "usuario_default"
-        val roomEmpty = isRoomEmptyForUser(uid)
-        if (!roomEmpty) return false
+    suspend fun shouldShowDefaultUserWarning(): Boolean = false
 
-        val fs = FirebaseFirestore.getInstance()
-        val catsSnap = fs.collection("categorias").whereEqualTo("userId", uid)
-            .whereEqualTo("activa", true).limit(1).get().await()
-        val artsSnap = fs.collection("articulos").whereEqualTo("userId", uid)
-            .whereEqualTo("activo", true).limit(1).get().await()
-        val mercSnap = fs.collection("mercadillos").whereEqualTo("userId", uid)
-            .whereEqualTo("activo", true).limit(1).get().await()
-        val recsSnap = fs.collection("recibos").whereEqualTo("idUsuario", uid)
-            .whereEqualTo("activo", true).limit(1).get().await()
-        val linsSnap = fs.collection("lineas_venta").whereEqualTo("idUsuario", uid)
-            .whereEqualTo("activo", true).limit(1).get().await()
-
-        val hasRemote = !catsSnap.isEmpty || !artsSnap.isEmpty ||
-                !mercSnap.isEmpty || !recsSnap.isEmpty || !linsSnap.isEmpty
-
-        if (hasRemote) {
-            try {
-                deactivateAllUserData(uid)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error desactivando datos del usuario_default", e)
-            }
-            return false
-        }
-        return true
-    }
 
     private suspend fun deactivateAllUserData(uid: String) {
+        if (!DemoAccess.canSync(uid)) return
         val fs = FirebaseFirestore.getInstance()
         val collections = listOf(
             "categorias" to "activa",

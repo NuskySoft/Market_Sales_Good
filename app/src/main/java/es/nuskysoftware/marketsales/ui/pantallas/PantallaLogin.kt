@@ -43,7 +43,6 @@ import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.AuthViewModelFactory
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
-import es.nuskysoftware.marketsales.utils.DefaultBootstrapper
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -57,7 +56,8 @@ val TAG = "PantallaLogin"
 fun PantallaLogin(
     onNavigateToMain: () -> Unit = {},
     // ✅ NUEVO (opcional y retrocompatible): si se pasa, navegamos aquí al splash de descarga
-    navController: NavController? = null
+    navController: NavController? = null,
+    initialRegister: Boolean = false
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -94,7 +94,7 @@ fun PantallaLogin(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isPasswordVisible by remember { mutableStateOf(false) }
-    var isLoginMode by remember { mutableStateOf(true) } // true = Login, false = Registro
+    var isLoginMode by remember { mutableStateOf(!initialRegister) } // true = Login, false = Registro
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -159,13 +159,29 @@ fun PantallaLogin(
         }
     }
 
+    var acknowledge by remember { mutableStateOf(false) }
+    var pendingAuth by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun requireAcknowledgement(action: () -> Unit) {
+        if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo() && !acknowledge) pendingAuth = action else action()
+    }
+    val authAction = pendingAuth
+    if (authAction != null) {
+        AlertDialog(
+            onDismissRequest = { pendingAuth = null },
+            title = { Text(StringResourceManager.getString("demo_cuenta_nueva_titulo", currentLanguage)) },
+            text = { Text(StringResourceManager.getString("demo_cuenta_nueva_aviso", currentLanguage)) },
+            confirmButton = { TextButton(onClick = { acknowledge = true; pendingAuth = null; authAction() }) { Text(StringResourceManager.getString("aceptar", currentLanguage)) } },
+            dismissButton = { TextButton(onClick = { pendingAuth = null }) { Text(StringResourceManager.getString("cancelar", currentLanguage)) } }
+        )
+    }
+
     fun handleAuthAction() {
         if (!isFormValid) return
         showError = false
         // 🔒 gate: aún no sabemos premium real
         ConfigurationManager.markPremiumUnknown()
         if (isLoginMode) authViewModel.loginWithEmail(email.trim(), password)
-        else authViewModel.registerWithEmail(email.trim(), password)
+        else requireAcknowledgement { authViewModel.registerWithEmail(email.trim(), password) }
     }
 
     fun handleGoogleSignIn() {
@@ -174,7 +190,7 @@ fun PantallaLogin(
             // 🔒 gate: aún no sabemos premium real
             ConfigurationManager.markPremiumUnknown()
             val signInIntent = googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
+            requireAcknowledgement { googleSignInLauncher.launch(signInIntent) }
         } else {
             errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
             showError = true
@@ -402,7 +418,7 @@ fun PantallaLogin(
                         ConfigurationManager.markPremiumUnknown()
                         android.util.Log.d(TAG, "Lanzando Google Sign-In")
                         val signInIntent = googleSignInClient.signInIntent
-                        googleSignInLauncher.launch(signInIntent)
+                        requireAcknowledgement { googleSignInLauncher.launch(signInIntent) }
                     } else {
                         errorMessage = StringResourceManager.getString("google_auth_unavailable", currentLanguage)
                         showError = true

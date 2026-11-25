@@ -136,7 +136,7 @@ fun PantallaArqueoCaja(
                 val totalMonedas = parseImporte(totalMonedasInput)
                 val totalContado = totalBilletes + totalMonedas
                 val diferencia = totalContado - resultadoEsperado
-                val puedeConfirmar = (m.estado == 4) && !guardando
+                val puedeConfirmar = (m.estado == 4 || es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) && !guardando
 
                 val estadoCajaTexto = when {
                     abs(diferencia) < 0.009 -> {

@@ -3,7 +3,10 @@
 
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/MercadilloRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
 
+
+import androidx.room.withTransaction
 import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
@@ -25,16 +28,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MercadilloRepository(
-    context: Context
+    context: Context,
+    private val database: AppDatabase = AppDatabase.getDatabase(context)
 ) {
-    private val mercadilloDao: MercadilloDao = AppDatabase.getDatabase(context).mercadilloDao()
-    private val lineasVentaDao: LineasVentaDao = AppDatabase.getDatabase(context).lineasVentaDao()
+    private val mercadilloDao: MercadilloDao = database.mercadilloDao()
+    private val lineasVentaDao: LineasVentaDao = database.lineasVentaDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val tz: TimeZone = TimeZone.getTimeZone("Europe/Madrid")
     private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).apply { timeZone = tz }
+
+    private val localDb = database
 
     companion object { private const val TAG = "MercadilloRepository" }
 
@@ -56,14 +62,14 @@ class MercadilloRepository(
     // ===== Flows =====
     fun getMercadillosUsuarioActual(): Flow<List<MercadilloEntity>> =
         ConfigurationManager.usuarioLogueado.flatMapLatest { userId ->
-            val effective = if (userId.isNullOrBlank()) "usuario_default" else userId
+            val effective = if (userId.isNullOrBlank()) es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID else userId
             Log.d(TAG, "🔄 Usuario cambió a: $effective - Recargando mercadillos")
             mercadilloDao.getMercadillosByUser(effective)
         }
 
     fun getMercadillosPorMes(ano: Int, mes: Int): Flow<List<MercadilloEntity>> =
         ConfigurationManager.usuarioLogueado.flatMapLatest { userId ->
-            val effective = if (userId.isNullOrBlank()) "usuario_default" else userId
+            val effective = if (userId.isNullOrBlank()) es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID else userId
             val mesPattern = "%${String.format("%02d", mes)}-$ano"
             mercadilloDao.getMercadillosByUserAndMes(effective, mesPattern)
         }
@@ -118,36 +124,43 @@ class MercadilloRepository(
             sincronizadoFirebase = false
         )
 
-        mercadilloDao.insertMercadillo(nuevo)
-        sincronizarMercadilloConFirebase(nuevo)
+        localDb.withTransaction {
+                DemoAccess.requireOwner(userId)
+                DemoAccess.checkLimit("mercadillos", mercadilloDao.contarDemo(userId))
+                mercadilloDao.insertMercadillo(nuevo)
+            }
+        repositoryScope.launch { sincronizarMercadilloConFirebase(nuevo) }
         nuevo.idMercadillo
     }
 
     suspend fun actualizarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
+        DemoAccess.requireOwner(mercadillo.userId)
         val actualizado = mercadillo.copy(
             version = mercadillo.version + 1,
             lastModified = System.currentTimeMillis(),
             sincronizadoFirebase = false
         )
         mercadilloDao.updateMercadillo(actualizado)
-        sincronizarMercadilloConFirebase(actualizado)
+        repositoryScope.launch { sincronizarMercadilloConFirebase(actualizado) }
         true
     }
 
     suspend fun eliminarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered("demo_no_borrar_mercadillo")
         mercadilloDao.deleteMercadillo(mercadillo)
         eliminarMercadilloDeFirebase(mercadillo.idMercadillo)
         true
     }
 
     suspend fun desactivarMercadillo(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
+        DemoAccess.requireRegistered("demo_no_borrar_mercadillo")
         mercadilloDao.desactivarMercadillo(mercadilloId)
         mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
         true
     }
 
     suspend fun getMercadilloById(id: String): MercadilloEntity? = withContext(Dispatchers.IO) {
-        mercadilloDao.getMercadilloById(id)
+        mercadilloDao.getMercadilloById(id)?.takeIf { it.userId == ConfigurationManager.getCurrentUserId() }
     }
 
     // ===== SALDOS / ARQUEO =====
@@ -253,14 +266,14 @@ class MercadilloRepository(
 
     // ===== Consultas específicas / híbrido =====
     suspend fun getProximoMercadillo(): MercadilloEntity? = withContext(Dispatchers.IO) {
-        val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+        val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
         val fechaActual = dateFormat.format(Date())
         mercadilloDao.getProximoMercadillo(userId, fechaActual)
     }
 
     fun getMercadillosRequierenAtencion(): Flow<List<MercadilloEntity>> =
         ConfigurationManager.usuarioLogueado.flatMapLatest { userId ->
-            if (!userId.isNullOrBlank() && userId != "usuario_default") {
+            if (!userId.isNullOrBlank() && userId != es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID) {
                 mercadilloDao.getMercadillosPendientesArqueo(userId)
             } else flowOf(emptyList())
         }
@@ -329,6 +342,8 @@ class MercadilloRepository(
 
     // ===== Híbrido Room/Firebase =====
     suspend fun getHybridMercadillos(userId: String): List<MercadilloEntity> = withContext(Dispatchers.IO) {
+        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext mercadilloDao.getMercadillosByUser(userId).first()
+
         try {
             val pendientes = mercadilloDao.getMercadillosNoSincronizadosByUser(userId)
             if (pendientes.isNotEmpty()) return@withContext mercadilloDao.getMercadillosByUser(userId).first()
@@ -350,6 +365,7 @@ class MercadilloRepository(
 
     // ===== Sync Firebase =====
     private suspend fun sincronizarMercadilloConFirebase(mercadillo: MercadilloEntity) {
+        if (!DemoAccess.canSync(mercadillo.userId)) return
         try {
             if (!connectivityObserver.isConnected.first()) return
             val datos = mapOf(
@@ -388,6 +404,7 @@ class MercadilloRepository(
     }
 
     private suspend fun eliminarMercadilloDeFirebase(mercadilloId: String) {
+        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
         try {
             if (connectivityObserver.isConnected.first()) {
                 FirebaseFirestore.getInstance()
@@ -405,7 +422,7 @@ class MercadilloRepository(
         } catch (_: Exception) { }
     }
 
-    private suspend fun descargarMercadillosDesdeFirebase(userId: String): List<MercadilloEntity> = try {
+    private suspend fun descargarMercadillosDesdeFirebase(userId: String): List<MercadilloEntity> = if (!DemoAccess.canSync(userId)) emptyList() else try {
         val snapshot = FirebaseFirestore.getInstance().collection("mercadillos")
             .whereEqualTo("userId", userId)
             .whereEqualTo("activo", true)

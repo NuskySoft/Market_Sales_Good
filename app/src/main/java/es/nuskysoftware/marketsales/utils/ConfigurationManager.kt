@@ -17,14 +17,14 @@ object ConfigurationManager {
     private val _fuente = MutableStateFlow("Montserrat")
     private val _temaOscuro = MutableStateFlow(false)
     private val _moneda = MutableStateFlow("€ Euro")
-    private val _usuarioLogueado = MutableStateFlow<String?>("usuario_default")
+    private val _usuarioLogueado = MutableStateFlow<String?>(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: AppModePolicy.DEMO_USER_ID)
     // O si quieres que el valor inicial cuando nadie está logueado sea null:
     // private val _usuarioLogueado = MutableStateFlow<String?>(null)
     private val _usuarioEmail = MutableStateFlow<String?>(null)
     private val _displayName = MutableStateFlow<String?>(null)
     private val _versionApp = MutableStateFlow(0) // Para compatibilidad
 
-    private val _isAuthenticated = MutableStateFlow(false)
+    private val _isAuthenticated = MutableStateFlow(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null)
 
     private var lastSuccessfulPremiumState: Boolean? = null
 
@@ -140,7 +140,7 @@ object ConfigurationManager {
     fun getTemaOscuro(): Boolean = _temaOscuro.value
     fun getMoneda(): String = _moneda.value
     fun getUsuarioEmail(): String? = _usuarioEmail.value
-    fun getUsuarioId(): String? = _usuarioLogueado.value.takeIf { it != "usuario_default" }
+    fun getUsuarioId(): String? = _usuarioLogueado.value.takeIf { it != es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID }
     fun getVersionApp(): Int = _versionApp.value
     fun getIsPremium(): Boolean = _esPremium.value
 
@@ -172,20 +172,6 @@ object ConfigurationManager {
         Log.d("ConfigurationManager", "   - lastSuccessfulPremiumState: $lastSuccessfulPremiumState")
         Log.d("ConfigurationManager", "   - isAuthenticated: ${_isAuthenticated.value}")
 
-        // 🛡️ PROTECCIÓN MEJORADA: Solo bloquear si usuario está autenticado
-        if (oldValue == true && newValue == false && _isAuthenticated.value == true) {
-            Log.e("ConfigurationManager", "🚨 BLOQUEANDO CAMBIO - Usuario autenticado premium")
-            Thread.currentThread().stackTrace.take(15).forEach { frame ->
-                Log.e("ConfigurationManager", "     at ${frame.className}.${frame.methodName}(${frame.fileName}:${frame.lineNumber})")
-            }
-            return
-        }
-
-        // ✅ PERMITIR logout cuando isAuthenticated = false
-        if (oldValue == true && newValue == false && _isAuthenticated.value == false) {
-            Log.w("ConfigurationManager", "✅ PERMITIENDO logout - Usuario no autenticado")
-        }
-
         _esPremium.value = newValue
         Log.d("ConfigurationManager", "✅ esPremium cambiado: $oldValue → $newValue (fuente: $source)")
     }
@@ -205,7 +191,7 @@ object ConfigurationManager {
         lastSuccessfulPremiumState = null
         Log.d("ConfigurationManager", "   - Protección premium limpiada")
 
-        // 🔄 Llamar a reset después de limpiar protección
+        _isAuthenticated.value = false
         resetToDefaults()
 
         Log.d("ConfigurationManager", "   - esPremium después: ${_esPremium.value}")
@@ -309,7 +295,7 @@ object ConfigurationManager {
         _usuarioLogueado.value = if (isAuthenticated && usuarioId != null) {
             usuarioId
         } else {
-            "usuario_default"
+            es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
         }
 
         // 💾 Guardar último estado premium válido para protección
@@ -364,7 +350,7 @@ object ConfigurationManager {
     }
 
     fun setUsuarioLogueado(userId: String?) {
-        _usuarioLogueado.value = userId ?: "usuario_default"
+        _usuarioLogueado.value = userId ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
     }
 
     fun setUsuarioId(userId: String?) {
@@ -406,7 +392,7 @@ object ConfigurationManager {
         _fuente.value = "Montserrat"
         _temaOscuro.value = false
         _moneda.value = "€ Euro"
-        _usuarioLogueado.value = "usuario_default"
+        _usuarioLogueado.value = es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
         _usuarioEmail.value = null
         _displayName.value = null
         setEsPremiumProtected(false, "resetToDefaults")
@@ -427,7 +413,7 @@ object ConfigurationManager {
 
     // ========== VERIFICACIONES ==========
     fun isUsuarioLogueado(): Boolean {
-        return _usuarioLogueado.value != "usuario_default"
+        return _usuarioLogueado.value != es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
     }
 
     fun isPremium(): Boolean = _esPremium.value

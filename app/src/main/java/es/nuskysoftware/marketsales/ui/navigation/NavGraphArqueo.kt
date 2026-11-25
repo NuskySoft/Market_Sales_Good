@@ -48,7 +48,7 @@ fun NavGraphBuilder.addArqueoGraph(navController: NavController) {
         arguments = listOf(navArgument("mercadilloId") { type = NavType.StringType })
     ) { backStack ->
         val id = backStack.arguments?.getString("mercadilloId") ?: return@composable
-        PantallaAsignarSaldo(navController, id)
+        es.nuskysoftware.marketsales.ui.components.DemoRestricted(navController, "demo_sin_asignar_saldo") { PantallaAsignarSaldo(navController, id) }
     }
 }
 

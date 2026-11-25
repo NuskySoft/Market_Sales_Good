@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/GastosRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+import es.nuskysoftware.marketsales.utils.DemoAccess
+
 
 import android.content.Context
 import android.util.Log
@@ -56,7 +58,10 @@ class GastosRepository(context: Context) {
         descontarDeCaja: Boolean
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val userId = ConfigurationManager.getCurrentUserId() ?: "usuario_default"
+            val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
+            DemoAccess.requireOwner(userId)
+            val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
+            DemoAccess.requireOwner(market.userId)
             val now = System.currentTimeMillis()
 
             val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
@@ -103,6 +108,7 @@ class GastosRepository(context: Context) {
     }
 
     private suspend fun pushUno(l: LineaGastoEntity) {
+        if (!DemoAccess.canSync(l.idUsuario)) return
         val docId = "${l.idMercadillo}-${l.numeroLinea}"
         val data = mapOf(
             "idMercadillo" to l.idMercadillo,

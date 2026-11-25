@@ -756,6 +756,18 @@ internal object SpanishStrings {
         "sin_usuario_categoria" -> "No se puede crear una categoría sin usuario"
         "sin_usuario_mercadillo" -> "No se puede crear un mercadillo sin usuario"
         "limite_free_mercadillos" -> "Los usuarios FREE solo pueden crear un mercadillo por día. Actualiza a Premium para crear múltiples mercadillos."
+        "version_demo" -> "Versión Demo"
+        "demo_crear_cuenta" -> "Crear cuenta gratuita"
+        "demo_solo_registrados" -> "Esta opción solo está disponible para usuarios registrados. Crea una cuenta gratuita para continuar."
+        "demo_abonos_registrados" -> "Los abonos solo están disponibles para usuarios registrados. Crea una cuenta gratuita para utilizarlos."
+        "demo_sin_asignar_saldo" -> "La Demo permite registrar gastos y hacer el arqueo, pero no asignar saldo."
+        "demo_no_borrar_mercadillo" -> "No se puede borrar el mercadillo de la Versión Demo."
+        "demo_limite_mercadillos" -> "La Versión Demo permite un máximo de 1 mercadillo. Crea una cuenta gratuita para continuar."
+        "demo_limite_categorias" -> "La Versión Demo permite un máximo de 1 categoría. Crea una cuenta gratuita para continuar."
+        "demo_limite_articulos" -> "La Versión Demo permite un máximo de 1 artículo. Crea una cuenta gratuita para continuar."
+        "demo_limite_ventas" -> "Has alcanzado las 10 ventas de la Versión Demo. Crea una cuenta gratuita para continuar."
+        "demo_cuenta_nueva_titulo" -> "Datos de la Demo separados"
+        "demo_cuenta_nueva_aviso" -> "Si creas una cuenta, empezarás de cero. Los datos de la Demo no se trasladan a ninguna cuenta, tampoco con Premium. Si inicias sesión en una cuenta existente, usarás los datos de esa cuenta."
         else -> key
     }
 }

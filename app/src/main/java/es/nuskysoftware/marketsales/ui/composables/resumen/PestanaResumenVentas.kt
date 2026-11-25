@@ -106,7 +106,10 @@ fun PestanaResumenVentas(
                         moneda = moneda,
                         metodoPago = metodo,
                         mostrarBotonAbono = puedeAbonar,
-                        onAbonarClick = { lineaParaConfirmar = linea }
+                        onAbonarClick = {
+                            if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_abonos_registrados")
+                            else lineaParaConfirmar = linea
+                        }
                     )
                 }
             }
@@ -156,6 +159,8 @@ fun PestanaResumenVentas(
                         lineaParaConfirmar = null
                         scope.launch(Dispatchers.IO) {
                             try {
+                                es.nuskysoftware.marketsales.utils.DemoAccess.requireRegistered("demo_abonos_registrados")
+                                es.nuskysoftware.marketsales.utils.DemoAccess.requireOwner(l.idUsuario)
                                 val maxId = lineasDao.obtenerMaxIdLineaPorMercadillo(l.idMercadillo)
                                 val nuevoId = siguienteIdLinea(maxId)
                                 val nextNumero = (lineas.maxOfOrNull { it.numeroLinea } ?: 0) + 1

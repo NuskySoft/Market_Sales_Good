@@ -93,7 +93,7 @@ class MercadillosManager(
         repository.getMercadillosUsuarioActual()
             .combine(minuteTicker.onStart { emit(Unit) }) { lista, _ ->
                 lista
-                    .filter { it.estado == EstadosMercadillo.Estado.EN_CURSO.codigo }
+                    .filter { DemoAccess.isDemo() || it.estado == EstadosMercadillo.Estado.EN_CURSO.codigo }
                     .sortedBy { safeParse(it.fecha, dfFecha) }
             }
             .stateIn(scope, SharingStarted.WhileSubscribed(5_000), emptyList())

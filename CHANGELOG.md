@@ -1,5 +1,13 @@
 # Historial de versiones
 
+## 2.2 — 2026-11-25
+
+- F11: al confirmar una venta Premium, descuenta los productos con control de stock independientemente de la pestaña seleccionada.
+- Mantiene las reglas de Premium, artículo con control de stock y conceptos manuales sin movimiento de existencias.
+- Cambio de negocio confirmado por el usuario. Prueba manual pendiente: stock 10, vender 2 y finalizar desde Manual o Productos debe dejar 8.
+- No modifica todavía la transacción integral de stock (F07), la lógica de abonos ni el esquema Room.
+
+
 ## 2.1 — 2026-11-25
 
 - F03: corrige contarPorUsuario de MercadilloDao para contar mercadillos del propietario, en lugar de categorías.

@@ -19,3 +19,8 @@
 - Aviso Demo fijo y acceso independiente a registro/login. Nunca transferir datos Demo a una cuenta, tampoco mediante Premium.
 - Mantener datos al ascender gratuito a Premium, conservar sesión y guardar local antes de sincronizar. Restauración en instalación vacía exclusiva de Premium.
 - No marcar como validadas las pruebas Android hasta que se hayan ejecutado. No tocar las ramas backup/.
+
+## Correcciones y filosofía de negocio
+
+- Antes de cambiar una regla de negocio: explicar comportamiento actual, ejemplo y propuesta; confirmar la intención con el usuario. No tratar todos los hallazgos de la auditoría como defectos demostrados.
+- Regla F11 confirmada: en cuenta Premium, descontar las líneas PRODUCTO con artículo que controle stock, independientemente de la pestaña seleccionada. Los conceptos manuales no descuentan existencias. No ampliar el control de stock a gratuito o Demo.

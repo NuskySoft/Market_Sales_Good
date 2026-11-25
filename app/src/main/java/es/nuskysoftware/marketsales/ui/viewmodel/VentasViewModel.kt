@@ -228,7 +228,7 @@ class VentasViewModel(
                     total = s.totalTicket
                 )
                 if (resultado.isSuccess) {
-                    if (ConfigurationManager.getIsPremium() && s.pestanaActiva == PestanaVenta.PRODUCTOS) {
+                    if (ConfigurationManager.getIsPremium()) {
                         s.lineasTicket.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.idProducto != null }
                             .forEach { linea ->
                                 try {

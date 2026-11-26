@@ -42,7 +42,7 @@ android {
 
     defaultConfig {
         applicationId = "es.nuskysoftware.marketsales"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 7
         versionName = "2.3"

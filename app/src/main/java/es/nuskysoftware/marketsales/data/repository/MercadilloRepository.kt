@@ -29,8 +29,10 @@ import java.util.*
 
 class MercadilloRepository(
     context: Context,
-    private val database: AppDatabase = AppDatabase.getDatabase(context)
-) {
+    private val database: AppDatabase = AppDatabase.getDatabase(context),
+    observeNetwork: Boolean = true
+) : java.io.Closeable {
+    private val appContext = context.applicationContext
     private val mercadilloDao: MercadilloDao = database.mercadilloDao()
     private val lineasVentaDao: LineasVentaDao = database.lineasVentaDao()
     private val firestore = FirebaseFirestore.getInstance()
@@ -46,7 +48,7 @@ class MercadilloRepository(
 
     init {
         // Sincronización básica al recuperar conexión
-        repositoryScope.launch {
+        if (observeNetwork) repositoryScope.launch {
             connectivityObserver.isConnected.collect { online ->
                 if (online) {
                     val userId = ConfigurationManager.getCurrentUserId()
@@ -202,44 +204,18 @@ class MercadilloRepository(
     // ===== AUTOESTADOS =====
 
     suspend fun actualizarEstadosAutomaticos(userId: String) = withContext(Dispatchers.IO) {
-        try {
-            val lista = mercadilloDao.getMercadillosByUser(userId).first()
-            val now = System.currentTimeMillis()
-            val hoyStr = dateFormat.format(Date(now))
-            var cambios = 0
-
-            for (m in lista) {
-                // ⛔️ SALVAGUARDA: nunca degradar estados ≥ 5 (5=pte asignar saldo, 6=cerrado)
-                if (m.estado >= 5) continue
-
-                val fechaStart = parseFechaStartOfDay(m.fecha) ?: continue
-                val ventanaInicio = fechaStart                 // 00:00 local
-                val ventanaFin = endOfWindowMillis(fechaStart) // 05:00 del día siguiente
-
-                when {
-                    // 1/2 -> 3 si hoy o dentro de ventana
-                    (m.estado == 1 || m.estado == 2) &&
-                            (m.fecha == hoyStr || now in ventanaInicio until ventanaFin) -> {
-                        mercadilloDao.actualizarEstado(m.idMercadillo, EstadosMercadillo.Estado.EN_CURSO.codigo)
-                        cambios++
-                        mercadilloDao.getMercadilloById(m.idMercadillo)?.let { sincronizarMercadilloConFirebase(it) }
-                    }
-
-                    // Fuera de ventana: si hubo ventas -> 4, si no -> 7
-                    now >= ventanaFin -> {
-                        val ventas = lineasVentaDao.contarLineasPorMercadillo(m.idMercadillo)
-                        if (ventas > 0) mercadilloDao.marcarPendienteArqueo(m.idMercadillo)
-                        else mercadilloDao.cancelarMercadillo(m.idMercadillo)
-                        cambios++
-                        mercadilloDao.getMercadilloById(m.idMercadillo)?.let { sincronizarMercadilloConFirebase(it) }
-                    }
-                }
-            }
-
-            if (cambios > 0) Log.d(TAG, "✅ Autoestados aplicados: $cambios")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Autoestados", e)
+        val cambios = AutoEstadoProcessor(database).apply(userId)
+        if (cambios > 0 && DemoAccess.canSync(userId)) {
+            es.nuskysoftware.marketsales.work.AutoEstadoScheduler.requestUpload(appContext)
         }
+        Unit
+    }
+
+    suspend fun sincronizarPendientesAutoestado(userId: String) =
+        sincronizarMercadillosNoSincronizados(userId)
+
+    override fun close() {
+        repositoryScope.cancel()
     }
 
     suspend fun confirmarArqueoCaja(

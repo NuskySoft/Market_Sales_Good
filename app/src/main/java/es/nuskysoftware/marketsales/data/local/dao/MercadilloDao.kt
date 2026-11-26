@@ -376,6 +376,9 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis()
     )
 
+    @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND estado IN (1, 2, 3)")
+    suspend fun pendientesAutoestado(uid: String): List<MercadilloEntity>
+
     // ========== UTILIDADES ==========
 
     @Query("""

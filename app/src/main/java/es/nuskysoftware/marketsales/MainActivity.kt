@@ -75,6 +75,17 @@ import es.nuskysoftware.marketsales.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.CancellationException
+import es.nuskysoftware.marketsales.work.AutoEstadoScheduler
+import es.nuskysoftware.marketsales.data.repository.AutoEstadoProcessor
+import es.nuskysoftware.marketsales.data.local.database.AppDatabase
+import es.nuskysoftware.marketsales.utils.AppModePolicy
 
 class MainActivity : ComponentActivity() {
 
@@ -84,6 +95,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        iniciarAutoestados()
         runCatching { es.nuskysoftware.marketsales.work.StockMovementScheduler.start(applicationContext) }
             .onFailure { Log.w(TAG, "Stock retry will be scheduled on next startup", it) }
 
@@ -121,6 +133,28 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val owner by ConfigurationManager.usuarioLogueado.collectAsState()
                     key(owner) { NavigationSystem(configuracionViewModel) }
+                }
+            }
+        }
+    }
+    private fun iniciarAutoestados() {
+        runCatching { AutoEstadoScheduler.scheduleDaily(applicationContext) }
+            .onFailure { Log.w(TAG, "No se pudo programar autoestados", it) }
+        val processor = AutoEstadoProcessor(AppDatabase.getDatabase(applicationContext))
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                ConfigurationManager.usuarioLogueado.collectLatest { owner ->
+                    if (owner.isNullOrBlank() || owner == AppModePolicy.DEMO_USER_ID) return@collectLatest
+                    while (isActive) {
+                        try {
+                            if (processor.apply(owner) > 0) AutoEstadoScheduler.requestUpload(applicationContext)
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (failure: Exception) {
+                            Log.w(TAG, "Reintento de autoestados", failure)
+                        }
+                        delay(60_000L)
+                    }
                 }
             }
         }

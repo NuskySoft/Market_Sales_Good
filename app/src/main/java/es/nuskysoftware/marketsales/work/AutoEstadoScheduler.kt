@@ -9,7 +9,10 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.ZonedDateTime
+import java.time.ZoneId
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import java.util.concurrent.TimeUnit
 
 /**
@@ -32,13 +35,13 @@ object AutoEstadoScheduler {
 
         wm.enqueueUniquePeriodicWork(
             WORK_00,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.KEEP,
             periodicAt(hour = 0, minute = 0)
         )
 
         wm.enqueueUniquePeriodicWork(
             WORK_05,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.KEEP,
             periodicAt(hour = 5, minute = 0)
         )
     }
@@ -59,11 +62,20 @@ object AutoEstadoScheduler {
         )
     }
 
+    fun requestUpload(context: Context) {
+        val request = OneTimeWorkRequest.Builder(AutoEstadoUploadWorker::class.java)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "autoEstado_upload", ExistingWorkPolicy.APPEND_OR_REPLACE, request
+        )
+    }
+
     // ---------- helpers ----------
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun periodicAt(hour: Int, minute: Int): PeriodicWorkRequest {
-        val now = LocalDateTime.now()
+        val now = ZonedDateTime.now(ZoneId.of("Europe/Madrid"))
         var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
         if (!next.isAfter(now)) next = next.plusDays(1)
         val delay = Duration.between(now, next)

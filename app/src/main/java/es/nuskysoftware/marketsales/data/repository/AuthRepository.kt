@@ -437,7 +437,6 @@ class AuthRepository(
             remote.categorias.forEach { categoriaDao.marcarComoSincronizada(it.idCategoria) }
             remote.articulos.forEach { articuloDao.marcarComoSincronizado(it.idArticulo) }
             remote.mercadillos.forEach { mercadilloDao.marcarComoSincronizado(it.idMercadillo) }
-            remote.gastos.forEach { lineasGastosDao.marcarComoSincronizado(it.numeroLinea) }
         }
         Log.i(
             TAG,
@@ -466,7 +465,6 @@ class AuthRepository(
             remote.categorias.forEach { categoriaDao.marcarComoSincronizada(it.idCategoria) }
             remote.articulos.forEach { articuloDao.marcarComoSincronizado(it.idArticulo) }
             remote.mercadillos.forEach { mercadilloDao.marcarComoSincronizado(it.idMercadillo) }
-            remote.gastos.forEach { lineasGastosDao.marcarComoSincronizado(it.numeroLinea) }
         }
         Log.i(TAG, "✅ Reemplazo completo desde Firebase para uid=$uid")
     }
@@ -485,7 +483,6 @@ class AuthRepository(
             remote.categorias.forEach { categoriaDao.marcarComoSincronizada(it.idCategoria) }
             remote.articulos.forEach { articuloDao.marcarComoSincronizado(it.idArticulo) }
             remote.mercadillos.forEach { mercadilloDao.marcarComoSincronizado(it.idMercadillo) }
-            remote.gastos.forEach { lineasGastosDao.marcarComoSincronizado(it.numeroLinea) }
         }
         Log.i(TAG, "✅ Pull MERGE desde Firebase para uid=$uid")
     }
@@ -512,9 +509,7 @@ class AuthRepository(
         }
         val gastos = lineasGastosDao.getPendientesSync(uid)
         gastos.forEach { g ->
-            colLineasGastos(firestore, uid).document(g.numeroLinea).set(g.toMap(), SetOptions.merge())
-                .await()
-            lineasGastosDao.marcarComoSincronizado(g.numeroLinea)
+            GastoSync.push(firestore, lineasGastosDao, g)
         }
         Log.i(TAG, "⬆️ Pendientes locales subidos a Firebase (uid=$uid)")
     }
@@ -567,7 +562,16 @@ class AuthRepository(
             colLineasGastos(firestore, uid)
                 .whereEqualTo("idUsuario", uid)
                 .whereEqualTo("activo", true)
-                .get().await().documents.mapNotNull { it.toLineaGasto(uid) }
+                .get().await().documents.mapNotNull { snap ->
+                    snap.toLineaGasto(uid)?.let { gasto -> snap.id to gasto }
+                }.groupBy { (_, gasto) -> gasto.idMercadillo to gasto.numeroLinea }
+                .values.map { copies ->
+                    // Un documento antiguo incompleto no debe sustituir al canónico.
+                    copies.maxWithOrNull(compareBy<Pair<String, LineaGastoEntity>>(
+                        { (id, gasto) -> id == GastoSync.documentId(gasto) },
+                        { (_, gasto) -> gasto.lastModified }
+                    ))!!.second
+                }
         } catch (e: Exception) {
             Log.e(TAG, "Error descargando gastos", e); emptyList()
         }
@@ -943,18 +947,6 @@ private fun MercadilloEntity.toMap(): Map<String, Any?> = mapOf(
     "sincronizadoFirebase" to true
 )
 
-private fun LineaGastoEntity.toMap(): Map<String, Any?> = mapOf(
-    "idLineaGasto" to numeroLinea,
-    "idUsuario" to idUsuario,
-    "idMercadillo" to idMercadillo,
-    "descripcion" to descripcion,
-    "importe" to importe,
-    "activo" to activo,
-    "version" to version,
-    "lastModified" to lastModified,
-    "sincronizadoFirebase" to sincronizadoFirebase
-)
-
 private fun Map<String, Any?>.getString(key: String, def: String = ""): String =
     (this[key] as? String) ?: def
 
@@ -1118,14 +1110,16 @@ private fun com.google.firebase.firestore.DocumentSnapshot.toLineaGasto(uid: Str
     val remoteUid = (m["userId"] as? String) ?: (m["idUsuario"] as? String)
     if (remoteUid != null && remoteUid != uid) return null
 
-    // 🔹 Adaptado exactamente a tu estructura real de LineaGastoEntity (V16)
+    val mercadillo = (m["idMercadillo"] as? String)?.takeIf { it.isNotBlank() } ?: return null
+    val numero = (m["numeroLinea"] as? String)?.takeIf { it.isNotBlank() }
+        ?: (m["idLineaGasto"] as? String)?.takeIf { it.isNotBlank() } ?: return null
     return LineaGastoEntity(
-        idMercadillo = m["idMercadillo"] as? String ?: "",
+        idMercadillo = mercadillo,
         idUsuario = uid,
-        numeroLinea = m["numeroLinea"] as? String ?: "",
+        numeroLinea = numero,
         descripcion = m["descripcion"] as? String ?: "",
         importe = (m["importe"] as? Number)?.toDouble() ?: 0.0,
-        fechaHora = (m["fechaHora"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+        fechaHora = (m["fechaHora"] as? Number)?.toLong() ?: (m["lastModified"] as? Number)?.toLong() ?: 0L,
         formaPago = m["formaPago"] as? String ?: "efectivo",
         descontarDeCaja = (m["descontarDeCaja"] as? Boolean) ?: true,
         version = (m["version"] as? Number)?.toLong() ?: 1L,

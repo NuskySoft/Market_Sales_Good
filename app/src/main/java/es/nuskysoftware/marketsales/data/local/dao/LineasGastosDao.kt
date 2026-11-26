@@ -54,11 +54,8 @@ interface LineasGastosDao {
     @Query("SELECT * FROM LineasGastos WHERE idUsuario = :userId AND sincronizadoFirebase = 0")
     suspend fun getPendientesSync(userId: String): List<LineaGastoEntity>
 
-    @Query("UPDATE LineasGastos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idMercadillo = :mercadillo AND numeroLinea = :numeroLinea")
-    suspend fun marcarSincronizado(mercadillo: String, numeroLinea: String, timestamp: Long)
-
-    @Query("UPDATE LineasGastos SET sincronizadoFirebase = 1 WHERE numeroLinea = :id")
-    suspend fun marcarComoSincronizado(id: String)
+    @Query("UPDATE LineasGastos SET sincronizadoFirebase = 1 WHERE idUsuario = :uid AND idMercadillo = :mercadillo AND numeroLinea = :numeroLinea AND lastModified = :timestamp AND version = :version")
+    suspend fun marcarSincronizado(uid: String, mercadillo: String, numeroLinea: String, timestamp: Long, version: Long): Int
 
     @Query("SELECT COUNT(*) FROM LineasGastos WHERE idUsuario = :uid")
     suspend fun contarPorUsuario(uid: String): Int

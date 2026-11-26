@@ -8,5 +8,10 @@ Base: candidata 2.3, commit `3bf79db995e14f34bf3f282feba33ef3d4e0e2ce`. Respaldo
 
 Comprobación estática de cambios realizada; compilación Gradle y pruebas Android pendientes. Verificar debug con IDs de prueba, release con IDs de producción sin generar impresiones de prueba reales, y firma con la clave existente. No instalar sobre los datos reales sin respaldo de Room.
 
+## Segundo bloque (F02)
+- Las dos rutas activas de subida de gastos usan GastoSync: clave mercadillo-línea, todos los campos y confirmación por propietario, clave, versión y fecha original. Room asigna el número de línea dentro de la transacción de alta.
+- La descarga reconoce identificadores antiguos idLineaGasto, descarta claves vacías y agrupa duplicados de la misma clave. Si existe el documento canónico se prefiere frente a la copia antigua incompleta; no se borran documentos remotos antiguos. Los campos que nunca se subieron no se pueden recuperar de esa copia. La reconciliación de datos locales/remotos y reintentos persistentes generales siguen pendientes de F06/F18.
+- Pendiente compilar y ejecutar prueba de dos mercadillos con línea 0001, reintento sin conexión y descarga de documentos antiguos.
+
 ## Pendientes
-F02, F04, F05, F06, F09, F10, F13, F14, F15, F17, F18, F19 y F20; regresión F01/F03/F07/F11/F12. Mantener las decisiones del documento de continuidad 2.4. F08/F16 quedan pendientes de validación real.
+F04, F05, F06, F09, F10, F13, F14, F15, F17, F18, F19 y F20; regresión F01/F03/F07/F11/F12. Mantener las decisiones del documento de continuidad 2.4. F08/F16 quedan pendientes de validación real.

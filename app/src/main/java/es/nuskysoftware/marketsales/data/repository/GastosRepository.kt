@@ -7,7 +7,6 @@ import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import es.nuskysoftware.marketsales.data.local.dao.LineasGastosDao
 import es.nuskysoftware.marketsales.data.local.dao.MercadilloDao
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
@@ -64,24 +63,24 @@ class GastosRepository(context: Context) {
             DemoAccess.requireOwner(market.userId)
             val now = System.currentTimeMillis()
 
-            val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
-            val base = max?.toIntOrNull() ?: 0
-            val next = String.format("%04d", base + 1)
+            val linea = db.withTransaction {
+                val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
+                val base = max?.toIntOrNull() ?: 0
+                val next = String.format("%04d", base + 1)
 
-            val linea = LineaGastoEntity(
-                idMercadillo = idMercadillo,
-                idUsuario = userId,
-                numeroLinea = next,
-                descripcion = descripcion,
-                importe = importe,
-                fechaHora = now,
-                formaPago = formaPago,
-                descontarDeCaja = descontarDeCaja,
-                lastModified = now,
-                sincronizadoFirebase = false
-            )
+                val linea = LineaGastoEntity(
+                    idMercadillo = idMercadillo,
+                    idUsuario = userId,
+                    numeroLinea = next,
+                    descripcion = descripcion,
+                    importe = importe,
+                    fechaHora = now,
+                    formaPago = formaPago,
+                    descontarDeCaja = descontarDeCaja,
+                    lastModified = now,
+                    sincronizadoFirebase = false
+                )
 
-            db.withTransaction {
                 gastosDao.insertarLinea(linea)
                 val totalG = gastosDao.getTotalGastosMercadillo(idMercadillo)
                 val m = mercadilloDao.getMercadilloById(idMercadillo) ?: return@withTransaction
@@ -92,6 +91,7 @@ class GastosRepository(context: Context) {
                     arqueoMercadillo = m.arqueoMercadillo ?: 0.0,
                     timestamp = System.currentTimeMillis()
                 )
+                linea
             }
 
             if (connectivity.isConnected.first()) {
@@ -108,24 +108,7 @@ class GastosRepository(context: Context) {
     }
 
     private suspend fun pushUno(l: LineaGastoEntity) {
-        if (!DemoAccess.canSync(l.idUsuario)) return
-        val docId = "${l.idMercadillo}-${l.numeroLinea}"
-        val data = mapOf(
-            "idMercadillo" to l.idMercadillo,
-            "idUsuario" to l.idUsuario,
-            "numeroLinea" to l.numeroLinea,
-            "descripcion" to l.descripcion,
-            "importe" to l.importe,
-            "fechaHora" to l.fechaHora,
-            "formaPago" to l.formaPago,
-            "descontarDeCaja" to l.descontarDeCaja,   // ✅ nuevo campo en Firestore
-            "activo" to l.activo,
-            "version" to l.version,
-            "lastModified" to l.lastModified,
-            "fechaSync" to System.currentTimeMillis()
-        )
-        fs.collection("LineasGastos").document(docId).set(data, SetOptions.merge()).await()
-        gastosDao.marcarSincronizado(l.idMercadillo, l.numeroLinea, System.currentTimeMillis())
+        GastoSync.push(fs, gastosDao, l)
     }
 
     private suspend fun pushPendientes() {

@@ -9,7 +9,7 @@ import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.FormError
 import com.google.android.ump.UserMessagingPlatform
-import com.google.firebase.BuildConfig
+import es.nuskysoftware.marketsales.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

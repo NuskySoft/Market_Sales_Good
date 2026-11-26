@@ -59,11 +59,10 @@ class GastosRepository(context: Context) {
         try {
             val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
             DemoAccess.requireOwner(userId)
-            val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
-            DemoAccess.requireOwner(market.userId)
-            val now = System.currentTimeMillis()
-
             val linea = db.withTransaction {
+                val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
+                DemoAccess.requireOwner(market.userId)
+                val now = System.currentTimeMillis()
                 val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
                 val base = max?.toIntOrNull() ?: 0
                 val next = String.format("%04d", base + 1)
@@ -83,12 +82,11 @@ class GastosRepository(context: Context) {
 
                 gastosDao.insertarLinea(linea)
                 val totalG = gastosDao.getTotalGastosMercadillo(idMercadillo)
-                val m = mercadilloDao.getMercadilloById(idMercadillo) ?: return@withTransaction
                 mercadilloDao.actualizarTotales(
                     id = idMercadillo,
-                    totalVentas = m.totalVentas,
+                    totalVentas = market.totalVentas,
                     totalGastos = totalG,
-                    arqueoMercadillo = m.arqueoMercadillo ?: 0.0,
+                    arqueoMercadillo = market.arqueoMercadillo ?: 0.0,
                     timestamp = System.currentTimeMillis()
                 )
                 linea

@@ -141,7 +141,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Google Auth / Credentials
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    // AuthorizationClient y clearToken para Gmail OAuth, sin cambiar el login Firebase.
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")

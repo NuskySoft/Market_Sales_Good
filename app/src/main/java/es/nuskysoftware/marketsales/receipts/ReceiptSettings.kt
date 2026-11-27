@@ -13,6 +13,8 @@ import javax.crypto.spec.GCMParameterSpec
 
 /** Configuración local por dispositivo/cuenta; las credenciales nunca se guardan en Room ni Firebase. */
 class ReceiptSettings(private val context: Context, private val owner: String) {
+    // Google Identity Services administra sus tokens en el dispositivo; no se guardan en nuestras preferencias.
+    internal val appContext:Context get()=context.applicationContext
     private val id = ReceiptFiles.key(owner)
     companion object {
         /** Identidad local no incluida en copias Android: evita reenviar colas restauradas en otro móvil. */
@@ -66,9 +68,11 @@ class ReceiptSettings(private val context: Context, private val owner: String) {
     fun clearMail() { secrets.edit().remove(id).commit() }
 }
 
-/** Cuenta autorizada; secret contiene contraseña de aplicación o refresh token, nunca se muestra. */
+/** Cuenta autorizada: secret vacío para Gmail OAuth; otros proveedores conservan su credencial cifrada. */
 data class MailConfig(val provider:String,val name:String,val address:String,val host:String,
     val port:Int,val tls:String,val username:String,val secret:String) {
+    /** La configuración antigua Gmail SMTP no habilita nuevos envíos: requiere conectar Google. */
+    val usable:Boolean get()=provider!="gmail"
     fun json()=JSONObject().put("provider",provider).put("name",name).put("address",address)
         .put("host",host).put("port",port).put("tls",tls).put("username",username).put("secret",secret)
     companion object {

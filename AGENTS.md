@@ -55,3 +55,5 @@
 - Room 22: migración 21→22 aditiva, instantáneas y cola locales, indicador PDF en la cabecera. Nunca subir PDF, logotipos o secretos a Firebase; no contratar intermediarios de pago.
 - SMTP TLS o autorización Microsoft Graph; datos y tokens cifrados localmente. El correo adicional Market Sales se reserva a la fase comercial. La venta y el stock no dependen de renderizado, copias o correo.
 - No afirmar compatibilidad con proveedores, compilación ni pruebas reales sin haberlas realizado. La configuración de Microsoft Entra es una condición de activación de Outlook/Hotmail.
+
+- Gmail: Google Identity Services y Gmail API con gmail.send e identificación mínima de la cuenta. No introducir contraseñas de aplicación, no guardar tokens Google ni implantar OAuth de servidor en el APK. Los trabajos locales piden autorización sin interfaz; si Google exige consentimiento, conservar la solicitud y solicitar reconexión explícita.

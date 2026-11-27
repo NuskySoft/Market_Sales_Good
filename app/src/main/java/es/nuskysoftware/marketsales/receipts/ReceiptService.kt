@@ -55,11 +55,11 @@ class ReceiptService(private val context: Context) {
         DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
         require(ReceiptMail.validAddress(recipient))
         // La solicitud se guarda antes de programar ningún trabajo.
-        check(settings(owner).mail()!=null){"Configura primero el correo"}
+        check(settings(owner).mail()?.usable==true){"Configura primero el correo"}
         db.withTransaction {
             DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
             check(db.recibosDao().obtenerReciboPorId(id,owner)!=null)
-            val config=settings(owner).mail() ?: error("Correo no configurado")
+            val config=settings(owner).mail()?.takeIf{it.usable} ?: error("Correo no configurado")
             val local=ReceiptFiles.file(context,owner,id)
             check(dao.find(owner,id)!=null || local.isFile){"PDF no disponible"}
             // El identificador de una solicitud es independiente del recibo para permitir reenvíos voluntarios.

@@ -1,6 +1,13 @@
 package es.nuskysoftware.marketsales.ui.recibos
 
 import android.content.Intent
+import android.accounts.AccountManager
+import android.app.Activity
+import androidx.activity.result.IntentSenderRequest
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.google.android.gms.auth.api.identity.AuthorizationResult
+import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.tasks.await
 import android.net.Uri
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
@@ -150,7 +157,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     val context=LocalContext.current;val en=language();val scope=rememberCoroutineScope()
     val service=remember{ReceiptService(context)};val owner=service.owner();val settings=remember(owner){service.settings(owner)}
     var previous by remember(owner){mutableStateOf(settings.mail())}
-    var provider by remember{mutableStateOf(previous?.provider ?: "gmail")}
+    var provider by remember{mutableStateOf(previous?.provider?.let{if(it==GmailMail.PROVIDER)"gmail" else it} ?: "gmail")}
     var name by remember{mutableStateOf(previous?.name.orEmpty())}
     var address by remember{mutableStateOf(previous?.address.orEmpty())}
     var host by remember{mutableStateOf(previous?.host ?: "smtp.gmail.com")}
@@ -163,6 +170,8 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     var code by remember{mutableStateOf<MicrosoftMail.DeviceCode?>(null)}
     var authorized by remember{mutableStateOf<MailConfig?>(previous?.takeIf{it.provider=="outlook"})}
     var authJob by remember{mutableStateOf<kotlinx.coroutines.Job?>(null)}
+    // Se conserva únicamente la dirección elegida al volver de la pantalla de consentimiento.
+    var chosenGoogle by rememberSaveable(owner){mutableStateOf("")}
     fun saveTest(config:MailConfig) {
         busy=true;message="";mailError=false
         // Separar aceptación SMTP del guardado cifrado: un fallo de Keystore no es un fallo de conexión.
@@ -196,18 +205,65 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             finally{busy=false}
         }
     }
+    /** Finaliza el consentimiento y solo guarda Gmail si el envío de prueba es aceptado. */
+    fun completeGoogle(result:AuthorizationResult) {
+        scope.launch {
+            try {
+                DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
+                val config=GmailMail.configuration(result,chosenGoogle)
+                if(service.allowed(owner))saveTest(config) else busy=false
+            }catch(e:CancellationException){throw e}
+            catch(e:Exception){busy=false;mailError=true;message=if(e is MailFailure)e.message.orEmpty() else t(en,"Google no confirmó la autorización.","Google did not confirm authorization.")}
+        }
+    }
+    val googleConsent=rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()){result->
+        if(result.resultCode==Activity.RESULT_OK){
+            try{completeGoogle(Identity.getAuthorizationClient(context).getAuthorizationResultFromIntent(result.data))}
+            catch(e:Exception){busy=false;mailError=true;message=t(en,"Google no completó la autorización.","Google authorization was not completed.")}
+        }else{busy=false;mailError=true;message=t(en,"Autorización cancelada.","Authorization cancelled.")}
+    }
+    // Selector independiente: no cambia el usuario con el que se ha iniciado sesión en Market Sales.
+    val googlePicker=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){result->
+        val selected=result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+        if(result.resultCode==Activity.RESULT_OK && !selected.isNullOrBlank()){
+            chosenGoogle=selected
+            scope.launch {
+                try{
+                    DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
+                    val auth=Identity.getAuthorizationClient(context).authorize(GmailMail.request(selected)).await()
+                    if(auth.hasResolution()){
+                        val pending=auth.pendingIntent ?: error("Consentimiento no disponible")
+                        googleConsent.launch(IntentSenderRequest.Builder(pending.intentSender).build())
+                    }else completeGoogle(auth)
+                }catch(e:CancellationException){throw e}
+                catch(e:Exception){
+                    busy=false;mailError=true
+                    val status=(e as? com.google.android.gms.common.api.ApiException)?.statusCode
+                    message=t(en,"No se pudo conectar con Google. Comprueba los servicios de Google y la configuración OAuth.","Could not connect to Google. Check Google services and OAuth settings.")+(status?.let{" (Google "+it+")"}.orEmpty())
+                }
+            }
+        }else{busy=false;message=t(en,"No se seleccionó una cuenta.","No account selected.")}
+    }
     Scaffold(topBar={TopAppBar(title={Text(t(en,"Configuración de correo","Mail settings"))},
         navigationIcon={TextButton(onClick={nav.safePopBackStack()}){Text("←")}},
         colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.primary,titleContentColor=MaterialTheme.colorScheme.onPrimary,navigationIconContentColor=MaterialTheme.colorScheme.onPrimary))}){padding->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            previous?.let { saved -> Text(t(en,"Cuenta configurada en este dispositivo: ","Configured account on this device: ")+saved.address,style=MaterialTheme.typography.bodySmall) }
+            previous?.takeIf{it.usable}?.let { saved -> Text(t(en,"Cuenta configurada en este dispositivo: ","Configured account on this device: ")+saved.address,style=MaterialTheme.typography.bodySmall) }
             listOf("gmail" to "Gmail","outlook" to "Outlook / Hotmail","smtp" to t(en,"Otro proveedor SMTP","Other SMTP provider")).forEach{(value,label)->
                 Row(verticalAlignment=Alignment.CenterVertically){
-                    RadioButton(provider==value,{provider=value;secret="";message="";mailError=false;if(value=="gmail"){host="smtp.gmail.com";port="465";tls="SSL"}else if(value=="smtp"){host="";port="465";tls="SSL";user=""}},enabled=!busy)
+                    RadioButton(provider==value,{provider=value;secret="";message="";mailError=false;if(value=="smtp"){host="";port="465";tls="SSL";user=""}},enabled=!busy)
                     Text(label)
                 }
             }
-            if(provider=="outlook"){
+            if(provider=="gmail"){
+                Text(t(en,"Conecta Google para enviar recibos. Market Sales no necesita tu contraseña ni permiso para leer tus correos.","Connect Google to send receipts. Market Sales does not need your password or permission to read mail."))
+                if(previous?.provider=="gmail")Text(t(en,"Conecta de nuevo tu cuenta: la contraseña de aplicación ya no se utiliza.","Reconnect your account: app passwords are no longer used."),style=MaterialTheme.typography.bodySmall)
+                Button(enabled=!busy,onClick={
+                    busy=true;mailError=false;message=""
+                    try{googlePicker.launch(AccountManager.newChooseAccountIntent(null,null,arrayOf("com.google"),null,null,null,null))}
+                    catch(e:Exception){busy=false;mailError=true;message=t(en,"No se pudo abrir el selector de cuentas Google.","Could not open the Google account picker.")}
+                }){Text(t(en,"Conectar con Google","Connect with Google"))}
+            }else if(provider=="outlook"){
                 Text(t(en,"Autoriza la cuenta en Microsoft. No se solicita tu contraseña.","Authorize your account with Microsoft. Your password is not requested."))
                 if(!MicrosoftMail.available)Text(t(en,"Outlook todavía requiere registrar el cliente Microsoft de Market Sales.","Outlook still requires Market Sales Microsoft client registration."),color=MaterialTheme.colorScheme.error)
                 authorized?.let{Text(it.address)}
@@ -233,20 +289,13 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             }else{
                 OutlinedTextField(name,{name=it},label={Text(t(en,"Nombre del remitente","Sender name"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
                 OutlinedTextField(address,{address=it},label={Text(t(en,"Correo de la empresa","Company email"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                if(provider=="smtp"){
-                    OutlinedTextField(host,{host=it},label={Text("SMTP")},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                    OutlinedTextField(port,{port=it.filter{ch->ch.isDigit()}.take(5);if(port=="465")tls="SSL";if(port=="587")tls="STARTTLS"},label={Text(t(en,"Puerto","Port"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                    Row(verticalAlignment=Alignment.CenterVertically){listOf("STARTTLS","SSL").forEach{v->RadioButton(tls==v,{tls=v;if(port in listOf("465","587"))port=if(v=="SSL")"465" else "587"},enabled=!busy);Text(v)}}
-                    OutlinedTextField(user,{user=it},label={Text(t(en,"Usuario (opcional si coincide con el correo)","User (optional if same as email)"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                }else{
-                    Row(verticalAlignment=Alignment.CenterVertically){listOf("465" to "SSL/TLS","587" to "STARTTLS").forEach{(p,label)->RadioButton(port==p,{port=p;tls=if(p=="465")"SSL" else "STARTTLS"},enabled=!busy);Text(label)}}
-                    Text(t(en,"Activa la verificación en dos pasos y crea una contraseña de aplicación si tu cuenta Gmail lo permite.","Enable two-step verification and create an app password if your Gmail account allows it."),style=MaterialTheme.typography.bodySmall)
-                    TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://myaccount.google.com/apppasswords")))}){Text(t(en,"Contraseñas de aplicación Google","Google app passwords"))}
-                }
+                OutlinedTextField(host,{host=it},label={Text("SMTP")},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
+                OutlinedTextField(port,{port=it.filter{ch->ch.isDigit()}.take(5);if(port=="465")tls="SSL";if(port=="587")tls="STARTTLS"},label={Text(t(en,"Puerto","Port"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
+                Row(verticalAlignment=Alignment.CenterVertically){listOf("STARTTLS","SSL").forEach{v->RadioButton(tls==v,{tls=v;if(port in listOf("465","587"))port=if(v=="SSL")"465" else "587"},enabled=!busy);Text(v)}}
+                OutlinedTextField(user,{user=it},label={Text(t(en,"Usuario (opcional si coincide con el correo)","User (optional if same as email)"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
                 OutlinedTextField(secret,{secret=it},label={Text(t(en,"Contraseña de aplicación / SMTP","App password / SMTP"))},visualTransformation=PasswordVisualTransformation(),singleLine=true,modifier=Modifier.fillMaxWidth(),enabled=!busy)
-                Button(enabled=!busy && ReceiptMail.validAddress(address.trim()) && secret.isNotBlank() && (provider=="gmail" || host.isNotBlank()) && port.toIntOrNull() in 1..65535,onClick={
-                    val gmail=provider=="gmail"
-                    saveTest(MailConfig(provider,name.trim(),address.trim(),if(gmail)"smtp.gmail.com" else host.trim(),port.toInt(),tls,if(gmail)address.trim() else user.trim().ifBlank{address.trim()},if(gmail)secret.replace(" ","") else secret))
+                Button(enabled=!busy && ReceiptMail.validAddress(address.trim()) && secret.isNotBlank() && host.isNotBlank() && port.toIntOrNull() in 1..65535,onClick={
+                    saveTest(MailConfig("smtp",name.trim(),address.trim(),host.trim(),port.toInt(),tls,user.trim().ifBlank{address.trim()},secret))
                 }){Text(t(en,"Comprobar y guardar","Test and save"))}
             }
             if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -278,7 +327,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     val premium by ConfigurationManager.esPremium.collectAsState()
     var email by remember{mutableStateOf("")};var enterEmail by remember{mutableStateOf(false)}
     var message by remember{mutableStateOf("")};var busy by remember{mutableStateOf(false)}
-    val configured=remember(owner){service.settings(owner).mail()!=null}
+    val configured=remember(owner){service.settings(owner).mail()?.usable==true}
     var preview by remember { mutableStateOf<java.io.File?>(null) }
     val exportPicker=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){uri->
         if(uri!=null)scope.launch{

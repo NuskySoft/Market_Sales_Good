@@ -29,7 +29,7 @@ import javax.activation.UnsupportedDataTypeException
 /** Resultado de transporte: solo se repite automáticamente un fallo inequívocamente anterior a la aceptación. */
 class MailFailure(val state:String, message:String): Exception(message)
 
-/** SMTP TLS y Microsoft Graph delegado, ambos directos desde el dispositivo. */
+/** Selecciona Gmail API, SMTP TLS o Microsoft Graph, directamente desde el dispositivo. */
 object ReceiptMail {
     fun validAddress(value:String):Boolean = runCatching {
         val a=InternetAddress(value,true); a.validate()
@@ -74,9 +74,11 @@ object ReceiptMail {
         addMailcap("multipart/*;; x-java-content-handler=com.sun.mail.handlers.multipart_mixed; x-java-fallback-entry=true")
     }
 
-    fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
+    suspend fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
         require(validAddress(recipient) && validAddress(config.address))
         require(config.name.none { it=='\r' || it=='\n' })
+        if(config.provider==GmailMail.PROVIDER) return GmailMail.send(settings.appContext,config,recipient,file,english)
+        if(config.provider=="gmail")throw MailFailure("ERROR","Conecta Gmail con Google en Configuración de correo. La contraseña de aplicación ya no se utiliza.")
         if(config.provider=="outlook") return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
         if(config.port !in 1..65535 || config.host.isBlank() || config.tls !in listOf("SSL","STARTTLS"))
             throw MailFailure("ERROR","Configuración SMTP incompleta.")

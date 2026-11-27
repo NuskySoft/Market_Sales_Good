@@ -14,6 +14,17 @@ import javax.mail.*
 import javax.mail.internet.*
 import javax.activation.DataHandler
 import javax.activation.FileDataSource
+import javax.activation.MailcapCommandMap
+import javax.mail.util.ByteArrayDataSource
+import com.sun.mail.smtp.SMTPTransport
+import com.sun.mail.smtp.SMTPAddressFailedException
+import com.sun.mail.smtp.SMTPSendFailedException
+import java.io.OutputStream
+import java.net.UnknownHostException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import javax.net.ssl.SSLException
+import javax.activation.UnsupportedDataTypeException
 
 /** Resultado de transporte: solo se repite automáticamente un fallo inequívocamente anterior a la aceptación. */
 class MailFailure(val state:String, message:String): Exception(message)
@@ -25,53 +36,113 @@ object ReceiptMail {
         a.address==value && value.contains("@") && !value.contains('\n') && !value.contains('\r')
     }.getOrDefault(false)
 
+    /** Recorre también nextException de JavaMail: el error de red suele estar anidado ahí. */
+    private fun causes(error:Throwable):List<Throwable> {
+        val result=mutableListOf<Throwable>()
+        val pending=java.util.ArrayDeque<Throwable>()
+        pending.add(error)
+        while(pending.isNotEmpty() && result.size<20) {
+            val current=pending.removeFirst()
+            if(result.any{it===current})continue
+            result.add(current)
+            current.cause?.let{pending.add(it)}
+            (current as? MessagingException)?.nextException?.let{pending.add(it)}
+        }
+        return result
+    }
+
+    /** Diagnóstico seguro: solo etiquetas y códigos numéricos SMTP, nunca respuestas crudas ni secretos. */
+    private fun connectFailure(error:Exception,config:MailConfig,code:Int):MailFailure {
+        val chain=causes(error)
+        val suffix=if(code in 400..599) " (SMTP $code)" else ""
+        return when {
+            chain.any{it is AuthenticationFailedException} || code==535 || code==534 ->
+                MailFailure("ERROR",if(config.provider=="gmail") "Gmail rechazó la autenticación. Comprueba la contraseña de aplicación y la cuenta." + suffix else "El servidor rechazó el usuario o la contraseña." + suffix)
+            chain.any{it is SSLException || it is java.security.cert.CertificateException} ->
+                MailFailure("ERROR","No se pudo verificar TLS. Comprueba el servidor, certificado, puerto y cifrado.")
+            chain.any{it is UnknownHostException} -> MailFailure("PENDING","No se pudo resolver el nombre del servidor SMTP. Comprueba el servidor y DNS.")
+            chain.any{it is SocketTimeoutException} -> MailFailure("PENDING","Tiempo de conexión SMTP agotado. Comprueba puerto, cifrado y acceso a Internet.")
+            chain.any{it is ConnectException} -> MailFailure("PENDING","Conexión SMTP rechazada. Comprueba el puerto y si la red permite SMTP.")
+            code in 500..599 -> MailFailure("ERROR","El servidor rechazó la conexión SMTP." + suffix)
+            else -> MailFailure("PENDING","No se pudo establecer la conexión SMTP." + suffix)
+        }
+    }
+
+    /** Registrar los manejadores MIME de forma explícita para no depender de META-INF en el APK. */
+    private fun mimeHandlers() = MailcapCommandMap().apply {
+        addMailcap("text/plain;; x-java-content-handler=com.sun.mail.handlers.text_plain")
+        addMailcap("multipart/*;; x-java-content-handler=com.sun.mail.handlers.multipart_mixed; x-java-fallback-entry=true")
+    }
+
     fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
         require(validAddress(recipient) && validAddress(config.address))
         require(config.name.none { it=='\r' || it=='\n' })
-        if(config.provider=="outlook") {
-            return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
-        }
-        require(config.port in 1..65535 && config.host.isNotBlank() && config.tls in listOf("SSL","STARTTLS"))
-        val props=Properties().apply {
-            put("mail.smtp.auth","true"); put("mail.smtp.host",config.host); put("mail.smtp.port",config.port.toString())
-            put("mail.smtp.ssl.checkserveridentity","true")
-            put("mail.smtp.connectiontimeout","15000"); put("mail.smtp.timeout","30000"); put("mail.smtp.writetimeout","30000")
-            if(config.tls=="SSL") put("mail.smtp.ssl.enable","true")
-            else { put("mail.smtp.starttls.enable","true"); put("mail.smtp.starttls.required","true") }
-        }
-        val session=Session.getInstance(props)
-        val message=MimeMessage(session).apply {
-            setFrom(InternetAddress(config.address,config.name,"UTF-8"))
-            setRecipient(Message.RecipientType.TO,InternetAddress(recipient,true))
-            subject=if(file==null) "Market Sales - test" else if(english) "Sales receipt" else "Recibo de venta"
-            val body=if(file==null) "Market Sales - OK" else if(english) "Thank you for your purchase." else "Gracias por su compra."
-            if(file==null) setText(body,"UTF-8") else {
-                val text=MimeBodyPart().apply { setText(body,"UTF-8") }
-                val attachment=MimeBodyPart().apply { dataHandler=DataHandler(object:FileDataSource(file){override fun getContentType()="application/pdf"}); fileName="recibo.pdf" }
-                setContent(MimeMultipart().apply { addBodyPart(text);addBodyPart(attachment) })
-            }
-            saveChanges()
-        }
-        val transport=session.getTransport("smtp")
+        if(config.provider=="outlook") return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
+        if(config.port !in 1..65535 || config.host.isBlank() || config.tls !in listOf("SSL","STARTTLS"))
+            throw MailFailure("ERROR","Configuración SMTP incompleta.")
+        if((config.port==465 && config.tls!="SSL") || (config.port==587 && config.tls!="STARTTLS"))
+            throw MailFailure("ERROR","El puerto 465 requiere SSL/TLS y el 587 utiliza STARTTLS.")
+        // Las corrutinas de Android pueden ejecutar JavaMail con un cargador de clases ajeno a la app.
+        // Se limita el cambio al hilo de esta operación y se restaura siempre.
+        val thread=Thread.currentThread()
+        val previousLoader=thread.contextClassLoader
         try {
-            // Si no se estableció sesión SMTP, el mensaje aún no puede haber sido aceptado.
-            try { transport.connect(config.host,config.port,config.username,config.secret) }
-            catch(e:AuthenticationFailedException){throw MailFailure("ERROR","Autenticación rechazada")}
-            catch(e:MessagingException){
-                if(generateSequence<Throwable>(e){it.cause}.any { it is javax.net.ssl.SSLException })
-                    throw MailFailure("ERROR","TLS no válido")
-                throw MailFailure("PENDING","Conexión SMTP no disponible")
+            thread.contextClassLoader=ReceiptMail::class.java.classLoader
+            val props=Properties().apply {
+                put("mail.smtp.auth","true"); put("mail.smtp.host",config.host); put("mail.smtp.port",config.port.toString())
+                put("mail.smtp.ssl.checkserveridentity","true")
+                put("mail.smtp.connectiontimeout","15000"); put("mail.smtp.timeout","30000"); put("mail.smtp.writetimeout","30000")
+                // Nunca registrar diálogo SMTP: podría contener datos privados de autenticación.
+                put("mail.debug","false")
+                if(config.tls=="SSL") put("mail.smtp.ssl.enable","true")
+                else { put("mail.smtp.starttls.enable","true"); put("mail.smtp.starttls.required","true") }
             }
-            // Tras iniciar DATA, un corte de red puede ocurrir después de aceptar el correo.
-            try { transport.sendMessage(message,message.allRecipients) }
-            catch(e:SendFailedException){
-                if(e.validSentAddresses?.isNotEmpty()==true) return config
-                if(e.invalidAddresses?.isNotEmpty()==true) throw MailFailure("ERROR","Destinatario rechazado")
-                throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP")
+            val session=Session.getInstance(props)
+            val message=try {
+                val handlers=mimeHandlers()
+                // ByteArrayDataSource evita depender de un manejador de objetos String para texto plano.
+                val body=if(file==null) "Market Sales - OK" else if(english) "Thank you for your purchase." else "Gracias por su compra."
+                fun textHandler()=DataHandler(ByteArrayDataSource(body.toByteArray(Charsets.UTF_8),"text/plain; charset=UTF-8")).apply { setCommandMap(handlers) }
+                MimeMessage(session).apply {
+                    setFrom(InternetAddress(config.address,config.name,"UTF-8"))
+                    setRecipient(Message.RecipientType.TO,InternetAddress(recipient,true))
+                    subject=if(file==null) "Market Sales - test" else if(english) "Sales receipt" else "Recibo de venta"
+                    if(file==null) dataHandler=textHandler() else {
+                        val text=MimeBodyPart().apply { dataHandler=textHandler() }
+                        val attachment=MimeBodyPart().apply {
+                            dataHandler=DataHandler(object:FileDataSource(file){override fun getContentType()="application/pdf"})
+                            fileName="recibo.pdf"
+                        }
+                        setContent(MimeMultipart().apply { addBodyPart(text);addBodyPart(attachment) })
+                        dataHandler.setCommandMap(handlers)
+                    }
+                    saveChanges()
+                    // Verificar la serialización antes de conectar: un fallo MIME nunca se confunde con un envío incierto.
+                    writeTo(object:OutputStream(){override fun write(b:Int)=Unit;override fun write(b:ByteArray,off:Int,len:Int)=Unit})
+                }
+            } catch(e:Exception) {
+                val mime=causes(e).any{it is UnsupportedDataTypeException || it is ClassNotFoundException}
+                throw MailFailure("ERROR",if(mime) "Error interno al preparar el formato MIME del correo." else "Error interno al preparar el mensaje de correo.")
             }
-            catch(e:MessagingException){throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP")}
-        } finally { runCatching { transport.close() } }
-        return config
+            // Instanciar el proveedor SMTP conocido evita depender del descubrimiento de proveedores del APK.
+            val transport=SMTPTransport(session,URLName("smtp",config.host,config.port,null,null,null))
+            try {
+                try { transport.connect(config.host,config.port,config.username,config.secret) }
+                catch(e:Exception){throw connectFailure(e,config,transport.lastReturnCode)}
+                try { transport.sendMessage(message,message.allRecipients) }
+                catch(e:SendFailedException){
+                    if(e.validSentAddresses?.isNotEmpty()==true) return config
+                    val failures=causes(e)
+                    val rc=failures.filterIsInstance<SMTPAddressFailedException>().firstOrNull()?.returnCode
+                        ?: failures.filterIsInstance<SMTPSendFailedException>().firstOrNull()?.returnCode ?: transport.lastReturnCode
+                    if(e.invalidAddresses?.isNotEmpty()==true) throw MailFailure("ERROR","Destinatario rechazado" + if(rc in 400..599) " (SMTP $rc)" else "")
+                    // Un corte después de DATA puede haber entregado el mensaje: no reintentar automáticamente.
+                    throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP" + if(rc in 400..599) " (SMTP $rc)" else "")
+                }
+                catch(e:MessagingException){throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP")}
+            } finally { runCatching { transport.close() } }
+            return config
+        } finally { thread.contextClassLoader=previousLoader }
     }
 }
 

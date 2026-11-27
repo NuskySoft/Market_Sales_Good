@@ -1,5 +1,7 @@
 # 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
 
+- Corrección SMTP durante pruebas: preparación MIME explícita compatible con Android, diagnóstico por fase sin secretos, selección 465 SSL/TLS o 587 STARTTLS para Gmail y emparejamiento de puertos habituales en SMTP manual. No se ha comprobado el envío real.
+
 - Corrección durante pruebas de aceptación: alta directa de mercadillos en la fecha de hoy, comparación por día civil en zona Europe/Madrid y validación única de cupos en Room; reprogramar a hoy activa inmediatamente el mercadillo. Sin cambios de esquema ni de límites Free/Demo.
 
 - Recibos Premium con instantánea local transaccional, PDF A4 y abonos con referencia al original; Free/Demo sin PDF.

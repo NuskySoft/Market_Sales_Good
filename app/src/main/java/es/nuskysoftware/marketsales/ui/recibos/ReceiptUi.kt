@@ -154,29 +154,45 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     var name by remember{mutableStateOf(previous?.name.orEmpty())}
     var address by remember{mutableStateOf(previous?.address.orEmpty())}
     var host by remember{mutableStateOf(previous?.host ?: "smtp.gmail.com")}
-    var port by remember{mutableStateOf(previous?.port?.toString() ?: "587")}
-    var tls by remember{mutableStateOf(previous?.tls?.takeIf{it.isNotBlank()} ?: "STARTTLS")}
+    var port by remember{mutableStateOf(previous?.port?.takeIf{it>0}?.toString() ?: "465")}
+    var tls by remember{mutableStateOf(previous?.tls?.takeIf{it.isNotBlank()} ?: "SSL")}
     var user by remember{mutableStateOf(previous?.username.orEmpty())}
     var secret by remember{mutableStateOf("")}
     var message by remember{mutableStateOf("")};var busy by remember{mutableStateOf(false)}
+    var mailError by remember{mutableStateOf(false)}
     var code by remember{mutableStateOf<MicrosoftMail.DeviceCode?>(null)}
     var authorized by remember{mutableStateOf<MailConfig?>(previous?.takeIf{it.provider=="outlook"})}
     var authJob by remember{mutableStateOf<kotlinx.coroutines.Job?>(null)}
     fun saveTest(config:MailConfig) {
-        busy=true;message=""
+        busy=true;message="";mailError=false
+        // Separar aceptación SMTP del guardado cifrado: un fallo de Keystore no es un fallo de conexión.
+        var accepted=false
+        var phase="session"
         scope.launch {
             try {
                 val tested=withContext(Dispatchers.IO){
                     DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
+                    phase="send"
                     val result=ReceiptMail.send(config,config.address,null,settings,en,false)
+                    accepted=true;phase="save"
                     DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
                     settings.save(result);result
                 }
                 if(tested.provider=="outlook")authorized=tested
                 previous=tested;secret="";message=t(en,"Prueba aceptada. Correo guardado.","Test accepted. Mail settings saved.")
-                ReceiptWorker.requestMail(context)
+                runCatching { ReceiptWorker.requestMail(context) }
             }catch(e:CancellationException){throw e}
-            catch(e:Exception){message=t(en,"No se pudo confirmar la prueba. Revisa la configuración y conexión.","Could not confirm test. Check settings and connection.")}
+            catch(e:Exception){
+                mailError=true
+                message=when {
+                    accepted -> t(en,"El servidor aceptó la prueba, pero no se pudo guardar la configuración cifrada.","The server accepted the test, but encrypted settings could not be saved.")
+                    e is MailFailure -> e.message.orEmpty()
+                    phase=="session" -> t(en,"La sesión Premium no está disponible. Vuelve a abrir la pantalla.","Premium session unavailable. Reopen this screen.")
+                    else -> t(en,"Error interno de correo (","Internal mail error (")+e.javaClass.simpleName+")."
+                }
+                // Solo fase y tipo: no imprimir excepciones, direcciones, respuestas SMTP ni credenciales.
+                android.util.Log.w("MarketSalesMail","Test phase="+phase+" type="+e.javaClass.simpleName)
+            }
             finally{busy=false}
         }
     }
@@ -187,7 +203,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             previous?.let { saved -> Text(t(en,"Cuenta configurada en este dispositivo: ","Configured account on this device: ")+saved.address,style=MaterialTheme.typography.bodySmall) }
             listOf("gmail" to "Gmail","outlook" to "Outlook / Hotmail","smtp" to t(en,"Otro proveedor SMTP","Other SMTP provider")).forEach{(value,label)->
                 Row(verticalAlignment=Alignment.CenterVertically){
-                    RadioButton(provider==value,{provider=value;if(value=="gmail"){host="smtp.gmail.com";port="587";tls="STARTTLS"}},enabled=!busy)
+                    RadioButton(provider==value,{provider=value;secret="";message="";mailError=false;if(value=="gmail"){host="smtp.gmail.com";port="465";tls="SSL"}else if(value=="smtp"){host="";port="465";tls="SSL";user=""}},enabled=!busy)
                     Text(label)
                 }
             }
@@ -219,21 +235,22 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                 OutlinedTextField(address,{address=it},label={Text(t(en,"Correo de la empresa","Company email"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
                 if(provider=="smtp"){
                     OutlinedTextField(host,{host=it},label={Text("SMTP")},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                    OutlinedTextField(port,{port=it},label={Text(t(en,"Puerto","Port"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                    Row(verticalAlignment=Alignment.CenterVertically){listOf("STARTTLS","SSL").forEach{v->RadioButton(tls==v,{tls=v},enabled=!busy);Text(v)}}
+                    OutlinedTextField(port,{port=it.filter{ch->ch.isDigit()}.take(5);if(port=="465")tls="SSL";if(port=="587")tls="STARTTLS"},label={Text(t(en,"Puerto","Port"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
+                    Row(verticalAlignment=Alignment.CenterVertically){listOf("STARTTLS","SSL").forEach{v->RadioButton(tls==v,{tls=v;if(port in listOf("465","587"))port=if(v=="SSL")"465" else "587"},enabled=!busy);Text(v)}}
                     OutlinedTextField(user,{user=it},label={Text(t(en,"Usuario (opcional si coincide con el correo)","User (optional if same as email)"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
                 }else{
+                    Row(verticalAlignment=Alignment.CenterVertically){listOf("465" to "SSL/TLS","587" to "STARTTLS").forEach{(p,label)->RadioButton(port==p,{port=p;tls=if(p=="465")"SSL" else "STARTTLS"},enabled=!busy);Text(label)}}
                     Text(t(en,"Activa la verificación en dos pasos y crea una contraseña de aplicación si tu cuenta Gmail lo permite.","Enable two-step verification and create an app password if your Gmail account allows it."),style=MaterialTheme.typography.bodySmall)
                     TextButton(onClick={context.startActivity(Intent(Intent.ACTION_VIEW,Uri.parse("https://myaccount.google.com/apppasswords")))}){Text(t(en,"Contraseñas de aplicación Google","Google app passwords"))}
                 }
                 OutlinedTextField(secret,{secret=it},label={Text(t(en,"Contraseña de aplicación / SMTP","App password / SMTP"))},visualTransformation=PasswordVisualTransformation(),singleLine=true,modifier=Modifier.fillMaxWidth(),enabled=!busy)
-                Button(enabled=!busy && ReceiptMail.validAddress(address.trim()) && secret.isNotBlank() && port.toIntOrNull() in 1..65535,onClick={
+                Button(enabled=!busy && ReceiptMail.validAddress(address.trim()) && secret.isNotBlank() && (provider=="gmail" || host.isNotBlank()) && port.toIntOrNull() in 1..65535,onClick={
                     val gmail=provider=="gmail"
-                    saveTest(MailConfig(provider,name.trim(),address.trim(),if(gmail)"smtp.gmail.com" else host.trim(),if(gmail)587 else port.toInt(),if(gmail)"STARTTLS" else tls,if(gmail)address.trim() else user.trim().ifBlank{address.trim()},if(gmail)secret.replace(" ","") else secret))
+                    saveTest(MailConfig(provider,name.trim(),address.trim(),if(gmail)"smtp.gmail.com" else host.trim(),port.toInt(),tls,if(gmail)address.trim() else user.trim().ifBlank{address.trim()},if(gmail)secret.replace(" ","") else secret))
                 }){Text(t(en,"Comprobar y guardar","Test and save"))}
             }
             if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())
-            if(message.isNotBlank())Text(message,style=MaterialTheme.typography.bodySmall)
+            if(message.isNotBlank())Text(message,style=MaterialTheme.typography.bodySmall,color=if(mailError)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
             HorizontalDivider()
             Text(t(en,"Correo Market Sales · servicio adicional de pago previsto, aún no disponible.","Market Sales mail · planned paid add-on, not yet available."),style=MaterialTheme.typography.bodySmall)
             TextButton(enabled=!busy,onClick={if(service.allowed(owner)){settings.clearMail();previous=null;authorized=null;message=t(en,"Configuración eliminada","Settings removed")}}){Text(t(en,"Desconectar correo","Disconnect mail"))}

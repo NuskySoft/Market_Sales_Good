@@ -47,7 +47,7 @@ object ReceiptMail {
             val body=if(file==null) "Market Sales - OK" else if(english) "Thank you for your purchase." else "Gracias por su compra."
             if(file==null) setText(body,"UTF-8") else {
                 val text=MimeBodyPart().apply { setText(body,"UTF-8") }
-                val attachment=MimeBodyPart().apply { dataHandler=DataHandler(FileDataSource(file)); fileName="recibo.pdf" }
+                val attachment=MimeBodyPart().apply { dataHandler=DataHandler(object:FileDataSource(file){override fun getContentType()="application/pdf"}); fileName="recibo.pdf" }
                 setContent(MimeMultipart().apply { addBodyPart(text);addBodyPart(attachment) })
             }
             saveChanges()

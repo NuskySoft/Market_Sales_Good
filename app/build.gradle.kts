@@ -82,6 +82,9 @@ android {
         jvmTarget = "11"
     }
 
+    // Los dos artefactos JavaMail comparten avisos de licencia; conservar una copia de cada recurso duplicado.
+    packaging { resources { pickFirsts += setOf("META-INF/LICENSE.md", "META-INF/NOTICE.md", "META-INF/LICENSE.txt", "META-INF/NOTICE.txt") } }
+
     // Habilita Compose y la generación de BuildConfig, fuente de versión y variante.
     buildFeatures {
         compose = true

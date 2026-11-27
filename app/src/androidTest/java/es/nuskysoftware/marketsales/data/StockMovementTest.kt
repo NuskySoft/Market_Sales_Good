@@ -19,7 +19,7 @@ import java.util.UUID
 class StockMovementTest {
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private fun open(name: String) = Room.databaseBuilder(context, AppDatabase::class.java, name)
-        .addMigrations(AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21).build()
+        .addMigrations(AppDatabase.MIGRATION_18_19, AppDatabase.MIGRATION_19_20, AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22).build()
 
     private fun product(id: String = "item", quantity: Int = 2) = LineaVentaUI(
         tipoLinea = TipoLinea.PRODUCTO, descripcion = "Producto", idProducto = id,

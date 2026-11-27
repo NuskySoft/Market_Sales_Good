@@ -34,7 +34,7 @@ object ReceiptFiles {
     /** Captura datos comerciales originales; no consulta el catálogo durante un reintento. */
     fun snapshot(receipt: ReciboEntity, lines: List<LineaVentaEntity>, company: EmpresaEntity?,
                  market: String, currency: String, language: String, logo: String, original: String): String {
-        val fields = company?.let { listOf(it.nombre, it.razonSocial, it.nif, it.direccion,
+        val fields = company?.let { listOf(it.nombre, it.razonSocial, if(it.nif.isNotBlank()) "NIF: " + it.nif else "", it.direccion,
             listOf(it.codigoPostal, it.poblacion, it.provincia, it.pais).filter { s -> s.isNotBlank() }.joinToString(" ")) }
             ?: emptyList()
         return JSONObject().put("id", receipt.idRecibo).put("owner", receipt.idUsuario)
@@ -62,10 +62,22 @@ object ReceiptFiles {
         var pageNumber = 0
         var page: PdfDocument.Page? = null
         var y = 0f
+        var tableStarted = false
         fun line(text: String, x: Float = 40f, size: Float = 11f, bold: Boolean = false) {
             paint.color = Color.rgb(32, 38, 45); paint.textSize = size
             paint.typeface = if (bold) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
             page!!.canvas.drawText(text, x, y, paint)
+        }
+        fun right(text:String,x:Float,size:Float=11f,bold:Boolean=false) {
+            paint.textAlign=Paint.Align.RIGHT
+            try { line(text,x,size,bold) } finally {paint.textAlign=Paint.Align.LEFT}
+        }
+        fun heading() {
+            line(tr("Concepto","Description"),size=10f,bold=true)
+            right(tr("Ud.","Qty"),365f,10f,true)
+            right(tr("Precio","Price"),455f,10f,true)
+            right(tr("Importe","Amount"),555f,10f,true)
+            y+=8;paint.color=Color.LTGRAY;page!!.canvas.drawLine(40f,y,555f,y,paint);y+=17
         }
         fun finish() {
             if (page == null) return
@@ -78,6 +90,7 @@ object ReceiptFiles {
             y = 45f
             line(if (s.getBoolean("refund")) tr("RECIBO DE ABONO","REFUND RECEIPT") else tr("RECIBO DE VENTA","SALES RECEIPT"), size=19f,bold=true)
             y += 22; line(s.getString("id"), size=10f); y += 17; line(s.getString("date")); y += 20
+            if(tableStarted) heading()
         }
         fun ensure(height: Float) { if (y + height > 770f) next() }
         fun wrapped(text: String, max: Float = 510f) {
@@ -109,16 +122,21 @@ object ReceiptFiles {
             wrapped(s.getString("market"))
             if (s.optString("original").isNotBlank()) wrapped(tr("Recibo original: ","Original receipt: ") + s.getString("original"))
             y += 14
+            ensure(50f);tableStarted=true;heading()
             val lines = s.getJSONArray("lines")
             for (i in 0 until lines.length()) {
                 val l = lines.getJSONObject(i); ensure(50f)
-                wrapped(l.getString("description"))
-                line(l.getInt("quantity").toString() + " × " + amount(l.getDouble("price")) + "  =  " + amount(l.getDouble("amount")))
-                y += 19
+                // Los importes se alinean a la derecha y el concepto puede ocupar varias líneas.
+                right(l.getInt("quantity").toString(),365f)
+                right(amount(l.getDouble("price")),455f)
+                right(amount(l.getDouble("amount")),555f)
+                val description=l.getString("description")
+                if(description.isBlank())y+=16 else wrapped(description,285f)
+                y += 3
                 paint.color=Color.LTGRAY; page!!.canvas.drawLine(40f,y,555f,y,paint); y += 15
             }
-            ensure(92f); y+=10; line(tr("TOTAL ","TOTAL ") + amount(s.getDouble("total")) + " " + money, size=17f,bold=true)
-            y+=24; wrapped(tr("Método de pago: ","Payment method: ") + s.getString("method"))
+            tableStarted=false;ensure(92f); y+=10; line(tr("TOTAL ","TOTAL ") + amount(s.getDouble("total")) + " " + money, size=17f,bold=true)
+            y+=24; wrapped(tr("Método de pago: ","Payment method: ") + when(s.getString("method").uppercase(Locale.ROOT)) { "EFECTIVO"->tr("Efectivo","Cash");"TARJETA"->tr("Tarjeta","Card");else->s.getString("method") })
             y+=15; wrapped(tr("Gracias por su compra","Thank you for your purchase"))
             finish()
             val atomic = AtomicFile(output)

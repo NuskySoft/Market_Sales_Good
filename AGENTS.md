@@ -48,3 +48,10 @@
 - Los cupos se verifican en transacciones Room; conservar operaciones confirmadas aunque se supere un cupo por ventas independientes sin conexión. No inventar fechas de alta de mercadillos antiguos.
 - Room 21 requiere conservar una copia de la base anterior si se quiere volver a 2.5. No utilizar migraciones destructivas.
 - Recibos PDF y envío, inventario completo, informes, facturación Premium, módulos de idiomas e integraciones se desarrollan en entregas posteriores, no en 2.6.
+
+## Recibos 2.7
+
+- Aplicar los requisitos cerrados de docs/RECIBOS_2_6.md y las limitaciones técnicas de docs/IMPLEMENTACION_2_7.md.
+- Room 22: migración 21→22 aditiva, instantáneas y cola locales, indicador PDF en la cabecera. Nunca subir PDF, logotipos o secretos a Firebase; no contratar intermediarios de pago.
+- SMTP TLS o autorización Microsoft Graph; datos y tokens cifrados localmente. El correo adicional Market Sales se reserva a la fase comercial. La venta y el stock no dependen de renderizado, copias o correo.
+- No afirmar compatibilidad con proveedores, compilación ni pruebas reales sin haberlas realizado. La configuración de Microsoft Entra es una condición de activación de Outlook/Hotmail.

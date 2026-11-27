@@ -98,6 +98,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Reanuda las obligaciones locales de recibos tras cerrar o reiniciar Android.
+        es.nuskysoftware.marketsales.work.ReceiptWorker.start(applicationContext)
         es.nuskysoftware.marketsales.data.repository.AccountSession.start(applicationContext)
         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.start(applicationContext)
         iniciarAutoestados()

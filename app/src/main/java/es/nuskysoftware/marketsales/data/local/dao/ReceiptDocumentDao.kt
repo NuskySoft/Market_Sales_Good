@@ -30,6 +30,8 @@ interface ReceiptDocumentDao {
     // Un proceso muerto durante SMTP deja resultado incierto: nunca reenviar a ciegas.
     @Query("UPDATE receipt_mail SET state='UNCERTAIN', detail='Envío interrumpido' WHERE owner=:owner AND state='SENDING'")
     suspend fun recoverInterrupted(owner: String)
+    @Query("UPDATE receipt_mail SET recipient=:recipient,state='PENDING',detail='' WHERE owner=:owner AND id=:id AND state IN ('ERROR','UNCERTAIN')")
+    suspend fun retry(owner:String,id:String,recipient:String):Int
     @Query("DELETE FROM receipt_documents WHERE owner=:owner")
     suspend fun deleteDocuments(owner: String)
     @Query("DELETE FROM receipt_mail WHERE owner=:owner")

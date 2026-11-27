@@ -223,6 +223,8 @@ class VentasRepository(
             if (onLocalSaleCommitted != null) {
                 onLocalSaleCommitted.invoke(idRecibo)
             } else {
+                // El trabajo PDF se programa después de la confirmación; un fallo no invalida el ticket.
+                runCatching { es.nuskysoftware.marketsales.work.ReceiptWorker.request(appContext) }
                 runCatching { StockMovementScheduler.request(appContext) }
                     .onFailure { Log.w(TAG, "Sale saved; stock scheduling will retry on startup", it) }
                 scope.launch {

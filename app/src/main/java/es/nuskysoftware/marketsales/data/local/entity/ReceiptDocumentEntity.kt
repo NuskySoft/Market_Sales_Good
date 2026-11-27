@@ -13,5 +13,5 @@ data class ReceiptDocumentEntity(
 @Entity(tableName = "receipt_mail", primaryKeys = ["owner", "id"])
 data class ReceiptMailEntity(
     val owner: String, val id: String, val receiptId: String, val recipient: String,
-    val created: Long, val state: String = "PENDING", val detail: String = ""
+    val created: Long, val state: String = "PENDING", val detail: String = "", val sender: String
 )

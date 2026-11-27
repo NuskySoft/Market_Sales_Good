@@ -9,6 +9,11 @@
 - Una venta guardada no puede fallar ni repetirse por un error de generación o envío de recibos. Los reintentos conservan el identificador de recibo y deben evitar duplicados.
 - Toda implementación se documentará dentro del código en castellano.
 
-## Decisión pendiente de canal
+## Acuerdos adicionales confirmados — 27-11-2026
 
-El envío desatendido de correo requiere un servicio de envío autorizado. Compartir con la app de WhatsApp mediante Android exige interacción; el envío desatendido por WhatsApp requiere una integración autorizada con WhatsApp Business Platform y sus requisitos operativos. Pendiente acordar cómo ofrecer WhatsApp sin romper la condición de envío automático ni introducir servicios o costes no aprobados. No se ha implementado el envío en este paso.
+- El envío de recibos es exclusivo de Premium.
+- En configuración habrá una opción «Solicitar siempre envío de recibo». Si está activada, preguntar al finalizar la transacción si el cliente quiere recibirlo; si está desactivada, no preguntar nunca. El recibo se conserva en ambos casos. El valor inicial y el alcance cuenta/dispositivo se concretarán antes de implementar.
+- Si el cliente quiere recibir el recibo, ofrecer correo electrónico o WhatsApp. Si elige WhatsApp pero no puede enviarse en ese momento, pedir su correo para enviarlo después automáticamente por email. No automatizar WhatsApp ni contratar una API de WhatsApp Business.
+- Para un correo solicitado sin conexión, guardar una solicitud persistente, asociada al recibo original, para enviarlo automáticamente cuando vuelva la red. El servicio autorizado de envío de email está por seleccionar.
+- La generación/consulta del PDF en Free y Demo, separada del envío Premium, se revisará en la definición de modalidades. No confundir la conservación del registro de venta (común) con el derecho a generar/compartir un archivo PDF.
+- Se pausa la implementación de recibos hasta cerrar la matriz Free/Premium de funciones actuales y futuras. No modificar código funcional en esta fase.

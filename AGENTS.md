@@ -34,3 +34,10 @@
 - Demo dispone de categoría protegida Sin categorizar adicional a su única categoría propia. No integrar WooCommerce ni leyenda de estados en este lote.
 - Al comparar ediciones, conservar el lastModified del dispositivo de origen; movimientos de stock independientes se suman por identificador, no se descartan por fecha.
 - Las versiones del esquema Room son independientes: esta candidata usa 20. Respaldo 2.3 conserva código, no datos del dispositivo; no hacer downgrade sobre Room 20.
+
+## Documentación obligatoria del código (desde 2.5)
+
+- Toda modificación nueva debe quedar documentada dentro de los propios archivos de código, en castellano, mediante comentarios explicativos y KDoc cuando corresponda.
+- Documentar la responsabilidad de módulos, clases, funciones, parámetros, resultados y errores; explicar también las operaciones, cálculos, consultas, condiciones, decisiones de negocio y puntos de persistencia/sincronización que se incorporen o modifiquen.
+- Actualizar los comentarios afectados al cambiar el comportamiento. No dejar implementaciones antiguas como bloques de dos o más líneas de código comentado; conservar los comentarios explicativos vigentes. No sustituir los comentarios internos por un manual externo.
+- No considerar terminada una modificación si falta su documentación interna. Esta regla se aplica a todas las futuras entregas.

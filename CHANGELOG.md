@@ -1,5 +1,7 @@
 # 2.6 — 27-11-2026 — adaptación de modalidades
 
+- Aceptada por el usuario tras pruebas parciales en Android Studio, incluido el alta rápida Premium desde calendario. Respaldo `backup/v2.6-validada`. No implica ejecución de todas las pruebas técnicas pendientes.
+
 - Free: 10 unidades positivas de catálogo por mercadillo, venta manual ilimitada y abonos sin recuperar cupo. Premium sin límite de catálogo.
 - Free: 50 mercadillos por año natural de celebración, incluyendo cancelados y eliminados, y uno activo por día; Premium sin esos límites y alta rápida desde calendario.
 - Configuración básica y actualización manual disponibles para cuentas registradas. Inventario, empresa y saldos reservados a Premium. Arqueo y cierre común, incluidos arqueos pendientes tras perder Premium.

@@ -29,7 +29,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Inventario: exclusivo de Premium, confirmado; incluye entradas y ajustes, historial, valoración y avisos de stock mínimo.
 - Listados e informes: distribución confirmada. Free conserva listados y resúmenes individuales; Premium añade informes agregados, estadísticas, comparativas y exportaciones.
 - Contratar/cancelar Premium: modelo comercial confirmado en el apartado 16; precios definitivos pendientes.
-- Leyenda del calendario: común a Free y Premium, confirmada (ya existe un diálogo accesible desde calendario).
+- Leyenda del calendario: común a Free y Premium, ya implementada y confirmada por el usuario. Retirada de tareas pendientes; no modificar.
 - Integraciones con cualquier plataforma de venta online: exclusivamente Premium, confirmado; no implementadas.
 - Usuarios colaboradores/roles de empresa: exclusivo de Premium, confirmado; fase final junto con multiempresa.
 

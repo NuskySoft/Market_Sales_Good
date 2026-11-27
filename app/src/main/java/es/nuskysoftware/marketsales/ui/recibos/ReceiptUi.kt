@@ -294,9 +294,30 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                 OutlinedTextField(port,{port=it.filter{ch->ch.isDigit()}.take(5);if(port=="465")tls="SSL";if(port=="587")tls="STARTTLS"},label={Text(t(en,"Puerto","Port"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
                 Row(verticalAlignment=Alignment.CenterVertically){listOf("STARTTLS","SSL").forEach{v->RadioButton(tls==v,{tls=v;if(port in listOf("465","587"))port=if(v=="SSL")"465" else "587"},enabled=!busy);Text(v)}}
                 OutlinedTextField(user,{user=it},label={Text(t(en,"Usuario (opcional si coincide con el correo)","User (optional if same as email)"))},modifier=Modifier.fillMaxWidth(),singleLine=true,enabled=!busy)
-                OutlinedTextField(secret,{secret=it},label={Text(t(en,"Contraseña de aplicación / SMTP","App password / SMTP"))},visualTransformation=PasswordVisualTransformation(),singleLine=true,modifier=Modifier.fillMaxWidth(),enabled=!busy)
-                Button(enabled=!busy && ReceiptMail.validAddress(address.trim()) && secret.isNotBlank() && host.isNotBlank() && port.toIntOrNull() in 1..65535,onClick={
-                    saveTest(MailConfig("smtp",name.trim(),address.trim(),host.trim(),port.toInt(),tls,user.trim().ifBlank{address.trim()},secret))
+                OutlinedTextField(secret,{secret=it},label={Text(t(en,"Contraseña del correo SMTP","SMTP email password"))},visualTransformation=PasswordVisualTransformation(),singleLine=true,modifier=Modifier.fillMaxWidth(),enabled=!busy)
+                // El botón solo se bloquea mientras hay una operación en curso. Validar al pulsar
+                // permite indicar el campo concreto que impide continuar, incluso tras cambiar de proveedor.
+                Button(enabled=!busy,onClick={
+                    val email=address.trim()
+                    val server=host.trim()
+                    val parsedPort=port.toIntOrNull()
+                    val validation=when {
+                        email.isBlank() -> t(en,"Introduce el correo de la empresa.","Enter the company email.")
+                        !ReceiptMail.validAddress(email) -> t(en,"La dirección de correo no es válida. Revisa el formato y los espacios.","Invalid email address. Check the format and spaces.")
+                        server.isBlank() -> t(en,"Introduce el servidor SMTP.","Enter the SMTP server.")
+                        parsedPort==null || parsedPort !in 1..65535 -> t(en,"Introduce un puerto válido entre 1 y 65535.","Enter a valid port between 1 and 65535.")
+                        secret.isBlank() -> t(en,"Introduce la contraseña del buzón SMTP.","Enter the SMTP mailbox password.")
+                        (parsedPort==465 && tls!="SSL") || (parsedPort==587 && tls!="STARTTLS") -> t(en,"Usa SSL/TLS con el puerto 465 o STARTTLS con el 587.","Use SSL/TLS with port 465 or STARTTLS with 587.")
+                        else -> null
+                    }
+                    if(validation!=null){
+                        mailError=true
+                        message=validation
+                    }else if(parsedPort!=null){
+                        // El usuario SMTP es opcional: si está vacío, utilizar el correo del remitente.
+                        // La contraseña se transmite tal como se escribió; no se recorta ni se registra.
+                        saveTest(MailConfig("smtp",name.trim(),email,server,parsedPort,tls,user.trim().ifBlank{email},secret))
+                    }
                 }){Text(t(en,"Comprobar y guardar","Test and save"))}
             }
             if(busy)LinearProgressIndicator(Modifier.fillMaxWidth())

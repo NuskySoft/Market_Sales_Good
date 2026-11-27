@@ -1,5 +1,7 @@
 # 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
 
+- Configuración SMTP: el botón Comprobar y guardar permanece disponible salvo durante una operación en curso; las validaciones se muestran al pulsar con un mensaje específico. Usuario SMTP opcional. No se altera el transporte ni la autorización Gmail.
+
 - Gmail OAuth y envío real de recibos confirmados por el usuario en emulador. Se sustituye el texto de prueba por confirmación profesional de configuración, común a todos los proveedores y dirigida únicamente a la propia cuenta. Verificación pública de Google pendiente.
 
 - Gmail sustituye SMTP/contraseña de aplicación por Google Identity Services + Gmail API, selección de cuenta independiente de Firebase, permiso de envío mínimo y reobtención de tokens desde Android. Configuración de Google Cloud y pruebas reales pendientes. Sin migración Room.

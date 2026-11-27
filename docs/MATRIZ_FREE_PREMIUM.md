@@ -80,8 +80,12 @@ Confirmado: Free puede crear un mercadillo por fecha y un máximo de 50 mercadil
 - Free: al pulsar ese día se muestra un aviso indicando que el alta directa desde el calendario es exclusiva de Premium; puede seguir utilizando la opción habitual de alta, dentro de sus límites.
 - Confirmado: el límite anual se computa por año natural de la fecha de celebración del mercadillo, no por fecha de alta. Los cancelados cuentan y borrar un mercadillo no libera cupo. Cada 1 de enero empieza un nuevo cupo de 50 para el nuevo año; planificar fechas futuras consume el cupo del año correspondiente. Se mantiene la consulta del historial de años anteriores.
 
-### 10. Siguiente cuestión: publicidad
+### 10. Publicidad
 
-Actualmente Free muestra publicidad cuando procede según consentimiento y Premium no muestra anuncios. Propuesta: conservar esta diferencia, sin anuncios que interrumpan la introducción/cobro/confirmación de ventas ni el registro de gastos; reservar anuncios intersticiales a transiciones no críticas. Mantener consentimiento y límites de frecuencia. Pendiente de confirmación.
+Confirmado: Demo y Free pueden mostrar banners e intersticiales cuando proceda según consentimiento, conexión y límites de frecuencia; Premium queda libre de publicidad. Los intersticiales se reservan a transiciones no críticas y nunca deben interrumpir una venta, cobro, confirmación ni registro de gastos. Principio de producto confirmado: no introducir restricciones ni molestias que provoquen el abandono de la aplicación; incentivar la compra mediante ventajas reales de Premium.
+
+### 11. Siguiente cuestión: integración con tiendas online
+
+Propuesta: la integración futura con WooCommerce será exclusiva de Premium; importar/vincular catálogo y sincronizar existencias y ventas de acuerdo con reglas que se definirán en su fase de desarrollo. Free conserva su catálogo independiente y ventas manuales/limitadas de catálogo. No desarrollar aún ni asumir reglas de sincronización, otros sistemas compatibles o tarifas adicionales. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

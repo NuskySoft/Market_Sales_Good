@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/MercadilloViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Mantiene el estado observable de planificación, selección y acciones de mercadillos.
+
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -491,6 +493,7 @@ class MercadilloViewModel(
     }
 
     /** Recalcula/repinta al cambiar de usuario o volver de edición. */
+    // Actualiza los datos observables de mercadillos.
     fun recargarDatos() {
         viewModelScope.launch {
             Log.d(TAG, "🔄 Recargando datos…")

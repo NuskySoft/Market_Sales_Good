@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Expone los saldos pendientes de la cuenta y las acciones sobre ellos.
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +24,7 @@ class SaldoPendienteViewModel(private val repository: SaldoGuardadoRepository) :
 }
 
 class SaldoPendienteViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+    // Construye el ViewModel con las dependencias del flujo.
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         val repo = SaldoGuardadoRepository(context)
         @Suppress("UNCHECKED_CAST")

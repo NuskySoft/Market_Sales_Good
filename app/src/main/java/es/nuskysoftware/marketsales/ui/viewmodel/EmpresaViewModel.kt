@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Expone los datos de empresa y coordina el guardado desde el formulario.
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.nuskysoftware.marketsales.data.repository.EmpresaRepository

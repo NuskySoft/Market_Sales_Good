@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaResumenVentas.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Expone los datos del resumen de ventas y las acciones relacionadas con abonos.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

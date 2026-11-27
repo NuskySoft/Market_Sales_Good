@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/VentasViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Mantiene el carrito, los conceptos manuales y productos, los totales y el flujo de confirmación de ventas.
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.nuskysoftware.marketsales.data.local.cache.CarritoCache

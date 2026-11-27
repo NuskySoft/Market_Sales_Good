@@ -23,7 +23,8 @@ class SaldoGuardadoRepository(context: Context) {
     // Compatibility name: now appends instead of deleting any previous balance.
     // Guarda un saldo adicional; el nombre histórico no significa sustituir otros saldos.
     suspend fun reemplazarGuardado(item: SaldoGuardadoEntity) = withContext(Dispatchers.IO) {
-        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
+        // Guardar, asignar o retirar un saldo pendiente requiere Premium.
+        DemoAccess.requirePremium()
         RecoveryGate(app).beforeWrite(item.idUsuario)
         db.withTransaction {
             DemoAccess.requireOwner(item.idUsuario)
@@ -33,7 +34,8 @@ class SaldoGuardadoRepository(context: Context) {
     }
     // Asigna el saldo identificado al mercadillo de destino y actualiza su disponibilidad.
     suspend fun asignar(id: String, destino: String) = withContext(Dispatchers.IO) {
-        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
+        // Guardar, asignar o retirar un saldo pendiente requiere Premium.
+        DemoAccess.requirePremium()
         val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
         db.withTransaction {
             DemoAccess.requireOwner(uid)
@@ -52,7 +54,8 @@ class SaldoGuardadoRepository(context: Context) {
     suspend fun borrarGuardado(id: String) = change(id, true)
     // Centraliza el cambio de disponibilidad y seguimiento de la modificación local.
     private suspend fun change(id: String, delete: Boolean) = withContext(Dispatchers.IO) {
-        DemoAccess.requireRegistered("demo_sin_asignar_saldo")
+        // Guardar, asignar o retirar un saldo pendiente requiere Premium.
+        DemoAccess.requirePremium()
         val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
         db.withTransaction {
             DemoAccess.requireOwner(uid)

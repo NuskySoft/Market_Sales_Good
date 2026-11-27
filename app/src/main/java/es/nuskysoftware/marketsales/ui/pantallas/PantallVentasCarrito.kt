@@ -51,6 +51,11 @@ fun PantallaVentasCarrito(
     val moneda by ConfigurationManager.moneda.collectAsState()
     val idioma by ConfigurationManager.idioma.collectAsState()
     val currentLanguage = idioma
+    // Mostrar el aviso del ViewModel aquí también al incrementar una línea de catálogo.
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { snackbar.showSnackbar(it); vm.limpiarError() }
+    }
 
     // Id provisional para mostrar (no se usa para persistir)
     val idReciboHeader by remember {
@@ -58,6 +63,7 @@ fun PantallaVentasCarrito(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
                 title = { Text(text = idReciboHeader) },

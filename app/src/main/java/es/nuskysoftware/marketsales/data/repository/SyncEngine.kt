@@ -113,7 +113,10 @@ class SyncEngine(context: Context) {
             val quantity = db.openHelper.readableDatabase.query("SELECT COALESCE(SUM(cantidad),0) FROM stock_movements WHERE idArticulo = ? AND idUsuario = ? AND aplicado = 1 AND incorporadoEnBase = 0", arrayOf(articleId, uid)).use { c -> c.moveToFirst(); c.getInt(0) }
             remote + ("stock" to ((remote["stockBase"] as Number).toInt() - quantity))
         } else remote
-        write(t, adjusted + ("sincronizadoFirebase" to true))
+        // La fecha de creación de un mercadillo es inmutable; un cliente antiguo puede omitirla.
+        val preservingCreation = if (t.name == "mercadillos" && local?.get("creadoEn") != null)
+            adjusted + ("creadoEn" to local["creadoEn"]) else adjusted
+        write(t, preservingCreation + ("sincronizadoFirebase" to true))
     }
     // Concilia un propietario en IO bajo exclusión mutua, incluidas bajas y cambios pendientes.
     suspend fun sync(uid: String) = withContext(Dispatchers.IO) { mutex.withLock {
@@ -140,7 +143,9 @@ class SyncEngine(context: Context) {
                     check(remote == null || remote[t.owner] == uid) { "Owner mismatch" }
                     // Solo se compara el contenido que pertenece a la generación actualmente autorizada.
                     val current = remote?.takeIf { (it["_generation"] ?: "legacy") == generation }
-                    val winner = if (current != null && newer(current, row)) defaults(t) + current else row
+                    val selected = if (current != null && newer(current, row)) defaults(t) + current else row
+                    // No perder el dato de creación al conciliar clientes con esquemas anteriores.
+                    val winner = if (t.name == "mercadillos") selected + ("creadoEn" to (current?.get("creadoEn") ?: row["creadoEn"])) else selected
                     tx.set(ref, winner + mapOf("_generation" to generation, "sincronizadoFirebase" to true))
                     if (t.name == "articulos" && winner["stockBase"] == null) winner + ("stockBase" to winner["stock"]) else winner
                 }.await()
@@ -177,6 +182,13 @@ class SyncEngine(context: Context) {
             }
         }
         syncStock(uid, generation)
+        // Solo revisar duplicados futuros después de descargar todas las operaciones del propietario.
+        // La baja lógica se sincroniza como cualquier edición; nunca borra filas ni tickets.
+        if (RecoveryGate(app).canPull(uid) && DemoAccess.canSync(uid) &&
+            db.userDao().getUserById(uid)?.esPremium == false) {
+            val changed = FreePlanningReconciler(db).apply(uid)
+            if (changed > 0) es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(app)
+        }
         // Recalcula las existencias con la misma base y unión de movimientos en todos los dispositivos.
         db.withTransaction {
             val sql = db.openHelper.writableDatabase

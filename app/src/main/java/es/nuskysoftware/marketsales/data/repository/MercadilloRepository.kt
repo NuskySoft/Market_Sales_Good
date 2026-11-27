@@ -195,6 +195,8 @@ class MercadilloRepository(
             DemoAccess.requireOwner(ownedMarket.userId)
             check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
 
+            // La introducción manual es común; la asignación automática desde otro mercadillo es Premium.
+            if (esAsignacionAutomatica) DemoAccess.requirePremium()
             mercadilloDao.asignarSaldoInicial(mercadilloId, saldoInicial)
             mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
             true

@@ -274,8 +274,9 @@ class AsignarSaldoViewModel(
     /** Persistencia de Paso 3. Llama desde el botón Aceptar del diálogo de confirmación. */
     // Ejecuta la decisión confirmada de guardar o asignar el saldo y continúa el flujo de navegación.
     fun confirmarYPersistir(navController: androidx.navigation.NavController) {
-        if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
-            es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_sin_asignar_saldo"); return
+        // La confirmación vuelve a comprobar el plan: puede haber cambiado con el formulario abierto.
+        if (!ConfigurationManager.getIsPremium() || es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+            es.nuskysoftware.marketsales.utils.DemoAccess.show("premium_required"); return
         }
         val d = _ui.value.dialogoIntermedio
         if (d.modo == null) return
@@ -287,6 +288,7 @@ class AsignarSaldoViewModel(
             try {
                 db.withTransaction {
                     es.nuskysoftware.marketsales.utils.DemoAccess.requireOwner(origen.userId)
+                    es.nuskysoftware.marketsales.utils.DemoAccess.requirePremium()
                     when (d.modo) {
                         IntermediaModo.GUARDAR -> {
                             // 1) Guardar/replace en tabla control

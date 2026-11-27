@@ -238,11 +238,11 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             composable("perfil") { DemoRestricted(navController) { PantallaPerfil(navController) } }
             composable("categorias") { PantallaCategorias(navController) }
             composable("articulos") { PantallaArticulos(navController) }
-            composable("inventario") { DemoRestricted(navController) { es.nuskysoftware.marketsales.ui.pantallas.PantallaInventario(navController) } }
+            composable("inventario") { PremiumRoute(navController) { es.nuskysoftware.marketsales.ui.pantallas.PantallaInventario(navController) } }
             composable("listados") { DemoRestricted(navController) { es.nuskysoftware.marketsales.ui.pantallas.PantallaListados(navController) } }
             composable("utilidades") { DemoRestricted(navController) { PantallaUtilidades(navController) } }
-            composable("saldos_pendientes") { DemoRestricted(navController) { PantallaSaldosPendientes(navController) } }
-            composable("datos_empresa") { DemoRestricted(navController) { PantallaDatosEmpresa(navController) } }
+            composable("saldos_pendientes") { PremiumRoute(navController) { PantallaSaldosPendientes(navController) } }
+            composable("datos_empresa") { PremiumRoute(navController) { PantallaDatosEmpresa(navController) } }
 
             // Pantalla de depuración para activar/desactivar datos (solo en compilaciones debug)
             if (BuildConfig.DEBUG) {
@@ -630,4 +630,21 @@ fun pingFirestoreProd() {
         .set(data)
         .addOnSuccessListener { Log.d("MS-FB", "Ping Firestore PROD OK") }
         .addOnFailureListener { e -> Log.e("MS-FB", "Ping Firestore PROD FAIL", e) }
+}
+
+
+/** Protege las pantallas profesionales, incluso ante navegación directa o un cambio de plan. */
+@Composable
+private fun PremiumRoute(navController: androidx.navigation.NavController, content: @Composable () -> Unit) {
+    val premium by ConfigurationManager.esPremium.collectAsState()
+    val ready by ConfigurationManager.esPremiumReady.collectAsState()
+    if (!ready) return
+    if (premium && !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+        content()
+    } else {
+        LaunchedEffect(Unit) {
+            es.nuskysoftware.marketsales.utils.DemoAccess.show("premium_required")
+            navController.safePopBackStack()
+        }
+    }
 }

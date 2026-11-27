@@ -107,15 +107,17 @@ class ArticuloRepository(
         RecoveryGate(appContext).beforeWrite(userId)
         Log.d(TAG, "🔄 Creando artículo para usuario: $userId")
 
+        // Free puede mantener el catálogo, pero no activar el control de costes ni existencias.
+        val premium = DemoAccess.mode() == es.nuskysoftware.marketsales.utils.AppMode.PREMIUM
         val nuevoArticulo = ArticuloEntity(
             userId = userId,
             nombre = nombre,
             idCategoria = idCategoria.ifBlank { CatalogDefaults.ensure(database, userId) },
             precioVenta = es.nuskysoftware.marketsales.utils.Money.round(precioVenta),
-            precioCoste = precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) },
-            stock = stock,
-            controlarStock = controlarStock,
-            controlarCoste = controlarCoste,
+            precioCoste = if (premium) precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) } else null,
+            stock = if (premium) stock else null,
+            controlarStock = premium && controlarStock,
+            controlarCoste = premium && controlarCoste,
             favorito = favorito,
             fotoUri = fotoUri,
             sincronizadoFirebase = false
@@ -147,18 +149,28 @@ class ArticuloRepository(
     suspend fun actualizarArticulo(articulo: ArticuloEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             DemoAccess.requireOwner(articulo.userId)
-            val applied = database.stockMovementDao().allForOwner(articulo.userId).filter { it.idArticulo == articulo.idArticulo && it.aplicado && !it.incorporadoEnBase }.sumOf { it.cantidad }
-            val articuloActualizado = articulo.copy(
-                stockBase = articulo.stock?.plus(applied),
-                precioVenta = es.nuskysoftware.marketsales.utils.Money.round(articulo.precioVenta),
-                precioCoste = articulo.precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) },
-                version = articulo.version + 1,
-                lastModified = System.currentTimeMillis(),
-                sincronizadoFirebase = false
-            )
-
-            // 1. ACTUALIZAR EN ROOM PRIMERO
-            articuloDao.updateArticulo(articuloActualizado)
+            // La edición Free conserva los campos Premium de la fila persistida, no los valores
+            // vacíos del formulario. También conserva los movimientos de stock pendientes.
+            val articuloActualizado = database.withTransaction {
+                DemoAccess.requireOwner(articulo.userId)
+                val anterior = articuloDao.getArticuloById(articulo.idArticulo) ?: error("Article not found")
+                check(anterior.userId == articulo.userId)
+                val premium = DemoAccess.mode() == es.nuskysoftware.marketsales.utils.AppMode.PREMIUM
+                val applied = database.stockMovementDao().allForOwner(articulo.userId).filter { it.idArticulo == articulo.idArticulo && it.aplicado && !it.incorporadoEnBase }.sumOf { it.cantidad }
+                val actualizado = articulo.copy(
+                    stock = if (premium) articulo.stock else anterior.stock,
+                    stockBase = if (premium) articulo.stock?.plus(applied) else anterior.stockBase,
+                    controlarStock = if (premium) articulo.controlarStock else anterior.controlarStock,
+                    controlarCoste = if (premium) articulo.controlarCoste else anterior.controlarCoste,
+                    precioVenta = es.nuskysoftware.marketsales.utils.Money.round(articulo.precioVenta),
+                    precioCoste = if (premium) articulo.precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) } else anterior.precioCoste,
+                    version = anterior.version + 1,
+                    lastModified = System.currentTimeMillis(),
+                    sincronizadoFirebase = false
+                )
+                articuloDao.updateArticulo(actualizado)
+                actualizado
+            }
             Log.d(TAG, "✅ Artículo actualizado en Room: ${articuloActualizado.nombre}")
 
             // 2. INTENTAR SINCRONIZAR CON FIREBASE

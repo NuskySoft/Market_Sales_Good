@@ -16,7 +16,8 @@ class EmpresaRepository(context: Context) {
     private val dao = db.empresaDao()
     // Expone los datos de empresa en función de la cuenta activa.
     fun getEmpresaFlow(): Flow<EmpresaEntity?> = ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
-        if (uid.isNullOrBlank()) flowOf(null) else dao.getEmpresaFlow(uid)
+        // La interfaz solo presenta datos de empresa en una cuenta Premium.
+        if (uid.isNullOrBlank() || !ConfigurationManager.getIsPremium()) flowOf(null) else dao.getEmpresaFlow(uid)
     }
     // Persiste los datos de empresa para la cuenta activa.
     suspend fun guardarOActualizar(nif: String, nombre: String, razon: String, direccion: String, poblacion: String, codigoPostal: String, provincia: String, pais: String) = withContext(Dispatchers.IO) {
@@ -24,6 +25,7 @@ class EmpresaRepository(context: Context) {
         RecoveryGate(app).beforeWrite(uid)
         db.withTransaction {
             DemoAccess.requireOwner(uid)
+            DemoAccess.requirePremium()
             val old = dao.getEmpresa(uid)
             dao.insertOrUpdate(EmpresaEntity(userId = uid, nif = nif, nombre = nombre, razonSocial = razon, direccion = direccion, poblacion = poblacion, codigoPostal = codigoPostal, provincia = provincia, pais = pais, version = (old?.version ?: 0) + 1, lastModified = System.currentTimeMillis()))
         }

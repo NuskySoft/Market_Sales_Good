@@ -104,7 +104,7 @@ fun PantallaConfiguracion(
                     )
                 }
 
-                // Idioma (solo Premium)
+                // Idioma disponible para toda cuenta registrada.
                 item {
                     OpcionConfiguracionV10(
                         iconRes = R.drawable.ic_language,
@@ -126,7 +126,7 @@ fun PantallaConfiguracion(
                     )
                 }
 
-                // Fuente (solo Premium)
+                // Fuente disponible para toda cuenta registrada.
                 item {
                     OpcionConfiguracionV10(
                         iconRes = R.drawable.ic_font,
@@ -194,7 +194,7 @@ fun PantallaConfiguracion(
                     }
                 }
 
-                // Moneda (solo Premium)
+                // Moneda disponible para toda cuenta registrada.
                 item {
                     val monedas = listOf(
                         "€ Euro" to StringResourceManager.getString("euro", currentLanguage),
@@ -307,7 +307,7 @@ private fun OpcionConfiguracionV10(
                     )
                     if (!habilitado) {
                         Text(
-                            text = StringResourceManager.getString("solo_premium", currentLanguage),
+                            text = StringResourceManager.getString("demo_solo_registrados", currentLanguage),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Red.copy(alpha = 0.7f)
                         )

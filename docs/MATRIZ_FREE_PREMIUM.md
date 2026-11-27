@@ -30,7 +30,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Listados e informes: distribución confirmada. Free conserva listados y resúmenes individuales; Premium añade informes agregados, estadísticas, comparativas y exportaciones.
 - Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
 - Leyenda del calendario: común, propuesta (ya existe un diálogo accesible desde calendario).
-- Integración WooCommerce: Premium, propuesta; no implementada.
+- Integraciones con cualquier plataforma de venta online: exclusivamente Premium, confirmado; no implementadas.
 - Usuarios colaboradores/roles de empresa: antigua propuesta sin confirmar; decidir si entra en el producto futuro.
 
 ## Decisiones de la revisión
@@ -84,8 +84,13 @@ Confirmado: Free puede crear un mercadillo por fecha y un máximo de 50 mercadil
 
 Confirmado: Demo y Free pueden mostrar banners e intersticiales cuando proceda según consentimiento, conexión y límites de frecuencia; Premium queda libre de publicidad. Los intersticiales se reservan a transiciones no críticas y nunca deben interrumpir una venta, cobro, confirmación ni registro de gastos. Principio de producto confirmado: no introducir restricciones ni molestias que provoquen el abandono de la aplicación; incentivar la compra mediante ventajas reales de Premium.
 
-### 11. Siguiente cuestión: integración con tiendas online
+### 11. Integración con tiendas online
 
-Propuesta: la integración futura con WooCommerce será exclusiva de Premium; importar/vincular catálogo y sincronizar existencias y ventas de acuerdo con reglas que se definirán en su fase de desarrollo. Free conserva su catálogo independiente y ventas manuales/limitadas de catálogo. No desarrollar aún ni asumir reglas de sincronización, otros sistemas compatibles o tarifas adicionales. Pendiente de confirmación.
+Confirmado: cualquier integración con plataformas de venta online será exclusiva de Premium (WooCommerce y cualquier otra futura plataforma). Free conserva catálogo independiente y ventas manuales/limitadas de catálogo. Reglas de importación y sincronización se definirán en su fase de desarrollo.
+- Requisito futuro específico: conector privado para la nueva tienda propia de Tokamadera, independiente de WordPress/WooCommerce. No mostrar ni permitir el uso de este conector al resto de usuarios; definir autorización y configuración en su fase de desarrollo. No implementar ahora.
+
+### 12. Siguiente cuestión: usuarios colaboradores
+
+Multiempresa Premium ya confirmada para fase final. Propuesta pendiente: permitir a Premium invitar a otros usuarios con cuentas individuales a colaborar en una misma empresa, sin compartir credenciales; permisos por rol, límites y coste por definir en fase posterior. Distinguir de usar una misma cuenta en varios dispositivos, que no es colaboración entre cuentas. Confirmar si incluirlo en la hoja de ruta o descartarlo.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

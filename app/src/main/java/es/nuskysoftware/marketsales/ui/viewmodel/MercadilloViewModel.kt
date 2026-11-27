@@ -12,6 +12,7 @@ import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import es.nuskysoftware.marketsales.utils.MercadillosManager
+import es.nuskysoftware.marketsales.utils.MercadillosValidator
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -35,7 +36,6 @@ class MercadilloViewModel(
 
     private val manager = MercadillosManager(appContext, repository)
 
-    private val dateFormat = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     // ===== UI STATE =====
@@ -115,7 +115,7 @@ class MercadilloViewModel(
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
                 validarFechaParaAlta(fecha)?.let { fail(it); return@launch }
-                validarMultiplesMercadillosPorDia(fecha)?.let { fail(it); return@launch }
+                // Los cupos se verifican una sola vez en la transacción Room, igual que en edición.
                 validarLugar(lugar)?.let { fail(it); return@launch }
                 validarOrganizador(organizador)?.let { fail(it); return@launch }
                 validarHorarios(horaInicio, horaFin)?.let { fail(it); return@launch }
@@ -191,6 +191,8 @@ class MercadilloViewModel(
                 // Reglas por estado (EN_CURSO: NO se puede cambiar la fecha)
                 val errCampos = validarCamposSegunEstado(actual, fecha)
                 if (errCampos != null) { fail(errCampos); return@launch }
+                // Un cambio de fecha usa la misma regla de alta. Una fecha histórica sin cambios se conserva.
+                if (fecha != actual.fecha) validarFechaParaAlta(fecha)?.let { fail(it); return@launch }
 
                 validarLugar(lugar)?.let { fail(it); return@launch }
                 validarOrganizador(organizador)?.let { fail(it); return@launch }
@@ -382,36 +384,19 @@ class MercadilloViewModel(
     fun limpiarMensaje() { _uiState.value = _uiState.value.copy(message = null) }
 
     // ===== VALIDACIONES =====
+    /** Valida el formato visible y los días reales del calendario. */
     fun validarFecha(fecha: String): String? =
         when {
             fecha.isBlank() -> tr("valid_fecha_vacia")
             !fecha.matches(Regex("\\d{2}-\\d{2}-\\d{4}")) -> tr("valid_formato_fecha_invalido")
-            else -> try { dateFormat.parse(fecha); null } catch (_: Exception) { tr("valid_fecha_invalida") }
+            MercadillosValidator.parseLocalDate(fecha) == null -> tr("valid_fecha_invalida")
+            else -> null
         }
 
+    /** Alta y reprogramación admiten todo el día de hoy, aunque haya pasado la hora de fin. */
     fun validarFechaParaAlta(fecha: String): String? {
         validarFecha(fecha)?.let { return it }
-        return try {
-            val fm = dateFormat.parse(fecha) ?: return tr("valid_fecha_invalida")
-            // ✅ Comparación SOLO por día (ignora horas): hoy permitido
-            val hoyStr = dateFormat.format(Date())
-            val hoyCero = dateFormat.parse(hoyStr)!!
-            if (fm.before(hoyCero)) tr("valid_fecha_pasada") else null
-        } catch (_: Exception) { tr("valid_fecha_invalida") }
-    }
-
-    private suspend fun validarMultiplesMercadillosPorDia(fecha: String): String? {
-        return try {
-            val userId = ConfigurationManager.getCurrentUserId() ?: return tr("usuario_no_autenticado")
-            val esPremium = ConfigurationManager.getIsPremium()
-            val existentes = repository.getMercadillosPorFecha(userId, fecha)
-            if (existentes.isNotEmpty() && !esPremium)
-                tr("free_limite_mercadillos_por_dia")
-            else null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error validando múltiples mercadillos", e)
-            tr("valid_error_disponibilidad_fecha")
-        }
+        return if (MercadillosValidator.puedeCrearConFecha(fecha)) null else tr("valid_fecha_pasada")
     }
 
     fun validarLugar(lugar: String): String? =

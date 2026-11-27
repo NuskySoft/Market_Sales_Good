@@ -281,10 +281,10 @@ fun DatePickerDialog(
     onDismiss: () -> Unit,
     currentLanguage: String
 ) {
-    val calendar = remember { Calendar.getInstance().apply { firstDayOfWeek = Calendar.MONDAY; time = Date() } }
+    // El selector utiliza la misma zona que el alta y los estados automáticos.
+    val calendar = remember { Calendar.getInstance(TimeZone.getTimeZone(es.nuskysoftware.marketsales.utils.CalendarDates.marketZone.id)).apply { firstDayOfWeek = Calendar.MONDAY; time = Date() } }
     var selectedDate by remember { mutableStateOf(calendar.clone() as Calendar) }
     var currentViewDate by remember { mutableStateOf(calendar.clone() as Calendar) }
-    val dateFormat = SimpleDateFormat("dd-MM-yyyy", if (currentLanguage == "es") Locale("es", "ES") else Locale.ENGLISH)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -305,7 +305,11 @@ fun DatePickerDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onDateSelected(dateFormat.format(selectedDate.time)) }) {
+            Button(onClick = {
+                // Convertir los campos del día elegido sin reinterpretarlos en otra zona horaria.
+                val day = java.time.LocalDate.of(selectedDate.get(Calendar.YEAR), selectedDate.get(Calendar.MONTH) + 1, selectedDate.get(Calendar.DAY_OF_MONTH))
+                onDateSelected(es.nuskysoftware.marketsales.utils.CalendarDates.display(day.toEpochDay()))
+            }) {
                 Text(StringResourceManager.getString("aceptar", currentLanguage))
             }
         },
@@ -321,12 +325,12 @@ private fun SelectedDateDisplay(selectedDate: Calendar, currentLanguage: String)
     Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                dayFormat.format(selectedDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                dayFormat.apply { timeZone = selectedDate.timeZone }.format(selectedDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
             Text(
-                displayFormat.format(selectedDate.time),
+                displayFormat.apply { timeZone = selectedDate.timeZone }.format(selectedDate.time),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 fontWeight = FontWeight.Bold
@@ -344,7 +348,7 @@ private fun MonthYearNavigation(currentViewDate: Calendar, onMonthChange: (Calen
             Text("←", fontSize = 20.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
         Text(
-            monthFormat.format(currentViewDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+            monthFormat.apply { timeZone = currentViewDate.timeZone }.format(currentViewDate.time).replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface
         )
         IconButton(onClick = { onMonthChange((currentViewDate.clone() as Calendar).apply { add(Calendar.MONTH, 1) }) }) {
@@ -403,7 +407,7 @@ private fun CalendarGrid(
                 if (dayNumber in 1..daysInMonth) {
                     val dayDate = (currentViewDate.clone() as Calendar).apply { set(Calendar.DAY_OF_MONTH, dayNumber) }
                     val isSelected = isSameDay(dayDate, selectedDate)
-                    val isToday = isSameDay(dayDate, Calendar.getInstance())
+                    val isToday = isSameDay(dayDate, Calendar.getInstance(dayDate.timeZone))
                     DayCell(day = dayNumber, isSelected = isSelected, isToday = isToday) { onDateSelected(dayDate) }
                 } else Box(modifier = Modifier.size(40.dp))
             }

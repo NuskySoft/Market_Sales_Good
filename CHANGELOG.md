@@ -1,5 +1,7 @@
 # 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
 
+- Corrección durante pruebas de aceptación: alta directa de mercadillos en la fecha de hoy, comparación por día civil en zona Europe/Madrid y validación única de cupos en Room; reprogramar a hoy activa inmediatamente el mercadillo. Sin cambios de esquema ni de límites Free/Demo.
+
 - Recibos Premium con instantánea local transaccional, PDF A4 y abonos con referencia al original; Free/Demo sin PDF.
 - Visor interno, logotipo opcional local, aviso de empresa, preferencia de solicitud por dispositivo y consulta/reenvío desde ventas.
 - SMTP TLS (Gmail con contraseña de aplicación y otros proveedores), integración Microsoft Graph preparada para Outlook/Hotmail, pendiente de registrar cliente público y validar.

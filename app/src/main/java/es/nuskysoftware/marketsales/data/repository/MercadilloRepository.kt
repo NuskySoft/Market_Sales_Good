@@ -6,6 +6,10 @@ package es.nuskysoftware.marketsales.data.repository
 
 // Responsabilidad: Gestiona mercadillos, estados, saldos, arqueos y consultas locales por propietario.
 import es.nuskysoftware.marketsales.utils.DemoAccess
+import es.nuskysoftware.marketsales.utils.CalendarDates
+import es.nuskysoftware.marketsales.utils.MercadillosValidator
+import es.nuskysoftware.marketsales.utils.StringResourceManager
+import java.time.Instant
 
 
 import androidx.room.withTransaction
@@ -85,47 +89,47 @@ class MercadilloRepository(
         val userId = ConfigurationManager.getCurrentUserId()
             ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_mercadillo", ConfigurationManager.idioma.value))
 
-        RecoveryGate(appContext).beforeWrite(userId)
+        RecoveryGate(appContext, localDb).beforeWrite(userId)
 
-        // Si el alta es con FECHA=HOY, crear directamente en EN_CURSO (3)
-        val hoyStr = dateFormat.format(Date())
-        val estadoInicial = when {
-            fecha == hoyStr -> EstadosMercadillo.Estado.EN_CURSO.codigo
-            saldoInicial != null -> EstadosMercadillo.Estado.PROGRAMADO_TOTAL.codigo
-            else -> EstadosMercadillo.Estado.PROGRAMADO_PARCIAL.codigo
-        }
-
-        val nuevo = MercadilloEntity(
-            userId = userId,
-            fecha = fecha,
-            lugar = lugar,
-            organizador = organizador,
-            esGratis = esGratis,
-            importeSuscripcion = if (!esGratis) importeSuscripcion else 0.0,
-            requiereMesa = requiereMesa,
-            requiereCarpa = requiereCarpa,
-            hayPuntoLuz = hayPuntoLuz,
-            horaInicio = horaInicio,
-            horaFin = horaFin,
-            saldoInicial = saldoInicial,
-            estado = estadoInicial,
-            creadoEn = System.currentTimeMillis(),
-            sincronizadoFirebase = false
-        )
-
-        localDb.withTransaction {
-                DemoAccess.requireOwner(userId)
-                DemoAccess.checkLimit("mercadillos", mercadilloDao.contarDemo(userId))
-                // Comprobar fecha y cupo dentro de la transacción de alta, también sin conexión.
-                validarCupoFree(userId, fecha)
-                if (saldoGuardadoId != null) DemoAccess.requirePremium()
-                mercadilloDao.insertMercadillo(nuevo)
-                if (saldoGuardadoId != null) {
-                    val saved = database.saldoGuardadoDao().byId(saldoGuardadoId, userId) ?: error("Balance not available")
-                    check(!saved.consumido && !saved.eliminado)
-                    database.saldoGuardadoDao().upsert(saved.copy(consumido = true, idMercadilloDestino = nuevo.idMercadillo, version = saved.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
-                }
+        // La fecha, estado inicial y cupos se resuelven juntos bajo Room.
+        // Se compara el día civil, no la hora actual ni las horas orientativas del mercadillo.
+        val nuevo = localDb.withTransaction {
+            DemoAccess.requireOwner(userId)
+            val now = Instant.now()
+            val dia = MercadillosValidator.parseLocalDate(fecha)
+                ?: error(StringResourceManager.getString("valid_fecha_invalida", ConfigurationManager.idioma.value))
+            check(MercadillosValidator.puedeCrearConFecha(fecha, now)) {
+                StringResourceManager.getString("valid_fecha_pasada", ConfigurationManager.idioma.value)
             }
+            val fechaNormalizada = CalendarDates.display(dia.toEpochDay())
+            DemoAccess.checkLimit("mercadillos", mercadilloDao.contarDemo(userId))
+            validarCupoFree(userId, fechaNormalizada)
+            if (saldoGuardadoId != null) DemoAccess.requirePremium()
+            val market = MercadilloEntity(
+                userId = userId,
+                fecha = fechaNormalizada,
+                lugar = lugar,
+                organizador = organizador,
+                esGratis = esGratis,
+                importeSuscripcion = if (!esGratis) importeSuscripcion else 0.0,
+                requiereMesa = requiereMesa,
+                requiereCarpa = requiereCarpa,
+                hayPuntoLuz = hayPuntoLuz,
+                horaInicio = horaInicio,
+                horaFin = horaFin,
+                saldoInicial = saldoInicial,
+                estado = MercadillosValidator.estadoPlanificado(dia, saldoInicial, now),
+                creadoEn = now.toEpochMilli(),
+                sincronizadoFirebase = false
+            )
+            mercadilloDao.insertMercadillo(market)
+            if (saldoGuardadoId != null) {
+                val saved = database.saldoGuardadoDao().byId(saldoGuardadoId, userId) ?: error("Balance not available")
+                check(!saved.consumido && !saved.eliminado)
+                database.saldoGuardadoDao().upsert(saved.copy(consumido = true, idMercadilloDestino = market.idMercadillo, version = saved.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+            }
+            market
+        }
         repositoryScope.launch { sincronizarMercadilloConFirebase(nuevo) }
         nuevo.idMercadillo
     }
@@ -155,7 +159,20 @@ class MercadilloRepository(
             val anterior = mercadilloDao.getMercadilloById(mercadillo.idMercadillo) ?: error("Market not found")
             DemoAccess.requireOwner(anterior.userId)
             check(anterior.activo && (anterior.estado !in 6..7 || DemoAccess.isDemo())) { "Final market" }
+            // Solo una reprogramación cambia el día; las demás ediciones conservan el estado existente.
+            // Pasar una planificación a hoy la deja inmediatamente EN_CURSO, igual que un alta.
+            val fechaCambiada = mercadillo.fecha != anterior.fecha
+            val now = Instant.now()
+            val dia = MercadillosValidator.parseLocalDate(mercadillo.fecha)
+            if (fechaCambiada) {
+                check(anterior.estado in 1..2) { StringResourceManager.getString("no_modificar_fecha_en_curso", ConfigurationManager.idioma.value) }
+                check(MercadillosValidator.puedeCrearConFecha(mercadillo.fecha, now)) {
+                    StringResourceManager.getString("valid_fecha_pasada", ConfigurationManager.idioma.value)
+                }
+            }
             val nuevo = mercadillo.copy(
+                fecha = if (fechaCambiada && dia != null) CalendarDates.display(dia.toEpochDay()) else mercadillo.fecha,
+                estado = if (fechaCambiada && dia != null) MercadillosValidator.estadoPlanificado(dia, mercadillo.saldoInicial, now) else mercadillo.estado,
                 creadoEn = anterior.creadoEn,
                 bajaPorPlan = anterior.bajaPorPlan,
                 fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),

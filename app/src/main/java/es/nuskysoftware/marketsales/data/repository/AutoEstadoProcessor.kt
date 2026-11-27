@@ -6,12 +6,11 @@ import androidx.room.withTransaction
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 
 internal object AutoEstadoPolicy {
-    private val zone = ZoneId.of("Europe/Madrid")
+    private val zone = es.nuskysoftware.marketsales.utils.CalendarDates.marketZone
     private val format = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
 
     // Calcula el estado según la ventana temporal y las ventas; conserva los estados definitivos o pendientes de arqueo/saldo.

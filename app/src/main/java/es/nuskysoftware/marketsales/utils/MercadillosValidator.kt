@@ -1,47 +1,26 @@
 package es.nuskysoftware.marketsales.utils
 
-// Responsabilidad: Comprueba los datos introducidos en la planificación de mercadillos.
-
-import android.os.Build
-import androidx.annotation.RequiresApi
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
+import java.time.Instant
 
 /**
- * Validador de fechas para Mercadillos.
- * Regla clave para ALTA/EDICIÓN:
- *   - Se permite crear en "hoy" y en futuro.
- *   - Se rechaza cualquier fecha anterior a hoy.
- *   - Se IGNORAN horas de inicio/fin para la validación de alta.
- *
- * Soporta dos formatos de fecha habituales:
- *   - "yyyy-MM-dd" (ISO)
- *   - "dd-MM-yyyy"
+ * Política común para alta y cambios de fecha. Hoy y futuro son válidos;
+ * las horas orientativas de inicio y fin no intervienen en el alta.
+ * Las fechas se interpretan estrictamente y en la zona comercial ya acordada.
  */
 object MercadillosValidator {
+    /** Admite ISO y dd-MM-uuuu; devuelve null para días inexistentes. */
+    fun parseLocalDate(fecha: String): LocalDate? =
+        CalendarDates.epochDay(fecha)?.let { LocalDate.ofEpochDay(it) }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private val iso = DateTimeFormatter.ISO_LOCAL_DATE
-    @RequiresApi(Build.VERSION_CODES.O)
-    private val dmy = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+    /** No usa milisegundos de medianoche ni formateadores mutables compartidos. */
+    fun puedeCrearConFecha(fecha: String, now: Instant = Instant.now()): Boolean =
+        parseLocalDate(fecha)?.let { !it.isBefore(CalendarDates.today(now)) } ?: false
 
-    /** true si la fecha es hoy o futuro; false si es pasado o inválida */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun puedeCrearConFecha(fecha: String): Boolean {
-        val f = parseLocalDate(fecha) ?: return false
-        val hoy = LocalDate.now()
-        return !f.isBefore(hoy) // hoy y futuro permitido
-    }
-
-    /** Intenta parsear con ISO y con dd-MM-yyyy */
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun parseLocalDate(fecha: String): LocalDate? {
-        return tryParse(fecha, iso) ?: tryParse(fecha, dmy)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun tryParse(s: String, fmt: DateTimeFormatter): LocalDate? {
-        return try { LocalDate.parse(s, fmt) } catch (_: DateTimeParseException) { null }
+    /** Estado inicial: hoy en curso (3); futuro programado parcial (1) o total (2). */
+    fun estadoPlanificado(fecha: LocalDate, saldoInicial: Double?, now: Instant = Instant.now()): Int {
+        val today = CalendarDates.today(now)
+        require(!fecha.isBefore(today)) { "Fecha anterior a hoy" }
+        return if (fecha == today) 3 else if (saldoInicial != null) 2 else 1
     }
 }

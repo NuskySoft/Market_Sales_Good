@@ -142,19 +142,9 @@ fun PantallaMercadillos(
         onRefresh = {
             scope.launch {
                 isRefreshing = true
-                if (esPremium) {
+                // La actualización manual es común a ambas cuentas registradas.
+                if (!es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
                     mercadilloViewModel.forzarSincronizacion()
-                } else {
-                    delay(600)
-                    val result = snackbarHostState.showSnackbar(
-                        message = StringResourceManager.getString("premium_required", currentLanguage),
-                        actionLabel = StringResourceManager.getString("go_premium", currentLanguage),
-                        withDismissAction = true,
-                        duration = SnackbarDuration.Short
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        navController?.navigate("configuracion")
-                    }
                 }
                 isRefreshing = false
             }
@@ -213,9 +203,8 @@ fun PantallaMercadillos(
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionVentas()
                                 if (ok && m != null) {
                                     val ruta = "ventas/${m.idMercadillo}"
-                                    activity?.let { act ->
-                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
-                                    } ?: run { navController?.navigate(ruta) }
+                                    // Navegación sin anuncios en las operaciones del mercadillo.
+                                    navController?.navigate(ruta)
                                 } else {
                                     accionPendiente = "ventas"; mostrarDialogoSeleccionActivo = true
                                 }
@@ -224,9 +213,8 @@ fun PantallaMercadillos(
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionGastos()
                                 if (ok && m != null) {
                                     val ruta = "gastos/${m.idMercadillo}"
-                                    activity?.let { act ->
-                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
-                                    } ?: run { navController?.navigate(ruta) }
+                                    // Navegación sin anuncios en las operaciones del mercadillo.
+                                    navController?.navigate(ruta)
                                 } else {
                                     accionPendiente = "gastos"; mostrarDialogoSeleccionActivo = true
                                 }
@@ -235,9 +223,8 @@ fun PantallaMercadillos(
                                 val (ok, m) = mercadilloViewModel.manejarNavegacionResumen()
                                 if (ok && m != null) {
                                     val ruta = "resumen/${m.idMercadillo}"
-                                    activity?.let { act ->
-                                        AdsInterstitialController.maybeShow(act) { navController?.navigate(ruta) }
-                                    } ?: run { navController?.navigate(ruta) }
+                                    // Navegación sin anuncios en las operaciones del mercadillo.
+                                    navController?.navigate(ruta)
                                 } else {
                                     accionPendiente = "resumen"; mostrarDialogoSeleccionActivo = true
                                 }
@@ -349,7 +336,16 @@ fun PantallaMercadillos(
                                     val uid = ConfigurationManager.getCurrentUserId()
                                     val delDia = (mercadillosPorDia[dia] ?: emptyList()).filter { it.userId == uid }
                                     when (delDia.size) {
-                                        0 -> Unit
+                                        0 -> {
+                                            // Alta rápida solo Premium; la Demo conserva el gesto anterior.
+                                            if (esPremium && ConfigurationManager.esPremiumReady.value) {
+                                                val day = java.time.LocalDate.of(calendarioState.ano, calendarioState.mes, dia)
+                                                val fecha = es.nuskysoftware.marketsales.utils.CalendarDates.display(day.toEpochDay())
+                                                navController?.navigate("alta_mercadillo_fecha/${android.net.Uri.encode(fecha)}")
+                                            } else if (!es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
+                                                scope.launch { snackbarHostState.showSnackbar(StringResourceManager.getString("premium_calendar_create", currentLanguage)) }
+                                            }
+                                        }
                                         1 -> {
                                             val m = delDia.first()
                                             val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)

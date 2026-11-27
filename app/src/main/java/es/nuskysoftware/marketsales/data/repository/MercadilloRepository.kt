@@ -86,13 +86,6 @@ class MercadilloRepository(
             ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_mercadillo", ConfigurationManager.idioma.value))
 
         RecoveryGate(appContext).beforeWrite(userId)
-        val esPremium = ConfigurationManager.getIsPremium()
-        if (!esPremium) {
-            val yaHayEseDia = mercadilloDao.existeMercadilloEnFecha(userId, fecha)
-            if (yaHayEseDia) throw IllegalArgumentException(
-                es.nuskysoftware.marketsales.utils.StringResourceManager.getString("limite_free_mercadillos", ConfigurationManager.idioma.value)
-            )
-        }
 
         // Si el alta es con FECHA=HOY, crear directamente en EN_CURSO (3)
         val hoyStr = dateFormat.format(Date())
@@ -116,12 +109,16 @@ class MercadilloRepository(
             horaFin = horaFin,
             saldoInicial = saldoInicial,
             estado = estadoInicial,
+            creadoEn = System.currentTimeMillis(),
             sincronizadoFirebase = false
         )
 
         localDb.withTransaction {
                 DemoAccess.requireOwner(userId)
                 DemoAccess.checkLimit("mercadillos", mercadilloDao.contarDemo(userId))
+                // Comprobar fecha y cupo dentro de la transacción de alta, también sin conexión.
+                validarCupoFree(userId, fecha)
+                if (saldoGuardadoId != null) DemoAccess.requirePremium()
                 mercadilloDao.insertMercadillo(nuevo)
                 if (saldoGuardadoId != null) {
                     val saved = database.saldoGuardadoDao().byId(saldoGuardadoId, userId) ?: error("Balance not available")
@@ -133,16 +130,40 @@ class MercadilloRepository(
         nuevo.idMercadillo
     }
 
+    /** Comprueba los límites de planificación sin contar el propio mercadillo durante una edición.
+     * Las ediciones en la misma fecha no consumen otra plaza ni impiden completar altas Premium anteriores. */
+    private suspend fun validarCupoFree(uid: String, fecha: String, anterior: MercadilloEntity? = null) {
+        if (DemoAccess.mode() != es.nuskysoftware.marketsales.utils.AppMode.FREE) return
+        val day = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(fecha) ?: error("Invalid date")
+        if (anterior?.fechaEpochDay == day) return
+        val date = java.time.LocalDate.ofEpochDay(day)
+        val except = anterior?.idMercadillo.orEmpty()
+        if (mercadilloDao.ocupaFecha(uid, day, except)) DemoAccess.deny("limite_free_mercadillos")
+        val previousYear = anterior?.fechaEpochDay?.let { java.time.LocalDate.ofEpochDay(it).year }
+        if (previousYear != date.year) {
+            val start = date.withDayOfYear(1)
+            if (mercadilloDao.contarAnio(uid, start.toEpochDay(), start.plusYears(1).toEpochDay(), except) >= es.nuskysoftware.marketsales.utils.AppModePolicy.FREE_MARKETS_YEAR) {
+                DemoAccess.deny("free_market_year_limit")
+            }
+        }
+    }
+
     suspend fun actualizarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
         DemoAccess.requireOwner(mercadillo.userId)
-        check(mercadilloDao.getMercadilloById(mercadillo.idMercadillo)?.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+        val anterior = mercadilloDao.getMercadilloById(mercadillo.idMercadillo) ?: error("Market not found")
+        check(anterior.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
         val actualizado = mercadillo.copy(
+            creadoEn = anterior.creadoEn,
             fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),
             version = mercadillo.version + 1,
             lastModified = System.currentTimeMillis(),
             sincronizadoFirebase = false
         )
-        mercadilloDao.updateMercadillo(actualizado)
+        localDb.withTransaction {
+            DemoAccess.requireOwner(anterior.userId)
+            validarCupoFree(anterior.userId, actualizado.fecha, anterior)
+            mercadilloDao.updateMercadillo(actualizado)
+        }
         repositoryScope.launch { sincronizarMercadilloConFirebase(actualizado) }
         true
     }

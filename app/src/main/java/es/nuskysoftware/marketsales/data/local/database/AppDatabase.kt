@@ -26,7 +26,7 @@ import es.nuskysoftware.marketsales.data.local.entity.*
         EmpresaEntity::class,       // v14
         StockMovementEntity::class  // v19
     ],
-    version = 20,
+    version = 21,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -45,6 +45,13 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
+
+        // Añade la fecha de creación sin modificar ni inventar fechas de registros históricos.
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE mercadillos ADD COLUMN creadoEn INTEGER")
+            }
+        }
 
         val MIGRATION_19_20 = object : Migration(19, 20) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -155,7 +162,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_16_17,
                         MIGRATION_17_18,
                         MIGRATION_18_19,
-                        MIGRATION_19_20
+                        MIGRATION_19_20,
+                        MIGRATION_20_21
                     )
                     .addCallback(BusinessStorageCallback())
                     .build()

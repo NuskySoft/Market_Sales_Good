@@ -28,6 +28,10 @@ object DemoAccess {
     fun requireRegistered(key: String = "demo_solo_registrados") {
         if (isDemo()) deny(key)
     }
+    /** Bloquea operaciones de gestión profesional fuera de una sesión Premium resuelta. */
+    fun requirePremium() {
+        if (isDemo() || !ConfigurationManager.esPremiumReady.value || !ConfigurationManager.getIsPremium()) deny("premium_required")
+    }
     // Keys: demo_limite_ventas, demo_limite_mercadillos, demo_limite_categorias, demo_limite_articulos.
     // Comprueba el límite correspondiente a la modalidad y recurso.
     fun checkLimit(resource: String, count: Int) {

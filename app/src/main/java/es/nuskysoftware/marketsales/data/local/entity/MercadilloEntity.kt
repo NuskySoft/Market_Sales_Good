@@ -68,7 +68,9 @@ data class MercadilloEntity(
     // Marca temporal de la modificación; no debe confundirse con la hora de subida.
     val lastModified: Long = System.currentTimeMillis(),
     // Indica si esta revisión local está confirmada en Firebase.
-    val sincronizadoFirebase: Boolean = false
+    val sincronizadoFirebase: Boolean = false,
+    // Fecha de alta inmutable. Null identifica registros antiguos cuyo orden de creación no se conoce.
+    val creadoEn: Long? = null
 ) {
     // Constructor vacío para Firestore
     constructor() : this(

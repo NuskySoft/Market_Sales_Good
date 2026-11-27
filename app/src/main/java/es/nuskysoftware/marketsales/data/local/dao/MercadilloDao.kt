@@ -27,6 +27,23 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface MercadilloDao {
+    /** Cuenta altas del año de celebración, incluidas las bajas lógicas y cancelaciones.
+     * Excluir un identificador permite comprobar un cambio de fecha sin contar dos veces el mismo registro. */
+    @Query("SELECT COUNT(*) FROM mercadillos WHERE userId = :uid AND fechaEpochDay >= :fromDay AND fechaEpochDay < :untilDay AND idMercadillo != :exceptId")
+    suspend fun contarAnio(uid: String, fromDay: Long, untilDay: Long, exceptId: String): Int
+
+    // Solo los registros vigentes ocupan una fecha concreta; se excluye el que se está editando.
+    @Query("SELECT EXISTS(SELECT 1 FROM mercadillos WHERE userId = :uid AND fechaEpochDay = :day AND activo = 1 AND idMercadillo != :exceptId)")
+    suspend fun ocupaFecha(uid: String, day: Long, exceptId: String): Boolean
+
+    // Candidatos futuros de un usuario Free; la revisión no afecta a mercadillos de hoy ni históricos.
+    @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND fechaEpochDay > :today ORDER BY fechaEpochDay, creadoEn, idMercadillo")
+    suspend fun planificadosFuturos(uid: String, today: Long): List<MercadilloEntity>
+
+    // No retirar planificación si existe cualquier operación económica o saldo vinculado.
+    @Query("SELECT EXISTS(SELECT 1 FROM recibos WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM lineas_venta WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM LineasGastos WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM saldos_guardados WHERE idUsuario = :uid AND (idMercadilloOrigen = :market OR idMercadilloDestino = :market))")
+    suspend fun tieneOperaciones(uid: String, market: String): Boolean
+
     // Consulta local de lectura; devuelve el recuento del propietario indicado. Los filtros y parámetros de la consulta definen su alcance.
     @Query("SELECT COUNT(*) FROM mercadillos WHERE userId = :uid")
     suspend fun contarDemo(uid: String): Int

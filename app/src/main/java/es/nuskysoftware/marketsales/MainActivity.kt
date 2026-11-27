@@ -188,9 +188,9 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
 
     LaunchedEffect(backStackEntry?.destination?.route, canRequestAds, esPremium, esPremiumReady) {
         val route = backStackEntry?.destination?.route ?: return@LaunchedEffect
-        // Evitar pantallas delicadas y SOLO si premium ya está resuelto
-        val avoidRoutes = setOf("login", "registro", "splash_descarga")
-        if (activity != null && esPremiumReady && canRequestAds && !esPremium && route !in avoidRoutes) {
+        // Lista positiva de pantallas no críticas; nunca interrumpir ventas, cobros o gastos.
+        val safeRoutes = setOf("configuracion", "perfil", "categorias", "articulos", "utilidades", "listados", "inventario")
+        if (activity != null && esPremiumReady && canRequestAds && !esPremium && route in safeRoutes) {
             AdsInterstitialController.maybeShow(activity)
         }
     }
@@ -252,6 +252,22 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             }
 
             composable("alta_mercadillo") { PantallaAltaMercadillo(navController) }
+
+            // Ruta independiente de alta rápida, con fecha preseleccionada y permiso comprobado.
+            composable(
+                route = "alta_mercadillo_fecha/{fecha}",
+                arguments = listOf(navArgument("fecha") { type = NavType.StringType })
+            ) { entry ->
+                val fecha = entry.arguments?.getString("fecha").orEmpty()
+                if (esPremium && esPremiumReady) {
+                    PantallaAltaMercadillo(navController, fechaPreseleccionada = fecha)
+                } else {
+                    LaunchedEffect(Unit) {
+                        es.nuskysoftware.marketsales.utils.DemoAccess.show("premium_calendar_create")
+                        navController.safePopBackStack()
+                    }
+                }
+            }
 
             composable(
                 route = "editar_mercadillo/{mercadilloId}",

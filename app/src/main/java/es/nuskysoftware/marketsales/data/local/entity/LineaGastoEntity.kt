@@ -55,14 +55,3 @@ data class LineaGastoEntity(
         activo = true
     )
 }
-
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/LineaGastoEntity.kt
-///**
-// * LineaGastoEntity V15 - incorpora control de versión y sincronización.
-// */
-//        Index(name = "idx_gastos_mercadillo", value = ["idMercadillo"]),
-//        Index(name = "idx_gastos_usuario", value = ["idUsuario"])
-//) {
-//    constructor() : this(

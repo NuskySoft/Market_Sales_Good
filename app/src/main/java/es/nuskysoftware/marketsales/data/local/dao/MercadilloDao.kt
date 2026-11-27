@@ -593,31 +593,3 @@ data class EstadisticaEstado(
     val estado: Int,
     val cantidad: Int
 )
-
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/MercadilloDao.kt
-////// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/MercadilloDao.kt
-///**
-// * MercadilloDao (COMPLETO con añadidos de ventas):
-// * - Mantiene TODO lo que ya tenías.
-// * - Añade:
-// *   • contarRecibosPorMercadillo(...)
-// *   • calcularTotalVentasDesdeRecibos(...)
-// *   • actualizarTotalVentas(...)
-// *   • getTotalVentasPorMetodoEF/BIZ/TAR(...)
-// *   • marcarPendienteArqueo(...) (util cuando hay ventas al cerrar ventana)
-// *
-// * Copia y pega este archivo entero para evitar “unresolved” y mantener consistencia.
-// */
-//    // ========== OPERACIONES BÁSICAS ==========
-//    // ========== CONSULTAS FILTRADAS POR USUARIO ==========
-//    // ========== CONSULTAS POR ESTADO ==========
-//    // ========== LÓGICA DE NEGOCIO ==========
-//    // ========== SINCRONIZACIÓN ==========
-//    // ========== ESTADOS / SALDOS ==========
-//    // Útil cuando cierra ventana y hay ventas: ponemos 4 + pendienteArqueo = 1
-//    // ========== UTILIDADES ==========
-//    // ========== MANTENIMIENTO ==========
-//    // ========== VENTAS (desde recibos) ==========
-///** Estadística simple por estado */

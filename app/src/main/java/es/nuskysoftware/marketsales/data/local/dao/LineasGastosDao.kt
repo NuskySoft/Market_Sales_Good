@@ -80,14 +80,3 @@ interface LineasGastosDao {
     @Query("UPDATE LineasGastos SET sincronizadoFirebase = 0 WHERE idMercadillo = :mercadillo AND numeroLinea = :numeroLinea AND idUsuario = :sessionOwner ")
     suspend fun marcarPendiente(mercadillo: String, numeroLinea: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 }
-
-
-//// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/LineasGastosDao.kt
-//    // === INSERT/UPSERT ===
-//    // === DELETE POR MERCADILLO ===
-//    // === QUERIES ===
-//    //  @Query("SELECT * FROM LineasGastos WHERE idMercadillo = :idMercadillo ORDER BY numeroLinea ASC")
-//    // @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo")
-//    // @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND formaPago = :forma")
-//    // @Query("SELECT MAX(numeroLinea) FROM LineasGastos WHERE idMercadillo = :idMercadillo")
-//    // === Sincronización híbrida ===

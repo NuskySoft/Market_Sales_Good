@@ -78,6 +78,10 @@ Confirmado: Free y Premium pueden consultar los resúmenes individuales de cada 
 Confirmado: Free puede crear un mercadillo por fecha y un máximo de 50 mercadillos por año; Premium puede crear varios por fecha y no tiene límite anual. No se añade límite mensual ni histórico. Calendario, leyenda de estados, planificación, consulta de historial y gestión de cancelados comunes.
 - Alta rápida Premium: al pulsar un día sin mercadillo programado se abre directamente la pantalla de alta de mercadillos con la fecha seleccionada ya introducida. No se crea el mercadillo hasta confirmar el formulario.
 - Free: al pulsar ese día se muestra un aviso indicando que el alta directa desde el calendario es exclusiva de Premium; puede seguir utilizando la opción habitual de alta, dentro de sus límites.
-- Pendiente concretar el cómputo anual (propuesta: año natural de la fecha del mercadillo; cancelados cuentan; evitar eludir límite borrando registros), sin cambiar las reglas de conservación del historial.
+- Confirmado: el límite anual se computa por año natural de la fecha de celebración del mercadillo, no por fecha de alta. Los cancelados cuentan y borrar un mercadillo no libera cupo. Cada 1 de enero empieza un nuevo cupo de 50 para el nuevo año; planificar fechas futuras consume el cupo del año correspondiente. Se mantiene la consulta del historial de años anteriores.
+
+### 10. Siguiente cuestión: publicidad
+
+Actualmente Free muestra publicidad cuando procede según consentimiento y Premium no muestra anuncios. Propuesta: conservar esta diferencia, sin anuncios que interrumpan la introducción/cobro/confirmación de ventas ni el registro de gastos; reservar anuncios intersticiales a transiciones no críticas. Mantener consentimiento y límites de frecuencia. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

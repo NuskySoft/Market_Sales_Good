@@ -73,8 +73,11 @@ Confirmado: Free y Premium permiten crear categorías y artículos sin límite g
 
 Confirmado: Free y Premium pueden consultar los resúmenes individuales de cada mercadillo, sus ventas, gastos, arqueos y totales, así como listados básicos de mercadillos. Premium exclusivamente: informes por intervalo de fechas, estadísticas mensuales/anuales, comparativas entre mercadillos, artículos más vendidos, análisis agregado por métodos de pago, rentabilidad de artículos, evolución de ingresos/gastos, gráficos y exportaciones PDF/CSV. Se mantienen los desgloses básicos de cada mercadillo ya existentes.
 
-### 9. Siguiente cuestión: límites de mercadillos
+### 9. Límites de mercadillos y alta rápida desde calendario
 
-Actualmente Free puede crear un mercadillo por fecha y Premium varios. Propuesta: conservar esa diferencia, sin imponer un máximo mensual/anual ni histórico a Free. Calendario, leyenda de estados y consulta del historial disponibles en ambas modalidades. Pendiente de confirmación.
+Confirmado: Free puede crear un mercadillo por fecha y un máximo de 50 mercadillos por año; Premium puede crear varios por fecha y no tiene límite anual. No se añade límite mensual ni histórico. Calendario, leyenda de estados, planificación, consulta de historial y gestión de cancelados comunes.
+- Alta rápida Premium: al pulsar un día sin mercadillo programado se abre directamente la pantalla de alta de mercadillos con la fecha seleccionada ya introducida. No se crea el mercadillo hasta confirmar el formulario.
+- Free: al pulsar ese día se muestra un aviso indicando que el alta directa desde el calendario es exclusiva de Premium; puede seguir utilizando la opción habitual de alta, dentro de sus límites.
+- Pendiente concretar el cómputo anual (propuesta: año natural de la fecha del mercadillo; cancelados cuentan; evitar eludir límite borrando registros), sin cambiar las reglas de conservación del historial.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

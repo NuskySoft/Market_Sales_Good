@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
+// Responsabilidad: Controla la autorización persistente de recuperación y el reinicio de datos de una cuenta en una instalación vacía.
+
 import android.content.Context
 import androidx.room.withTransaction
 import com.google.firebase.firestore.FirebaseFirestore
@@ -25,6 +27,7 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
         val question = MutableStateFlow<Question?>(null)
     }
     private val collections = listOf("categorias" to "userId", "articulos" to "userId", "mercadillos" to "userId", "recibos" to "idUsuario", "lineas_venta" to "idUsuario", "LineasGastos" to "idUsuario", "saldosGuardados" to "idUsuario", "empresa" to "userId", "stock_movements" to "idUsuario")
+    // Detecta datos de negocio locales relevantes para la decisión de recuperación.
     private fun hasLocal(uid: String): Boolean {
         for ((table, owner) in listOf("categorias" to "userId", "articulos" to "userId", "mercadillos" to "userId", "recibos" to "idUsuario", "LineasGastos" to "idUsuario", "empresa" to "userId", "saldos_guardados" to "idUsuario")) {
             val extra = if (table == "categorias") " AND idCategoria != ?" else ""
@@ -33,7 +36,9 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
         }
         return false
     }
+    // Consulta si se permite descargar datos y no hay una eliminación en curso.
     fun canPull(uid: String): Boolean = prefs.getString("$uid:state", null) == "active" && prefs.getString("$uid:delete", null) == null
+    // Prepara el estado de recuperación y comprueba la generación remota.
     suspend fun prepare(uid: String): String? = withContext(Dispatchers.IO) {
         if (!DemoAccess.canSync(uid)) return@withContext null
         if (prefs.getString("$uid:delete", null) != null) finishDeletion(uid)
@@ -63,6 +68,7 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
         if (!canPull(uid)) return@withContext null
         remoteGeneration
     }
+    // Comprueba la autorización antes de escribir datos de negocio.
     fun beforeWrite(uid: String) {
         DemoAccess.requireOwner(uid)
         if (AppModePolicy.isLocalOnly(uid)) return
@@ -74,7 +80,9 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
             error(StringResourceManager.getString("recovery_decision_required", ConfigurationManager.idioma.value))
         }
     }
+    // Cierra la pregunta pendiente del propietario indicado.
     fun dismiss(uid: String) { if (question.value?.uid == uid) question.value = null }
+    // Registra la decisión explícita de reiniciar datos.
     fun confirmReset(uid: String) {
         DemoAccess.requireOwner(uid)
         check(prefs.getString("$uid:state", null) != "active")
@@ -83,6 +91,7 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
         dismiss(uid)
         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(app)
     }
+    // Completa el reinicio pendiente y coordina la eliminación con el servidor.
     private suspend fun finishDeletion(uid: String) {
         check(DemoAccess.canSync(uid))
         val next = prefs.getString("$uid:delete", null) ?: return
@@ -114,6 +123,7 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
         }.await()
         prefs.edit().putString("$uid:generation", next).remove("$uid:delete").commit()
     }
+    // Limpia los datos locales de ese propietario en una transacción.
     private suspend fun clearLocal(uid: String) = db.withTransaction {
         for ((table, owner) in listOf("empresa" to "userId", "categorias" to "userId", "articulos" to "userId", "mercadillos" to "userId", "recibos" to "idUsuario", "lineas_venta" to "idUsuario", "LineasGastos" to "idUsuario", "saldos_guardados" to "idUsuario", "stock_movements" to "idUsuario"))
             db.openHelper.writableDatabase.execSQL("DELETE FROM `$table` WHERE `$owner` = ?", arrayOf(uid))

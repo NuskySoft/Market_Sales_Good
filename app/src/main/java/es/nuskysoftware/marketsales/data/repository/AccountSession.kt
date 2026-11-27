@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
+// Responsabilidad: Observa la cuenta activa y mantiene el estado de sesión coherente con la fila guardada en Room.
+
 import android.content.Context
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.utils.AppModePolicy
@@ -13,6 +15,7 @@ object AccountSession {
     private var job: Job? = null
 
     @Synchronized
+    // Inicia la observación de la sesión y de la información persistida del usuario activo.
     fun start(context: Context) {
         if (job?.isActive == true) return
         val dao = AppDatabase.getDatabase(context.applicationContext).userDao()

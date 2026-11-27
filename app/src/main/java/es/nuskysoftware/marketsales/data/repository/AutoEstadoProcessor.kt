@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
+// Responsabilidad: Aplica las transiciones automáticas de mercadillos según su fecha y las ventas registradas.
+
 import androidx.room.withTransaction
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import java.time.Instant
@@ -12,6 +14,7 @@ internal object AutoEstadoPolicy {
     private val zone = ZoneId.of("Europe/Madrid")
     private val format = DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
 
+    // Calcula el estado según la ventana temporal y las ventas; conserva los estados definitivos o pendientes de arqueo/saldo.
     fun next(estado: Int, fecha: String, now: Instant, tieneVentas: Boolean): Int {
         if (estado !in 1..3) return estado
         val date = try { LocalDate.parse(fecha, format) } catch (_: java.time.DateTimeException) { return estado }
@@ -26,6 +29,7 @@ internal object AutoEstadoPolicy {
 }
 
 internal class AutoEstadoProcessor(private val db: AppDatabase) {
+    // Revisa los mercadillos del propietario y aplica las transiciones necesarias en una transacción Room.
     suspend fun apply(uid: String, now: Instant = Instant.now()): Int = db.withTransaction {
         val dao = db.mercadilloDao()
         var changed = 0

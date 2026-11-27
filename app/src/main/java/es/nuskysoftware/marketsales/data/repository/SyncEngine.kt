@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
+// Responsabilidad: Concilia los datos de negocio de Room y Firebase de cada cuenta. Las filas pendientes de Room constituyen la cola persistente de subida.
+
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
@@ -34,11 +36,14 @@ class SyncEngine(context: Context) {
         Table("saldos_guardados", "saldosGuardados", "idUsuario", listOf("idRegistro"), SaldoGuardadoEntity::class.java),
         Table("empresa", "empresa", "userId", listOf("userId"), EmpresaEntity::class.java)
     )
+    // Selecciona los campos de entidad que se pueden persistir.
     private fun fields(t: Table) = t.type.declaredFields.filter { !Modifier.isStatic(it.modifiers) && !it.isSynthetic }
+    // Obtiene valores de referencia de la entidad para completar campos compatibles.
     private fun defaults(t: Table): Map<String, Any?> {
         val obj = t.type.getDeclaredConstructor().newInstance()
         return fields(t).associate { it.isAccessible = true; it.name to it.get(obj) }
     }
+    // Lee las filas del propietario; dirtyOnly limita la consulta a los cambios pendientes.
     private fun rows(t: Table, uid: String, dirtyOnly: Boolean = false): List<Map<String, Any?>> {
         val result = mutableListOf<Map<String, Any?>>()
         db.openHelper.readableDatabase.query("SELECT * FROM `${t.name}` WHERE `${t.owner}` = ?" + if (dirtyOnly) " AND sincronizadoFirebase = 0" else "", arrayOf(uid)).use { c ->
@@ -55,10 +60,15 @@ class SyncEngine(context: Context) {
         }
         return result
     }
+    // Compone el identificador de documento a partir de las claves de la tabla.
     private fun id(t: Table, row: Map<String, Any?>) = t.keys.joinToString(if (t.name == "lineas_venta") "_" else "-") { row[it].toString() }
+    // Extrae la marca de modificación de origen, independiente de la hora de subida.
     private fun modified(row: Map<String, Any?>) = (row["lastModified"] as? Number)?.toLong() ?: 0L
+    // Representación estable para resolver empates de fecha; omite metadatos de transporte y stock.
     private fun fingerprint(row: Map<String, Any?>) = row.filterKeys { it !in setOf("sincronizadoFirebase", "fechaSync", "stock", "_generation") }.toSortedMap().toString()
+    // Selecciona el contenido que prevalece por fecha y, en empate, por representación estable.
     private fun newer(a: Map<String, Any?>, b: Map<String, Any?>): Boolean = modified(a) > modified(b) || (modified(a) == modified(b) && fingerprint(a) > fingerprint(b))
+    // Persiste la representación de una fila en su tabla local.
     private fun write(t: Table, row: Map<String, Any?>) {
         val cv = ContentValues()
         for (f in fields(t)) when (val v = row[f.name]) {
@@ -69,6 +79,7 @@ class SyncEngine(context: Context) {
         }
         db.openHelper.writableDatabase.insert(t.name, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE, cv)
     }
+    // Aplica una fila remota en una transacción; la instantánea esperada protege frente a cambios locales posteriores.
     private suspend fun apply(t: Table, uid: String, remote: Map<String, Any?>, expected: Map<String, Any?>? = null) = db.withTransaction {
         val local = rows(t, uid).firstOrNull { id(t, it) == id(t, remote) }
         if (local != null && expected != null && fingerprint(local) != fingerprint(expected)) return@withTransaction
@@ -86,6 +97,7 @@ class SyncEngine(context: Context) {
         } else remote
         write(t, adjusted + ("sincronizadoFirebase" to true))
     }
+    // Concilia un propietario en IO bajo exclusión mutua, incluidas bajas y cambios pendientes.
     suspend fun sync(uid: String) = withContext(Dispatchers.IO) { mutex.withLock {
         if (!DemoAccess.canSync(uid)) return@withLock
         syncProfile(uid)
@@ -145,6 +157,7 @@ class SyncEngine(context: Context) {
         }
         db.invalidationTracker.refreshVersionsAsync()
     } }
+    // Concilia el perfil y publica el estado de la fila realmente guardada.
     private suspend fun syncProfile(uid: String) {
         val t = Table("usuarios", "usuarios", "uid", listOf("uid"), UserEntity::class.java)
         val local = rows(t, uid).firstOrNull()
@@ -166,6 +179,7 @@ class SyncEngine(context: Context) {
             ConfigurationManager.applyAccountFromRoom(uid, account.esPremium, account.email, account.displayName)
         }
     }
+    // Concilia movimientos de stock de la generación activa y reconstruye existencias.
     private suspend fun syncStock(uid: String, generation: String) {
         val dao = db.stockMovementDao()
         for (m in dao.allForOwner(uid)) {

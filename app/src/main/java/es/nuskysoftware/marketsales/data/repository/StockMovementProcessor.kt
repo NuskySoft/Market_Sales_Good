@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.repository
 
+// Responsabilidad: Aplica movimientos de stock pendientes de forma recuperable, utilizando transacciones locales para evitar descontar dos veces.
+
 import android.util.Log
 import androidx.room.withTransaction
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
@@ -7,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 
 /** No network or UI dependencies. A failure never rolls back an already confirmed sale. */
 class StockMovementProcessor(private val db: AppDatabase) {
+    // Procesa las obligaciones persistidas que aún no se han aplicado al stock.
     suspend fun processPending(owner: String? = null): Boolean {
         val dao = db.stockMovementDao()
         for (candidate in dao.pending().filter { owner == null || it.idUsuario == owner }) {

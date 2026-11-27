@@ -42,6 +42,11 @@ class VentasViewModel(
     private val _uiState = MutableStateFlow(VentasUiState())
     val uiState: StateFlow<VentasUiState> = _uiState.asStateFlow()
 
+    // Evento consumido una sola vez tras guardar realmente la venta.
+    private val _confirmedReceipt = MutableStateFlow<String?>(null)
+    val confirmedReceipt: StateFlow<String?> = _confirmedReceipt.asStateFlow()
+    fun consumeReceipt() { _confirmedReceipt.value = null }
+
     private var mercadilloId: String = ""
     private var usuarioId: String = ""
     // Unidades de catálogo ya confirmadas en Room; no se contabilizan borradores ni devoluciones.
@@ -273,6 +278,7 @@ class VentasViewModel(
                     // Stock belongs to the durable sale outbox. Never discount here as well.
                     CarritoCache.clear(mercadilloId)
                     limpiarVenta()
+                    _confirmedReceipt.value = resultado.getOrNull()
                 } else {
                     val base = t("error_guardar_venta")
                     mostrarError(base.replace("{0}", resultado.exceptionOrNull()?.message ?: ""))

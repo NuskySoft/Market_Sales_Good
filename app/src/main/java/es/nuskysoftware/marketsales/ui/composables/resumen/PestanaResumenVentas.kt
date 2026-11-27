@@ -78,6 +78,11 @@ fun PestanaResumenVentas(
     var metodoDevolucion by remember { mutableStateOf<String?>(null) }
     var refundBusy by remember { mutableStateOf(false) }
     var refundError by remember { mutableStateOf<String?>(null) }
+    var selectedReceipt by remember { mutableStateOf<String?>(null) }
+    val receiptOwner by ConfigurationManager.usuarioLogueado.collectAsState()
+    val premium by ConfigurationManager.esPremium.collectAsState()
+    val documents by remember(receiptOwner) { db.receiptDocumentDao().ids(receiptOwner.orEmpty()) }.collectAsState(initial=emptyList())
+    val external = remember(receiptOwner) { es.nuskysoftware.marketsales.receipts.ReceiptSettings(context,receiptOwner.orEmpty()).folder }
     val salesRepository = remember { es.nuskysoftware.marketsales.data.repository.VentasRepository(context) }
 
     Column(Modifier.fillMaxSize()) {
@@ -119,6 +124,12 @@ fun PestanaResumenVentas(
                         }
                     )
                 }
+                // Una acción por recibo, no por cada concepto del mismo ticket.
+                if (premium && (linea.idRecibo in documents || external != null) && ordenFinal.firstOrNull { it.idRecibo == linea.idRecibo }?.idLinea == linea.idLinea) {
+                    TextButton(onClick = { selectedReceipt = linea.idRecibo }) {
+                        Text(if (currentLanguage == "en") "Receipt PDF" else "Recibo PDF")
+                    }
+                }
             }
         }
 
@@ -143,6 +154,8 @@ fun PestanaResumenVentas(
             )
         }
     }
+
+    selectedReceipt?.let { es.nuskysoftware.marketsales.ui.recibos.ReceiptActions(it) { selectedReceipt = null } }
 
     // Confirmar creación de abono
     val lineaConfirm = lineaParaConfirmar
@@ -177,7 +190,10 @@ fun PestanaResumenVentas(
                         scope.launch {
                             val result = salesRepository.crearAbono(l, l.cantidad, l.idMercadillo, method)
                             refundBusy = false
-                            result.onSuccess { lineaParaConfirmar = null; refundError = null }
+                            result.onSuccess { id ->
+                                    lineaParaConfirmar = null; refundError = null
+                                    if (premium && es.nuskysoftware.marketsales.receipts.ReceiptSettings(context,l.idUsuario).ask) selectedReceipt = id
+                                }
                                 .onFailure { refundError = it.message ?: StringResourceManager.getString("local_save_failed", currentLanguage) }
                         }
                     }

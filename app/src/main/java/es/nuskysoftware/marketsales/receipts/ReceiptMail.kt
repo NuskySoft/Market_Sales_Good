@@ -25,10 +25,10 @@ object ReceiptMail {
         a.address==value && value.contains("@") && !value.contains('\n') && !value.contains('\r')
     }.getOrDefault(false)
 
-    fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false) {
+    fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
         require(validAddress(recipient))
         if(config.provider=="outlook") {
-            MicrosoftMail.send(config,recipient,file,settings,english); return
+            return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
         }
         require(config.port in 1..65535 && config.host.isNotBlank() && config.tls in listOf("SSL","STARTTLS"))
         val props=Properties().apply {
@@ -64,12 +64,13 @@ object ReceiptMail {
             // Tras iniciar DATA, un corte de red puede ocurrir después de aceptar el correo.
             try { transport.sendMessage(message,message.allRecipients) }
             catch(e:SendFailedException){
-                if(e.validSentAddresses?.isNotEmpty()==true) return
+                if(e.validSentAddresses?.isNotEmpty()==true) return config
                 if(e.invalidAddresses?.isNotEmpty()==true) throw MailFailure("ERROR","Destinatario rechazado")
                 throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP")
             }
             catch(e:MessagingException){throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación SMTP")}
         } finally { runCatching { transport.close() } }
+        return config
     }
 }
 
@@ -121,13 +122,14 @@ object MicrosoftMail {
         }
         error("Autorización caducada")
     }
-    fun send(config:MailConfig,recipient:String,file:File?,settings:ReceiptSettings,english:Boolean) {
+    fun send(config:MailConfig,recipient:String,file:File?,settings:ReceiptSettings,english:Boolean,persistRefresh:Boolean):MailConfig {
         val r=try { request(BASE+"token","POST",form("client_id" to BuildConfig.MS_MAIL_CLIENT_ID,"grant_type" to "refresh_token","refresh_token" to config.secret,"scope" to SCOPES)) }
         catch(e:Exception){throw MailFailure("PENDING","Conexión Microsoft no disponible")}
         if(r.status==429 || r.status>=500) throw MailFailure("PENDING","Microsoft temporalmente no disponible")
         if(r.status!=200) throw MailFailure("ERROR","Vuelve a autorizar Outlook")
         val updated=r.body.optString("refresh_token")
-        if(updated.isNotBlank() && updated!=config.secret) settings.save(config.copy(secret=updated))
+        val refreshed=if(updated.isNotBlank()) config.copy(secret=updated) else config
+        if(persistRefresh && refreshed!=config && settings.mail()==config) settings.save(refreshed)
         val token=r.body.getString("access_token")
         val message=JSONObject().put("subject",if(file==null) "Market Sales - test" else if(english) "Sales receipt" else "Recibo de venta")
             .put("body",JSONObject().put("contentType","Text").put("content",if(english) "Thank you for your purchase." else "Gracias por su compra."))
@@ -140,7 +142,7 @@ object MicrosoftMail {
         val result=try{request("https://graph.microsoft.com/v1.0/me/sendMail","POST",JSONObject().put("message",message).toString(),token,true)}
         catch(e:Exception){throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación por Microsoft")}
         when(result.status){
-            202->return
+            202->return refreshed
             429->throw MailFailure("PENDING","Límite temporal de Microsoft")
             400,401,403,413->throw MailFailure("ERROR","Microsoft rechazó la solicitud")
             else->throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación por Microsoft")

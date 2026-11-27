@@ -138,6 +138,8 @@ fun PantallaDatosEmpresa(navController: NavController? = null) {
                 label = { Text(StringResourceManager.getString("pais", currentLanguage)) },
                 modifier = Modifier.fillMaxWidth()
             )
+            // El logotipo es opcional, local al dispositivo y solo afecta a futuros PDF.
+            es.nuskysoftware.marketsales.ui.recibos.CompanyLogo()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End

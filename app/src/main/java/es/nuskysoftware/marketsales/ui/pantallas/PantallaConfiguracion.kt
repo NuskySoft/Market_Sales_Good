@@ -223,6 +223,9 @@ fun PantallaConfiguracion(
                     )
                 }
 
+                // Preferencias locales de recibos solo para Premium.
+                if (premiumReady && esPremium) item { es.nuskysoftware.marketsales.ui.recibos.ReceiptPreferences() }
+
                 // Promoción Premium para usuarios FREE
                 if (premiumReady && !esPremium) {
                     item {

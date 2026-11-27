@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         // Reanuda las obligaciones locales de recibos tras cerrar o reiniciar Android.
-        es.nuskysoftware.marketsales.work.ReceiptWorker.start(applicationContext)
+        runCatching { es.nuskysoftware.marketsales.work.ReceiptWorker.start(applicationContext) }
         es.nuskysoftware.marketsales.data.repository.AccountSession.start(applicationContext)
         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.start(applicationContext)
         iniciarAutoestados()
@@ -156,6 +156,7 @@ class MainActivity : ComponentActivity() {
                     if (owner.isNullOrBlank()) return@collectLatest
                     es.nuskysoftware.marketsales.data.repository.CatalogDefaults.ensure(AppDatabase.getDatabase(applicationContext), owner)
                     if (owner == AppModePolicy.DEMO_USER_ID) return@collectLatest
+                    runCatching { es.nuskysoftware.marketsales.work.ReceiptWorker.request(applicationContext) }
                     while (isActive) {
                         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(applicationContext)
                         try {
@@ -216,7 +217,10 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
 
             composable("logout") { PantallaLogoutSplash(navController) }
 
-            composable("mercadillos") { PantallaMercadillos(navController) }
+            composable("mercadillos") {
+                PantallaMercadillos(navController)
+                es.nuskysoftware.marketsales.ui.recibos.ReceiptWelcome(navController)
+            }
 
             composable("registro") {
                 PantallaLogin(navController = navController, initialRegister = true)
@@ -245,6 +249,9 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
             composable("utilidades") { DemoRestricted(navController) { PantallaUtilidades(navController) } }
             composable("saldos_pendientes") { PremiumRoute(navController) { PantallaSaldosPendientes(navController) } }
             composable("datos_empresa") { PremiumRoute(navController) { PantallaDatosEmpresa(navController) } }
+            composable("recibo_correo") { PremiumRoute(navController) { es.nuskysoftware.marketsales.ui.recibos.MailSettingsScreen(navController) } }
+            // En Free siguen siendo visibles las solicitudes previamente autorizadas, sin crear otras.
+            composable("recibo_envios") { DemoRestricted(navController) { es.nuskysoftware.marketsales.ui.recibos.MailQueueScreen(navController) } }
 
             // Pantalla de depuración para activar/desactivar datos (solo en compilaciones debug)
             if (BuildConfig.DEBUG) {

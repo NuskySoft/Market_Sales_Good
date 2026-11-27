@@ -42,6 +42,12 @@ fun PantallaVentas(
     val snackbarHostState = remember { SnackbarHostState() }
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
+    val confirmed by ventasViewModel.confirmedReceipt.collectAsState()
+    // Solo se ofrece envío después de la confirmación local y si está activada la preferencia.
+    if (confirmed != null) {
+        es.nuskysoftware.marketsales.ui.recibos.ReceiptAfterSale(confirmed!!, onDismiss = { ventasViewModel.consumeReceipt() })
+    }
+
     // Inicializa VM
     LaunchedEffect(mercadilloActivo.idMercadillo, mercadilloActivo.userId) {
         ventasViewModel.inicializar(

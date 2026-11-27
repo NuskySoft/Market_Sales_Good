@@ -33,8 +33,18 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Integración WooCommerce: Premium, propuesta; no implementada.
 - Usuarios colaboradores/roles de empresa: antigua propuesta sin confirmar; decidir si entra en el producto futuro.
 
-## Primera cuestión para revisión
+## Decisiones de la revisión
 
-Free puede crear categorías/artículos pero no vender desde catálogo. Confirmar si mantener la venta por catálogo como ventaja Premium o permitirla en Free reservando coste, stock y gestión avanzada a Premium.
+### 1. Venta mediante catálogo
 
-No se han modificado permisos ni código funcional con este documento. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.
+- Confirmado: Free podrá vender desde el catálogo, con un máximo de 10 unidades vendidas mediante catálogo por mercadillo, no 10 referencias distintas. Cuenta la cantidad vendida aunque se repita la misma referencia; ejemplo: vender 10 raciones de churros agota el límite aunque exista un único artículo de catálogo utilizado.
+- Premium: sin ese límite.
+- Las ventas manuales no están sujetas a este límite de catálogo.
+- Propuesta adicional aún por cerrar: una referencia distinta de catálogo por ticket en Free. El límite de 10 unidades se aplica al conjunto de tickets del mercadillo.
+- Precisar al implementar el tratamiento de abonos y el aviso al alcanzar el límite. No alterar ventas confirmadas.
+
+### 2. Actualización manual / sincronización
+
+El gesto de deslizar hacia abajo en el calendario solicita una sincronización inmediata y actualmente está restringido a Premium. Se propone permitirlo también en Free, sin alterar la sincronización automática ni la restauración de una instalación vacía exclusiva de Premium. Pendiente de confirmación.
+
+No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

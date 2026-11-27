@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/gastos/PantallaGastosCarrito.kt
 package es.nuskysoftware.marketsales.ui.pantallas.gastos
 
+// Responsabilidad: Permite revisar los gastos pendientes de confirmar y elegir sus opciones de registro.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +39,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Permite revisar los gastos pendientes de confirmar y elegir sus opciones de registro.
 fun PantallaGastosCarrito(
     navController: NavController,
     gastosViewModel: GastosViewModel,

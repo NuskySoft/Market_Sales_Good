@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaResultadoMercadillo.kt
 package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
+// Responsabilidad: Presenta el resultado económico del mercadillo y las opciones del flujo de cierre.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +29,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta el resultado económico del mercadillo y las opciones del flujo de cierre.
 fun PantallaResultadoMercadillo(
     navController: NavController,
     mercadilloId: String
@@ -43,6 +46,7 @@ fun PantallaResultadoMercadillo(
     var gastosBi by remember { mutableStateOf(0.0) }
     var gastosTa by remember { mutableStateOf(0.0) }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (mercadilloId).
     LaunchedEffect(mercadilloId) {
         vm.cargar(mercadilloId)
         withContext(Dispatchers.IO) {

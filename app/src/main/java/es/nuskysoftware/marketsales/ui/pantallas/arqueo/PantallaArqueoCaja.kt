@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaArqueoCaja.kt
 package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
+// Responsabilidad: Interfaz del recuento de efectivo y confirmación de los importes de caja.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +61,7 @@ import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz del recuento de efectivo y confirmación de los importes de caja.
 fun PantallaArqueoCaja(
     navController: NavController,
     mercadilloId: String
@@ -75,6 +78,7 @@ fun PantallaArqueoCaja(
     var totalBilletesInput by remember { mutableStateOf("") }
     var totalMonedasInput by remember { mutableStateOf("") }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (mercadilloId).
     LaunchedEffect(mercadilloId) {
         vm.cargar(mercadilloId)
         gastosEfectivo = withContext(Dispatchers.IO) {
@@ -358,205 +362,3 @@ private fun parseImporte(value: String): Double {
 }
 
 
-//// app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaArqueoCaja.kt
-//package es.nuskysoftware.marketsales.ui.pantallas.arqueo
-//
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.rememberScrollState
-//import androidx.compose.foundation.verticalScroll
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.ArrowBack
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.*
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.platform.LocalContext
-//import androidx.compose.ui.text.font.FontWeight
-//import androidx.compose.ui.unit.dp
-//import androidx.lifecycle.viewmodel.compose.viewModel
-//import androidx.navigation.NavController
-//import es.nuskysoftware.marketsales.data.local.database.AppDatabase
-//import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
-//import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModel
-//import es.nuskysoftware.marketsales.ui.viewmodel.ArqueoViewModelFactory
-//import es.nuskysoftware.marketsales.utils.ConfigurationManager
-//import es.nuskysoftware.marketsales.utils.StringResourceManager
-//import es.nuskysoftware.marketsales.utils.safePopBackStack
-//import kotlinx.coroutines.Dispatchers
-//import kotlinx.coroutines.launch
-//import kotlinx.coroutines.withContext
-//
-//@OptIn(ExperimentalMaterial3Api::class)
-//@Composable
-//fun PantallaArqueoCaja(
-//    navController: NavController,
-//    mercadilloId: String
-//) {
-//    val context = LocalContext.current
-//    val repo = remember { MercadilloRepository(context) }
-//    val vm: ArqueoViewModel = viewModel(factory = ArqueoViewModelFactory(context, repo))
-//    val ui by vm.ui.collectAsState()
-//    val currentLanguage by ConfigurationManager.idioma.collectAsState()
-//
-//    // Gastos en efectivo reales desde Room (solo los que descuentan de caja)
-//    val db = remember { AppDatabase.getDatabase(context) }
-//    var gastosEfectivo by remember { mutableStateOf(0.0) }
-//
-//    LaunchedEffect(mercadilloId) {
-//        vm.cargar(mercadilloId)
-//        gastosEfectivo = withContext(Dispatchers.IO) {
-//            db.lineasGastosDao().getTotalGastosEfectivoDeCaja(mercadilloId)
-//        }
-//    }
-//
-//    val scope = rememberCoroutineScope()
-//    var mostrarDialogo by remember { mutableStateOf(false) }
-//    var guardando by remember { mutableStateOf(false) }
-//
-//    Scaffold(
-//        topBar = {
-//            TopAppBar(
-//                title = { Text(StringResourceManager.getString("arqueo_caja", currentLanguage)) },
-//                navigationIcon = {
-//                    IconButton(onClick = { navController.safePopBackStack() }) {
-//                        Icon(
-//                            Icons.Default.ArrowBack,
-//                            contentDescription = StringResourceManager.getString("volver", currentLanguage)
-//                        )
-//                    }
-//                }
-//            )
-//        }
-//    ) { pad ->
-//        when {
-//            ui.loading -> Box(
-//                Modifier.fillMaxSize().padding(pad),
-//                contentAlignment = Alignment.Center
-//            ) { CircularProgressIndicator() }
-//
-//            ui.error != null -> Box(
-//                Modifier.fillMaxSize().padding(pad),
-//                contentAlignment = Alignment.Center
-//            ) { Text(ui.error!!, color = MaterialTheme.colorScheme.error) }
-//
-//            ui.mercadillo != null -> {
-//                val m = ui.mercadillo!!
-//                val resultado = m.saldoInicial + m.ventasEfectivo - gastosEfectivo
-//                val puedeConfirmar = (m.estado == 4) && !guardando
-//
-//                Column(
-//                    Modifier
-//                        .padding(pad)
-//                        .fillMaxSize()
-//                        .verticalScroll(rememberScrollState())
-//                        .padding(16.dp),
-//                    verticalArrangement = Arrangement.spacedBy(16.dp)
-//                ) {
-//                    Card {
-//                        Column(
-//                            Modifier.padding(16.dp),
-//                            verticalArrangement = Arrangement.spacedBy(12.dp)
-//                        ) {
-//                            KeyValueLine(
-//                                label = StringResourceManager.getString("saldo_inicial", currentLanguage),
-//                                value = vm.fmtMoneda(m.saldoInicial)
-//                            )
-//                            KeyValueLine(
-//                                label = StringResourceManager.getString("ventas_en_efectivo", currentLanguage),
-//                                value = vm.fmtMoneda(m.ventasEfectivo)
-//                            )
-//                            KeyValueLine(
-//                                label = StringResourceManager.getString("gastos_en_efectivo", currentLanguage),
-//                                value = vm.fmtMoneda(gastosEfectivo)
-//                            )
-//                            Divider()
-//                            KeyValueLine(
-//                                label = StringResourceManager.getString("resultado_arqueo", currentLanguage),
-//                                value = vm.fmtMoneda(resultado),
-//                                bold = true
-//                            )
-//                        }
-//                    }
-//                    Button(
-//                        onClick = { mostrarDialogo = true },
-//                        enabled = puedeConfirmar,
-//                        modifier = Modifier.fillMaxWidth()
-//                    ) {
-//                        Text(
-//                            if (guardando)
-//                                StringResourceManager.getString("guardando", currentLanguage)
-//                            else
-//                                StringResourceManager.getString("confirmar_arqueo", currentLanguage)
-//                        )
-//                    }
-//                }
-//
-//                // Diálogo de confirmación
-//                if (mostrarDialogo) {
-//                    AlertDialog(
-//                        onDismissRequest = { mostrarDialogo = false },
-//                        title = { Text(StringResourceManager.getString("confirmar_arqueo", currentLanguage)) },
-//                        text = {
-//                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_unavez", currentLanguage))
-//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_guardado", currentLanguage))
-//                                Text(StringResourceManager.getString("confirmar_arqueo_aviso_premium", currentLanguage))
-//                                Spacer(Modifier.height(6.dp))
-//                                Text(StringResourceManager.getString("confirmar_arqueo_pregunta", currentLanguage))
-//                            }
-//                        },
-//                        confirmButton = {
-//                            TextButton(
-//                                onClick = {
-//                                    mostrarDialogo = false
-//                                    scope.launch {
-//                                        guardando = true
-//                                        try {
-//                                            vm.confirmarArqueoCaja(
-//                                                mercadilloId = mercadilloId,
-//                                                saldoFinalCaja = resultado
-//                                            )
-//                                            navController.safePopBackStack() // volver a PantallaArqueo
-//                                        } finally {
-//                                            guardando = false
-//                                        }
-//                                    }
-//                                }
-//                            ) { Text(StringResourceManager.getString("confirmar", currentLanguage)) }
-//                        },
-//                        dismissButton = {
-//                            TextButton(onClick = { mostrarDialogo = false }) {
-//                                Text(StringResourceManager.getString("cancelar", currentLanguage))
-//                            }
-//                        }
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-//
-///* ====== UI helper local ====== */
-//
-//@Composable
-//private fun KeyValueLine(label: String, value: String, bold: Boolean = false) {
-//    Row(
-//        Modifier.fillMaxWidth(),
-//        horizontalArrangement = Arrangement.SpaceBetween,
-//        verticalAlignment = Alignment.CenterVertically
-//    ) {
-//        Text(
-//            label,
-//            style = MaterialTheme.typography.bodyMedium,
-//            color = MaterialTheme.colorScheme.onSurfaceVariant
-//        )
-//        Text(
-//            value,
-//            style = if (bold) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-//            fontWeight = if (bold) FontWeight.SemiBold else null
-//        )
-//    }
-//}
-//
-//
-//

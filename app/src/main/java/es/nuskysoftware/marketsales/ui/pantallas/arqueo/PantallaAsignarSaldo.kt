@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/arqueo/PantallaAsignarSaldo.kt
 package es.nuskysoftware.marketsales.ui.pantallas.arqueo
 
+// Responsabilidad: Interfaz de elección entre guardar el saldo final o asignarlo a un mercadillo futuro.
+
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -36,6 +38,7 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz de elección entre guardar el saldo final o asignarlo a un mercadillo futuro.
 fun PantallaAsignarSaldo(
     navController: NavController,
     mercadilloIdOrigen: String

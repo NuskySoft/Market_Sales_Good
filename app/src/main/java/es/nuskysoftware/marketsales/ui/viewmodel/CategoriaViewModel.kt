@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/CategoriaViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Mantiene las categorías observables y coordina su alta, edición y baja.
+
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

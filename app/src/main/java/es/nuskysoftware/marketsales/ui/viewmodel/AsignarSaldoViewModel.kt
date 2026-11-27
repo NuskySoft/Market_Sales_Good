@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AsignarSaldoViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Coordina la selección de destino, ajustes del saldo final y confirmación del flujo de asignación.
+
 import androidx.room.withTransaction
 import android.content.Context
 import androidx.lifecycle.ViewModel
@@ -82,6 +84,7 @@ class AsignarSaldoViewModel(
 
     init { cargarDatos() }
 
+    // Recupera los datos requeridos por el estado de la pantalla.
     private fun cargarDatos() {
         _ui.value = _ui.value.copy(loading = true)
         viewModelScope.launch(Dispatchers.IO) {
@@ -121,6 +124,7 @@ class AsignarSaldoViewModel(
     /* ===== Formatos / cálculo ===== */
 
     /** Saldo final actual (o arqueo si aún no hay saldoFinal persistido). */
+    // Obtiene el importe de cierre disponible a partir de los datos del mercadillo de origen.
     private fun saldoFinalActual(): Double {
         val m = _ui.value.mercadilloOrigen ?: return 0.0
         return (m.saldoFinal ?: m.arqueoCaja ?: 0.0).coerceAtLeast(0.0)
@@ -129,6 +133,7 @@ class AsignarSaldoViewModel(
     fun saldoFinalActualFmt(): String = fmtMoneda(saldoFinalActual())
 
     /** Saldo final ajustado en vivo según opción + importe TPV. */
+    // Calcula el importe que resulta de añadir o retirar efectivo antes de confirmar.
     private fun saldoFinalAjustado(): Double {
         val base = saldoFinalActual()
         val imp = importeActual()
@@ -206,6 +211,7 @@ class AsignarSaldoViewModel(
         )
     }
 
+    // Determina qué confirmación mostrar según el destino y el saldo existente.
     fun prepararConfirmacion() {
         val d = _ui.value.dialogoIntermedio
         val hayProximos = _ui.value.mercadillos.isNotEmpty()
@@ -226,6 +232,7 @@ class AsignarSaldoViewModel(
         _ui.value = _ui.value.copy(confirm = ConfirmState())
     }
 
+    // Construye el texto del diálogo para la decisión seleccionada.
     fun textoConfirmacion(): TextoConfirm {
         val caso = _ui.value.confirm.caso ?: return TextoConfirm("", emptyList())
         val hayPrevio = _ui.value.haySaldoGuardadoPrevio
@@ -265,6 +272,7 @@ class AsignarSaldoViewModel(
     }
 
     /** Persistencia de Paso 3. Llama desde el botón Aceptar del diálogo de confirmación. */
+    // Ejecuta la decisión confirmada de guardar o asignar el saldo y continúa el flujo de navegación.
     fun confirmarYPersistir(navController: androidx.navigation.NavController) {
         if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) {
             es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_sin_asignar_saldo"); return
@@ -346,6 +354,7 @@ class AsignarSaldoViewModel(
         fun factory(context: Context, mercadilloIdOrigen: String): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
+                // Construye el ViewModel con las dependencias del flujo.
                 override fun <T : ViewModel> create(modelClass: Class<T>): T {
                     val db = AppDatabase.getDatabase(context)
                     val mercRepo = MercadilloRepository(context)

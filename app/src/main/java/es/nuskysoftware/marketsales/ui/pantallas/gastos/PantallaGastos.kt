@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/gastos/PantallaGastos.kt
 package es.nuskysoftware.marketsales.ui.pantallas.gastos
 
+// Responsabilidad: Pantalla de introducción de gastos manuales y automáticos.
+
 import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.activity.ComponentActivity
@@ -30,6 +32,7 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ContextCastToActivity")
 @Composable
+// Pantalla de introducción de gastos manuales y automáticos.
 fun PantallaGastos(
     navController: NavController,
     mercadilloActivo: MercadilloEntity
@@ -78,11 +81,6 @@ fun PantallaGastos(
                     text = { Text(StringResourceManager.getString("ingresar_gasto", currentLanguage)) }
                 )
                 // Si activas la pestaña de automáticos, internacionaliza también su etiqueta:
-                // Tab(
-                //     selected = selectedTab == 1,
-                //     onClick = { selectedTab = 1 },
-                //     text = { Text(StringResourceManager.getString("automaticos", currentLanguage)) }
-                // )
             }
 
             when (selectedTab) {

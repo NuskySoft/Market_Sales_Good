@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/ArticuloViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Mantiene el estado de artículos y las acciones de catálogo de la interfaz.
+
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

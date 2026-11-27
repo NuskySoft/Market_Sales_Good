@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/ConfiguracionViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Expone los ajustes observables y coordina la persistencia de los cambios de configuración.
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.nuskysoftware.marketsales.data.local.entity.ConfiguracionEntity

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AuthViewModelFactory.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Construye el ViewModel de autenticación con sus dependencias.
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +19,7 @@ class AuthViewModelFactory(
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
+    // Construye el ViewModel con las dependencias del flujo.
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
             val appContext = context.applicationContext

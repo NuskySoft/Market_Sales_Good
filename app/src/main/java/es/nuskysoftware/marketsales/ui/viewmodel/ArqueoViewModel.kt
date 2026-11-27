@@ -7,6 +7,8 @@
  */
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+// Responsabilidad: Mantiene el estado y los cálculos del arqueo y coordina su persistencia.
+
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -177,13 +179,6 @@ class ArqueoViewModel(
     }
 
     // ===== Helpers de formato para UI =====
-//    fun fmtMoneda(value: Double): String {
-//        val nf = NumberFormat.getCurrencyInstance(Locale.getDefault())
-//        val simbolo = (ConfigurationManager.moneda.value.split(" ").firstOrNull() ?: "€")
-//        val raw = nf.format(value)
-//        return if (!raw.startsWith(simbolo)) raw.replace(Regex("^[^\\d-]+"), "$simbolo ") else raw
-//    }
-//}
 
     fun fmtMoneda(value: Double): String {
         // Obtiene el símbolo configurado (por ejemplo "€" o "$")
@@ -200,6 +195,7 @@ class ArqueoViewModelFactory(
     private val repository: MercadilloRepository
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
+    // Construye el ViewModel con las dependencias del flujo.
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return ArqueoViewModel(repository, context) as T
     }

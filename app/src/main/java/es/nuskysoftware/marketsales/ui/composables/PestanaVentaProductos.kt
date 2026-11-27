@@ -69,7 +69,7 @@ fun PestanaVentaProductos(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text(StringResourceManager.getString("funcion_premium", currentLanguage))
+            Text(StringResourceManager.getString("demo_solo_registrados", currentLanguage))
         }
         return
     }

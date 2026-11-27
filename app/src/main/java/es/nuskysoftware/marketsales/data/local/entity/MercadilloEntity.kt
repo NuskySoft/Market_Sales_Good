@@ -4,6 +4,7 @@ package es.nuskysoftware.marketsales.data.local.entity
 // Responsabilidad: Mercadillo y su planificación, estado, información económica y control de sincronización.
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 import java.util.UUID
 
@@ -70,7 +71,9 @@ data class MercadilloEntity(
     // Indica si esta revisión local está confirmada en Firebase.
     val sincronizadoFirebase: Boolean = false,
     // Fecha de alta inmutable. Null identifica registros antiguos cuyo orden de creación no se conoce.
-    val creadoEn: Long? = null
+    val creadoEn: Long? = null,
+    // Distingue la baja por descenso de plan de una retirada voluntaria del usuario.
+    @ColumnInfo(defaultValue = "0") val bajaPorPlan: Boolean = false
 ) {
     // Constructor vacío para Firestore
     constructor() : this(

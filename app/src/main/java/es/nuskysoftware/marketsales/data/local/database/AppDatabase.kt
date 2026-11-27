@@ -50,6 +50,8 @@ abstract class AppDatabase : RoomDatabase() {
         val MIGRATION_20_21 = object : Migration(20, 21) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE mercadillos ADD COLUMN creadoEn INTEGER")
+                // Una baja por plan puede revertirse si llegan operaciones de otro dispositivo.
+                db.execSQL("ALTER TABLE mercadillos ADD COLUMN bajaPorPlan INTEGER NOT NULL DEFAULT 0")
             }
         }
 

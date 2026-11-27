@@ -2,6 +2,7 @@ package es.nuskysoftware.marketsales.data.repository
 
 import androidx.room.withTransaction
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
+import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 import es.nuskysoftware.marketsales.utils.DemoAccess
 import java.time.LocalDate
 import java.time.ZoneId
@@ -14,20 +15,31 @@ import java.time.ZoneId
  */
 internal class FreePlanningReconciler(private val db: AppDatabase) {
     suspend fun apply(uid: String): Int = db.withTransaction {
-        if (!DemoAccess.canSync(uid) || db.userDao().getUserById(uid)?.esPremium != false) return@withTransaction 0
+        if (!DemoAccess.canSync(uid)) return@withTransaction 0
+        val account = db.userDao().getUserById(uid) ?: return@withTransaction 0
         val dao = db.mercadilloDao()
         val today = LocalDate.now(ZoneId.of("Europe/Madrid")).toEpochDay()
         var changed = 0
+        // Otro dispositivo pudo conservar ventas offline cuando se retiró la planificación.
+        // Si llegan después, restituir su visibilidad para conservar el historial económico.
+        for (market in dao.retiradosPorPlan(uid)) {
+            if (!dao.tieneOperaciones(uid, market.idMercadillo)) continue
+            DemoAccess.requireOwner(uid)
+            dao.updateMercadillo(market.copy(activo = true, bajaPorPlan = false,
+                version = market.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+            changed++
+        }
+        if (account.esPremium) return@withTransaction changed
         for (group in dao.planificadosFuturos(uid, today).groupBy { it.fechaEpochDay }.values) {
             if (group.size < 2 || group.any { it.creadoEn == null }) continue
             // Desempate estable si dos altas comparten exactamente la marca temporal.
-            val ordered = group.sortedWith(compareBy({ it.creadoEn }, { it.idMercadillo }))
+            val ordered = group.sortedWith(compareBy<MercadilloEntity>({ it.creadoEn }, { it.idMercadillo }))
             for (market in ordered.drop(1)) {
                 if (market.estado !in 1..2 || dao.tieneOperaciones(uid, market.idMercadillo) ||
                     market.totalVentas != 0.0 || market.totalGastos != 0.0 || market.saldoFinal != null ||
                     market.arqueoCaja != null || market.arqueoMercadillo != null) continue
                 DemoAccess.requireOwner(uid)
-                dao.updateMercadillo(market.copy(activo = false, version = market.version + 1,
+                dao.updateMercadillo(market.copy(activo = false, bajaPorPlan = true, version = market.version + 1,
                     lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
                 changed++
             }

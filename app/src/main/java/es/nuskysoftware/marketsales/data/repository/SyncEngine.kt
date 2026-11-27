@@ -184,8 +184,7 @@ class SyncEngine(context: Context) {
         syncStock(uid, generation)
         // Solo revisar duplicados futuros después de descargar todas las operaciones del propietario.
         // La baja lógica se sincroniza como cualquier edición; nunca borra filas ni tickets.
-        if (RecoveryGate(app).canPull(uid) && DemoAccess.canSync(uid) &&
-            db.userDao().getUserById(uid)?.esPremium == false) {
+        if (RecoveryGate(app).canPull(uid) && DemoAccess.canSync(uid)) {
             val changed = FreePlanningReconciler(db).apply(uid)
             if (changed > 0) es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(app)
         }

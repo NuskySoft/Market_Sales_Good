@@ -40,6 +40,10 @@ interface MercadilloDao {
     @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND estado IN (1, 2, 3, 4, 5) AND fechaEpochDay > :today ORDER BY fechaEpochDay, creadoEn, idMercadillo")
     suspend fun planificadosFuturos(uid: String, today: Long): List<MercadilloEntity>
 
+    // Recupera exclusivamente las bajas automáticas, nunca las eliminaciones voluntarias.
+    @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 0 AND bajaPorPlan = 1")
+    suspend fun retiradosPorPlan(uid: String): List<MercadilloEntity>
+
     // No retirar planificación si existe cualquier operación económica o saldo vinculado.
     @Query("SELECT EXISTS(SELECT 1 FROM recibos WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM lineas_venta WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM LineasGastos WHERE idUsuario = :uid AND idMercadillo = :market UNION ALL SELECT 1 FROM saldos_guardados WHERE idUsuario = :uid AND (idMercadilloOrigen = :market OR idMercadilloDestino = :market))")
     suspend fun tieneOperaciones(uid: String, market: String): Boolean

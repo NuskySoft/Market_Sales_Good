@@ -151,9 +151,10 @@ class MercadilloRepository(
     suspend fun actualizarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
         DemoAccess.requireOwner(mercadillo.userId)
         val anterior = mercadilloDao.getMercadilloById(mercadillo.idMercadillo) ?: error("Market not found")
-        check(anterior.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+        check(anterior.activo && (anterior.estado !in 6..7 || DemoAccess.isDemo())) { "Final market" }
         val actualizado = mercadillo.copy(
             creadoEn = anterior.creadoEn,
+            bajaPorPlan = anterior.bajaPorPlan,
             fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),
             version = mercadillo.version + 1,
             lastModified = System.currentTimeMillis(),

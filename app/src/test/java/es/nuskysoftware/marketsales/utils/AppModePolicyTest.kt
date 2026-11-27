@@ -6,6 +6,18 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppModePolicyTest {
+    // Comprueba unidades, no número de referencias ni tickets; manual y abonos no consumen cupo.
+    @Test fun freeCatalogueStopsAtTenUnitsButManualSalesRemainAvailable() {
+        assertTrue(AppModePolicy.canUseCatalog(AppMode.FREE, 0, 10))
+        assertTrue(AppModePolicy.canUseCatalog(AppMode.FREE, 9, 1))
+        assertFalse(AppModePolicy.canUseCatalog(AppMode.FREE, 9, 2))
+        assertFalse(AppModePolicy.canUseCatalog(AppMode.FREE, 10, 1))
+        assertTrue(AppModePolicy.canUseCatalog(AppMode.FREE, 12, 0))
+        assertTrue(AppModePolicy.canUseCatalog(AppMode.PREMIUM, 100, 100))
+        assertFalse(AppModePolicy.canUseCatalog(AppMode.DEMO, 0, 1))
+        assertEquals(0L, AppModePolicy.catalogRemaining(15))
+    }
+
     @Test fun registrationAndPremiumAreIndependent() {
         assertEquals(AppMode.DEMO, AppModePolicy.mode(false, true))
         assertEquals(AppMode.FREE, AppModePolicy.mode(true, false))
@@ -43,5 +55,7 @@ class AppModePolicyTest {
         assertFalse(AppModePolicy.canAssignBalance(AppMode.DEMO))
         assertTrue(AppModePolicy.canRefund(AppMode.FREE))
         assertTrue(AppModePolicy.canRefund(AppMode.PREMIUM))
+        assertFalse(AppModePolicy.canAssignBalance(AppMode.FREE))
+        assertTrue(AppModePolicy.canAssignBalance(AppMode.PREMIUM))
     }
 }

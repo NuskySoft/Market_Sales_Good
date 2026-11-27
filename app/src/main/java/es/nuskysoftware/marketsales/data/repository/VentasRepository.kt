@@ -62,15 +62,6 @@ class VentasRepository(
     }
 
 
-    /**
-     * Confirma una venta local y conserva las obligaciones de stock en la misma transacción.
-     * El envío remoto es posterior y no puede invalidar una venta ya guardada.
-     * @param idMercadillo Identificador del mercadillo propietario de la venta.
-     * @param lineas Conceptos manuales o artículos, con cantidad, precio e importe.
-     * @param metodoPago Método empleado en esta operación, también cuando es una devolución.
-     * @param total Importe recibido desde la interfaz, utilizado por la validación Demo.
-     * @return Identificador del recibo confirmado, o fallo de la operación local.
-     */
     /** Unidades confirmadas del catálogo; el borrador se suma aparte en la interfaz. */
     fun observarUnidadesCatalogo(uid: String, market: String): Flow<Long> =
         lineasVentaDao.observarUnidadesCatalogoVendidas(uid, market)
@@ -87,6 +78,15 @@ class VentasRepository(
     private fun unidadesCatalogo(lineas: List<LineaVentaUI>): Long =
         lineas.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.cantidad > 0 && it.idLineaOriginalAbonada == null }.sumOf { it.cantidad.toLong() }
 
+    /**
+     * Confirma una venta local y conserva las obligaciones de stock en la misma transacción.
+     * El envío remoto es posterior y no puede invalidar una venta ya guardada.
+     * @param idMercadillo Identificador del mercadillo propietario de la venta.
+     * @param lineas Conceptos manuales o artículos, con cantidad, precio e importe.
+     * @param metodoPago Método empleado en esta operación, también cuando es una devolución.
+     * @param total Importe recibido desde la interfaz, utilizado por la validación Demo.
+     * @return Identificador del recibo confirmado, o fallo de la operación local.
+     */
     suspend fun guardarVenta(
         idMercadillo: String,
         lineas: List<LineaVentaUI>,
@@ -94,8 +94,6 @@ class VentasRepository(
         total: Double
     ): Result<String> {
         val userId = ConfigurationManager.getCurrentUserId() ?: return Result.failure(IllegalStateException("No owner"))
-        // Captura el plan en el momento de confirmar la operación; los conceptos manuales nunca generan stock.
-        val isPremiumAtConfirmation = ConfigurationManager.getIsPremium() && !DemoAccess.isDemo()
         val idRecibo = try {
             // Una instalación gratuita con historial remoto reservado debe resolver la recuperación antes de escribir.
             RecoveryGate(appContext, db).beforeWrite(userId)
@@ -104,6 +102,9 @@ class VentasRepository(
                 DemoAccess.requireOwner(userId)
                 val market = db.mercadilloDao().getMercadilloById(idMercadillo) ?: error("Market not found")
                 DemoAccess.requireOwner(market.userId)
+                // El plan se captura dentro de la confirmación local, junto a la verificación de cupo.
+                val mode = DemoAccess.mode()
+                val isPremiumAtConfirmation = mode == es.nuskysoftware.marketsales.utils.AppMode.PREMIUM
                 // En cuentas registradas no se admiten ventas durante el arqueo, cierre o cancelación; Demo es la excepción.
                 check(DemoAccess.isDemo() || market.estado !in 4..7) { "Market does not allow sales" }
                 // Comprueba las referencias de abono para que una línea original no se devuelva dos veces.
@@ -113,7 +114,7 @@ class VentasRepository(
                 }
                 // El cupo se comprueba bajo la misma transacción que guarda el ticket para evitar
                 // que dos confirmaciones locales simultáneas consuman las mismas unidades.
-                if (!admiteCatalogo(userId, idMercadillo, lineas)) {
+                if (!es.nuskysoftware.marketsales.utils.AppModePolicy.canUseCatalog(mode, lineasVentaDao.unidadesCatalogoVendidas(userId, idMercadillo), unidadesCatalogo(lineas))) {
                     DemoAccess.deny("free_catalog_limit")
                 }
                 check(market.activo) { "Market unavailable" }

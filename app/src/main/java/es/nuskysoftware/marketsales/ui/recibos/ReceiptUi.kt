@@ -121,7 +121,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                     context.contentResolver.openInputStream(uri)?.use{BitmapFactory.decodeStream(it,null,bounds)}
                     require(bounds.outWidth>0 && bounds.outHeight>0)
                     var sample=1
-                    while(maxOf(bounds.outWidth,bounds.outHeight)/sample>384)sample*=2
+                    while(maxOf(bounds.outWidth,bounds.outHeight)/sample>320)sample*=2
                     val image=context.contentResolver.openInputStream(uri)?.use{BitmapFactory.decodeStream(it,null,BitmapFactory.Options().apply{inSampleSize=sample})} ?: error("Imagen no válida")
                     check(service.allowed(uid))
                     val atomic=AtomicFile(ReceiptFiles.logo(context,uid));val stream=atomic.startWrite()
@@ -260,13 +260,32 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     var email by remember{mutableStateOf("")};var enterEmail by remember{mutableStateOf(false)}
     var message by remember{mutableStateOf("")};var busy by remember{mutableStateOf(false)}
     val configured=remember(owner){service.settings(owner).mail()!=null}
+    var preview by remember { mutableStateOf<java.io.File?>(null) }
+    val exportPicker=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")){uri->
+        if(uri!=null)scope.launch{
+            busy=true
+            try{service.export(owner,id,uri);message=t(en,"Copia guardada","Copy saved")}
+            catch(e:CancellationException){throw e}
+            catch(e:Exception){message=t(en,"No se pudo exportar la copia","Could not export copy")}
+            finally{busy=false}
+        }
+    }
+    val importPicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()){uri->
+        if(uri!=null)scope.launch{
+            busy=true
+            try{preview=service.importCopy(owner,id,uri);message=""}
+            catch(e:CancellationException){throw e}
+            catch(e:Exception){message=t(en,"No se pudo recuperar el PDF original. Comprueba el nombre del archivo.","Could not restore the original PDF. Check the file name.")}
+            finally{busy=false}
+        }
+    }
     fun open(whatsapp:Boolean) {
         if(whatsapp && !service.online()){
             enterEmail=configured;message=if(configured)t(en,"Sin conexión. Introduce el correo para enviarlo después.","Offline. Enter email to send later.") else t(en,"Sin conexión y correo sin configurar. Puedes reenviar después.","Offline and no mail configured. You can resend later.");return
         }
         busy=true
         scope.launch{
-            try{val file=service.original(owner,id);service.open(owner,file,whatsapp);if(whatsapp)onDismiss()}
+            try{val file=service.original(owner,id);if(whatsapp){service.open(owner,file,true);onDismiss()}else preview=file}
             catch(e:CancellationException){throw e}
             catch(e:Exception){if(whatsapp && configured)enterEmail=true;message=if(whatsapp)t(en,"No se pudo compartir por WhatsApp. Puedes usar correo si está configurado.","Could not share via WhatsApp. Use mail if configured.") else t(en,"PDF original no disponible o sin visor PDF.","Original PDF unavailable or no PDF viewer.")}
             finally{busy=false}
@@ -274,9 +293,16 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     }
     LaunchedEffect(premium){if(!premium)onDismiss()}
     if(!premium)return
+    preview?.let { file -> ReceiptPreview(file, onClose={preview=null});return }
     AlertDialog(onDismissRequest={if(!busy)onDismiss()},title={Text(if(afterSale)t(en,"¿Enviar recibo al cliente?","Send receipt to customer?") else t(en,"Recibo PDF","PDF receipt"))},
         text={Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
-            if(!afterSale)OutlinedButton(enabled=!busy,onClick={open(false)},modifier=Modifier.fillMaxWidth()){Text(t(en,"Ver PDF","View PDF"))}
+            if(!afterSale){
+                OutlinedButton(enabled=!busy,onClick={open(false)},modifier=Modifier.fillMaxWidth()){Text(t(en,"Ver PDF","View PDF"))}
+                Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){
+                    TextButton(enabled=!busy,onClick={exportPicker.launch(ReceiptFiles.externalName(owner,id))}){Text(t(en,"Exportar copia","Export copy"))}
+                    TextButton(enabled=!busy,onClick={importPicker.launch(arrayOf("application/pdf"))}){Text(t(en,"Recuperar copia","Restore copy"))}
+                }
+            }
             OutlinedButton(enabled=!busy,onClick={open(true)},modifier=Modifier.fillMaxWidth()){Text("WhatsApp")}
             OutlinedButton(enabled=!busy && configured,onClick={enterEmail=true},modifier=Modifier.fillMaxWidth()){Text(t(en,"Correo electrónico","Email"))}
             if(!configured)Text(t(en,"Configura el correo en Utilidades para activar el envío automático.","Configure mail in Utilities to enable automatic sending."),style=MaterialTheme.typography.bodySmall)
@@ -297,6 +323,45 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             }
         }){Text(t(en,"Enviar","Send"))}},
         dismissButton={TextButton(enabled=!busy,onClick=onDismiss){Text(if(afterSale)t(en,"No, finalizar","No, finish") else t(en,"Cerrar","Close"))}})
+}
+
+/** Visor PDF local con paginación, sin depender de un lector instalado. */
+@Composable private fun ReceiptPreview(file:java.io.File,onClose:()->Unit) {
+    val en=language()
+    var page by remember(file){mutableStateOf(0)}
+    var count by remember(file){mutableStateOf(1)}
+    var image by remember(file){mutableStateOf<Bitmap?>(null)}
+    var failed by remember(file){mutableStateOf(false)}
+    LaunchedEffect(file,page){
+        try {
+            val result=withContext(Dispatchers.IO){
+                val fd=android.os.ParcelFileDescriptor.open(file,android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+                val renderer=try {android.graphics.pdf.PdfRenderer(fd)} catch(e:Exception){fd.close();throw e}
+                renderer.use{
+                    it.openPage(page).use{p->
+                        // Acotar memoria incluso para documentos externos de tamaño poco habitual.
+                        val scale=minOf(2f,1600f/maxOf(p.width,p.height))
+                        val bmp=Bitmap.createBitmap((p.width*scale).toInt().coerceAtLeast(1),(p.height*scale).toInt().coerceAtLeast(1),Bitmap.Config.ARGB_8888)
+                        bmp.eraseColor(android.graphics.Color.WHITE)
+                        p.render(bmp,null,null,android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                        bmp to it.pageCount
+                    }
+                }
+            }
+            image=result.first;count=result.second;failed=false
+        }catch(e:CancellationException){throw e}
+        catch(e:Exception){failed=true}
+    }
+    AlertDialog(onDismissRequest=onClose,title={Text(t(en,"Recibo PDF","PDF receipt"))},
+        text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){
+            if(failed)Text(t(en,"No se pudo abrir el PDF","Could not open PDF"))
+            else image?.let{Image(it.asImageBitmap(),contentDescription=t(en,"Página del recibo","Receipt page"),modifier=Modifier.fillMaxWidth().heightIn(max=430.dp))} ?: LinearProgressIndicator(Modifier.fillMaxWidth())
+            if(count>1)Row(verticalAlignment=Alignment.CenterVertically){
+                TextButton(enabled=page>0,onClick={page--}){Text("‹")}
+                Text("${page+1} / $count",Modifier.weight(1f))
+                TextButton(enabled=page+1<count,onClick={page++}){Text("›")}
+            }
+        }},confirmButton={TextButton(onClick=onClose){Text(t(en,"Cerrar","Close"))}})
 }
 
 /** Entrada discreta en Utilidades y contador de solicitudes no resueltas. */

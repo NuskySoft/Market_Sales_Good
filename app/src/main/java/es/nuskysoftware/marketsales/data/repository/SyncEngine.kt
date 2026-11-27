@@ -116,7 +116,10 @@ class SyncEngine(context: Context) {
         // La fecha de creación de un mercadillo es inmutable; un cliente antiguo puede omitirla.
         val preservingCreation = if (t.name == "mercadillos" && local?.get("creadoEn") != null)
             adjusted + ("creadoEn" to local["creadoEn"]) else adjusted
-        write(t, preservingCreation + ("sincronizadoFirebase" to true))
+        // La elegibilidad PDF es inmutable; clientes anteriores pueden no conocerla.
+        val preservingPdf = if (t.name == "recibos" && local?.get("pdfOriginal") == true)
+            preservingCreation + ("pdfOriginal" to true) else preservingCreation
+        write(t, preservingPdf + ("sincronizadoFirebase" to true))
     }
     // Concilia un propietario en IO bajo exclusión mutua, incluidas bajas y cambios pendientes.
     suspend fun sync(uid: String) = withContext(Dispatchers.IO) { mutex.withLock {
@@ -145,7 +148,11 @@ class SyncEngine(context: Context) {
                     val current = remote?.takeIf { (it["_generation"] ?: "legacy") == generation }
                     val selected = if (current != null && newer(current, row)) defaults(t) + current else row
                     // No perder el dato de creación al conciliar clientes con esquemas anteriores.
-                    val winner = if (t.name == "mercadillos") selected + ("creadoEn" to (current?.get("creadoEn") ?: row["creadoEn"])) else selected
+                    val winner = when (t.name) {
+                        "mercadillos" -> selected + ("creadoEn" to (current?.get("creadoEn") ?: row["creadoEn"]))
+                        "recibos" -> selected + ("pdfOriginal" to (current?.get("pdfOriginal") == true || row["pdfOriginal"] == true))
+                        else -> selected
+                    }
                     tx.set(ref, winner + mapOf("_generation" to generation, "sincronizadoFirebase" to true))
                     if (t.name == "articulos" && winner["stockBase"] == null) winner + ("stockBase" to winner["stock"]) else winner
                 }.await()

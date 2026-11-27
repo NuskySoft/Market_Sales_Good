@@ -82,7 +82,6 @@ fun PestanaResumenVentas(
     val receiptOwner by ConfigurationManager.usuarioLogueado.collectAsState()
     val premium by ConfigurationManager.esPremium.collectAsState()
     val documents by remember(receiptOwner) { db.receiptDocumentDao().ids(receiptOwner.orEmpty()) }.collectAsState(initial=emptyList())
-    val external = remember(receiptOwner) { es.nuskysoftware.marketsales.receipts.ReceiptSettings(context,receiptOwner.orEmpty()).folder }
     val salesRepository = remember { es.nuskysoftware.marketsales.data.repository.VentasRepository(context) }
 
     Column(Modifier.fillMaxSize()) {
@@ -125,7 +124,7 @@ fun PestanaResumenVentas(
                     )
                 }
                 // Una acción por recibo, no por cada concepto del mismo ticket.
-                if (premium && (linea.idRecibo in documents || (external != null && recibos.any { it.idRecibo == linea.idRecibo && it.pdfOriginal })) && ordenFinal.firstOrNull { it.idRecibo == linea.idRecibo }?.idLinea == linea.idLinea) {
+                if (premium && (linea.idRecibo in documents || recibos.any { it.idRecibo == linea.idRecibo && it.pdfOriginal }) && ordenFinal.firstOrNull { it.idRecibo == linea.idRecibo }?.idLinea == linea.idLinea) {
                     TextButton(onClick = { selectedReceipt = linea.idRecibo }) {
                         Text(if (currentLanguage == "en") "Receipt PDF" else "Recibo PDF")
                     }

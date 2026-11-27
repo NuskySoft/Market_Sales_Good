@@ -59,9 +59,29 @@ class ReceiptService(private val context: Context) {
             check(dao.find(owner,id)!=null || local.isFile){"PDF no disponible"}
             // El identificador de una solicitud es independiente del recibo para permitir reenvíos voluntarios.
             // Se conserva además la dirección autorizada para no enviar con otra cuenta tras una edición.
+            check(dao.activeRequest(owner,id,recipient)==0) { "Ya existe una solicitud pendiente o incierta" }
             dao.enqueue(ReceiptMailEntity(owner,UUID.randomUUID().toString(),id,recipient,System.currentTimeMillis(),sender=config.address))
         }
         runCatching { ReceiptWorker.request(context) }
+    }
+
+    /** Exportación explícita: permite destinos que no soportan la selección de carpetas. */
+    suspend fun export(owner:String,id:String,destination:Uri)=withContext(Dispatchers.IO) {
+        val pdf=original(owner,id)
+        check(allowed(owner))
+        context.contentResolver.openOutputStream(destination,"w")?.use { out -> pdf.inputStream().use { it.copyTo(out) } }
+            ?: error("No se pudo exportar")
+    }
+
+    /** Recuperación manual por nombre asociado a cuenta y recibo, sin reconstruir datos históricos. */
+    suspend fun importCopy(owner:String,id:String,uri:Uri):File=withContext(Dispatchers.IO) {
+        DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
+        val receipt=db.recibosDao().obtenerReciboPorId(id,owner) ?: error("Recibo no disponible")
+        check(receipt.pdfOriginal || dao.find(owner,id)!=null)
+        val name=context.contentResolver.query(uri,arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),null,null,null)?.use { c -> if(c.moveToFirst())c.getString(0) else null }
+        require(name==ReceiptFiles.externalName(owner,id)){"La copia no corresponde al recibo seleccionado"}
+        val result=ReceiptFiles.restoreFromUri(context,owner,id,uri)
+        check(allowed(owner));result
     }
 
     /** Comparte un URI de solo lectura con la aplicación elegida; no confirma entrega. */

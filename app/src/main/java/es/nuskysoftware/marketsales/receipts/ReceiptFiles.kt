@@ -24,6 +24,9 @@ object ReceiptFiles {
     fun folder(context: Context, owner: String): File =
         File(context.filesDir, "receipts/" + key(owner)).apply { mkdirs() }
     fun file(context: Context, owner: String, id: String) = File(folder(context, owner), key(id) + ".pdf")
+    /** Nombre reconocible, con identificador de cuenta no reversible y recibo único. */
+    fun externalName(owner:String,id:String):String =
+        "MarketSales-" + key(owner).take(16) + "-" + id.replace(Regex("[^A-Za-z0-9_-]"),"_") + ".pdf"
     fun logo(context: Context, owner: String) = File(folder(context, owner), "logo.png")
     fun uri(context: Context, file: File): Uri =
         FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
@@ -131,27 +134,14 @@ object ReceiptFiles {
         val resolver = context.contentResolver
         val parent = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
-        val name = key(owner + ":" + id) + ".pdf"
+        val name = externalName(owner,id)
         var existing: Uri? = null
         resolver.query(children, arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME), null,null,null)?.use { c ->
             while(c.moveToNext()) if (c.getString(1)==name) {
                 existing=DocumentsContract.buildDocumentUriUsingTree(tree,c.getString(0)); break
             }
         }
-        if (restore) {
-            val uri = existing ?: return null
-            val target = file(context,owner,id)
-            val atomic=AtomicFile(target); val out=atomic.startWrite()
-            try {
-                resolver.openInputStream(uri)?.use { input ->
-                    val header=ByteArray(5); var n=0
-                    while(n<5){val read=input.read(header,n,5-n); if(read<0)break; n+=read}
-                    require(n==5 && String(header,Charsets.US_ASCII)=="%PDF-")
-                    out.write(header); input.copyTo(out)
-                } ?: error("No se puede leer el archivo")
-                atomic.finishWrite(out); return target
-            } catch(e:Exception){atomic.failWrite(out);throw e}
-        }
+        if (restore) return existing?.let { restoreFromUri(context,owner,id,it) }
         require(source != null)
         if(existing != null) {
             // Si el proveedor ya contiene una copia idéntica no se crea otra.
@@ -173,6 +163,34 @@ object ReceiptFiles {
         catch(e:Exception){runCatching{DocumentsContract.deleteDocument(resolver,destination)};throw e}
         return source
     }
+    /** Valida cabecera y estructura PDF antes de promover la copia; no sustituye un original existente. */
+    @Synchronized
+    fun restoreFromUri(context:Context,owner:String,id:String,uri:Uri):File {
+        val target=file(context,owner,id)
+        if(target.isFile && target.length()>0)return target
+        val temporary=File.createTempFile("restore-", ".pdf", folder(context,owner))
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                temporary.outputStream().use { out ->
+                    val header=ByteArray(5);var n=0
+                    while(n<5){val read=input.read(header,n,5-n);if(read<0)break;n+=read}
+                    require(n==5 && String(header,Charsets.US_ASCII)=="%PDF-")
+                    out.write(header)
+                    val buffer=ByteArray(8192);var total=5L
+                    while(true){val count=input.read(buffer);if(count<0)break;total+=count;require(total<=50_000_000L);out.write(buffer,0,count)}
+                }
+            } ?: error("No se puede leer el archivo")
+            // PdfRenderer adquiere la propiedad del descriptor al construirse.
+            val fd=android.os.ParcelFileDescriptor.open(temporary,android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+            val renderer=try { android.graphics.pdf.PdfRenderer(fd) } catch(e:Exception){fd.close();throw e}
+            renderer.use { check(it.pageCount>0) }
+            val atomic=AtomicFile(target);val out=atomic.startWrite()
+            try {temporary.inputStream().use{it.copyTo(out)};atomic.finishWrite(out)}
+            catch(e:Exception){atomic.failWrite(out);throw e}
+            return target
+        } finally {temporary.delete()}
+    }
+
     private fun java.io.InputStream.readNBytesCompat(buffer: ByteArray): Int {
         var count=0
         while(count<buffer.size){val n=read(buffer,count,buffer.size-count);if(n<=0)break;count+=n}

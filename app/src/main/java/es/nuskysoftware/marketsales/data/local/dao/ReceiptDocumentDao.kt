@@ -22,6 +22,9 @@ interface ReceiptDocumentDao {
     suspend fun enqueue(mail: ReceiptMailEntity)
     @Query("SELECT * FROM receipt_mail WHERE owner=:owner ORDER BY created DESC")
     fun observeMail(owner: String): Flow<List<ReceiptMailEntity>>
+    // Un doble toque o nueva solicitud mientras está pendiente no origina un segundo correo.
+    @Query("SELECT COUNT(*) FROM receipt_mail WHERE owner=:owner AND receiptId=:receiptId AND recipient=:recipient COLLATE NOCASE AND state IN ('PENDING','SENDING','UNCERTAIN')")
+    suspend fun activeRequest(owner:String,receiptId:String,recipient:String):Int
     @Query("SELECT * FROM receipt_mail WHERE owner=:owner AND state='PENDING' ORDER BY created")
     suspend fun pending(owner: String): List<ReceiptMailEntity>
     // Compare-and-set: solo un trabajador puede reclamar o cancelar una solicitud.

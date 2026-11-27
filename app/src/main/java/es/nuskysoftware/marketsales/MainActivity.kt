@@ -48,7 +48,6 @@ import es.nuskysoftware.marketsales.ui.pantallas.PantallaLogoutSplash
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaUtilidades
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaVentas
 import es.nuskysoftware.marketsales.ui.pantallas.PantallaVentasCarrito
-import es.nuskysoftware.marketsales.ui.pantallas.TipoEnvio
 import es.nuskysoftware.marketsales.ui.theme.MarketSalesTheme
 import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModel
 import es.nuskysoftware.marketsales.ui.viewmodel.ConfiguracionViewModelFactory
@@ -525,13 +524,6 @@ fun NavigationSystem(configuracionViewModel: ConfiguracionViewModel) {
                     totalFormateado = totalFmt,
                     metodo = metodo,
                     onBack = { navController.safePopBackStack() },
-                    onEnviar = { via: TipoEnvio, destino: String ->
-                        val ventasEntry = navController.getBackStackEntry(ventasRoute)
-                        ventasEntry.savedStateHandle["finalizar_metodo"] = metodo
-                        ventasEntry.savedStateHandle["enviar_via"] = via.name
-                        ventasEntry.savedStateHandle["enviar_destino"] = destino
-                        navController.safePopBackStack(route = ventasRoute, inclusive = false)
-                    },
                     onFinalizarVenta = {
                         val metodoRepo = when (metodo.lowercase()) {
                             "efectivo" -> MetodoPagoRepo.EFECTIVO

@@ -18,22 +18,26 @@ import java.util.concurrent.TimeUnit
 class ReceiptWorker(context:Context,params:WorkerParameters):CoroutineWorker(context,params) {
     override suspend fun doWork():Result=withContext(Dispatchers.IO) {
         lock.withLock {
-            val owner=ConfigurationManager.getCurrentUserId()
+            val database=AppDatabase.getDatabase(applicationContext)
+            val owner=com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
             if(owner.isNullOrBlank() || AppModePolicy.isLocalOnly(owner)) return@withLock Result.success()
+            // La sesión de Firebase y la cuenta persistida deben coincidir, también tras muerte del proceso.
+            if(database.configuracionDao().getUsuarioLogueado()!=owner) return@withLock Result.success()
+            suspend fun active() = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid==owner && database.configuracionDao().getUsuarioLogueado()==owner
             val service=ReceiptService(applicationContext)
             val settings=service.settings(owner)
-            val dao=AppDatabase.getDatabase(applicationContext).receiptDocumentDao()
+            val dao=database.receiptDocumentDao()
             var retry=false
             // Un proceso anterior pudo morir después de aceptar un correo; no se reenvía a ciegas.
             dao.recoverInterrupted(owner)
             for(id in dao.documentIds(owner)) {
-                if(ConfigurationManager.getCurrentUserId()!=owner) return@withLock Result.success()
+                if(!active()) return@withLock Result.success()
                 val doc=dao.find(owner,id) ?: continue
                 try {
                     val pdf=ReceiptFiles.render(applicationContext,doc)
                     // Copias nuevas solo en Premium; los originales ya generados nunca se eliminan por descenso.
                     val destination=settings.folder
-                    if(service.allowed(owner) && destination!=null && doc.copiedTo!=destination) {
+                    if(database.userDao().isPremium(owner)==true && destination!=null && doc.copiedTo!=destination) {
                         ReceiptFiles.external(applicationContext,owner,id,Uri.parse(destination),pdf,false)
                         dao.copied(owner,id,destination)
                     }
@@ -43,7 +47,10 @@ class ReceiptWorker(context:Context,params:WorkerParameters):CoroutineWorker(con
             val pending=dao.pending(owner)
             if(pending.isNotEmpty() && !service.online()) return@withLock Result.retry()
             for(mail in pending) {
-                if(ConfigurationManager.getCurrentUserId()!=owner) return@withLock Result.success()
+                if(!active()) return@withLock Result.success()
+                if(database.recibosDao().obtenerReciboPorId(mail.receiptId,owner)==null) {
+                    dao.transition(owner,mail.id,"PENDING","CANCELLED","Recibo ya no disponible");continue
+                }
                 val config=settings.mail()
                 if(config==null || !config.address.equals(mail.sender,true)) {
                     dao.transition(owner,mail.id,"PENDING","ERROR","Configura la cuenta de correo original")
@@ -60,7 +67,7 @@ class ReceiptWorker(context:Context,params:WorkerParameters):CoroutineWorker(con
                 catch(e:Exception){retry=true;continue}
                 if(dao.transition(owner,mail.id,"PENDING","SENDING","")!=1)continue
                 try {
-                    if(ConfigurationManager.getCurrentUserId()!=owner) {
+                    if(!active()) {
                         dao.transition(owner,mail.id,"SENDING","PENDING","");break
                     }
                     ReceiptMail.send(config,mail.recipient,pdf,settings,mail.receiptId.endsWith("-EN"))
@@ -85,8 +92,13 @@ class ReceiptWorker(context:Context,params:WorkerParameters):CoroutineWorker(con
             request(context)
         }
         fun request(context:Context) {
-            WorkManager.getInstance(context).enqueueUniqueWork("receipt-local",ExistingWorkPolicy.APPEND_OR_REPLACE,
+            WorkManager.getInstance(context).enqueueUniqueWork("receipt-local",ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequest.Builder(ReceiptWorker::class.java)
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build())
+            // Una petición independiente condicionada por red despierta la cola al recuperar conexión.
+            WorkManager.getInstance(context).enqueueUniqueWork("receipt-network",ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequest.Builder(ReceiptWorker::class.java)
+                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                     .setBackoffCriteria(BackoffPolicy.EXPONENTIAL,30,TimeUnit.SECONDS).build())
         }
     }

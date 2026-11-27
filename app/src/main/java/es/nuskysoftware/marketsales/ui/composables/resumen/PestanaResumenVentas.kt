@@ -125,7 +125,7 @@ fun PestanaResumenVentas(
                     )
                 }
                 // Una acción por recibo, no por cada concepto del mismo ticket.
-                if (premium && (linea.idRecibo in documents || external != null) && ordenFinal.firstOrNull { it.idRecibo == linea.idRecibo }?.idLinea == linea.idLinea) {
+                if (premium && (linea.idRecibo in documents || (external != null && recibos.any { it.idRecibo == linea.idRecibo && it.pdfOriginal })) && ordenFinal.firstOrNull { it.idRecibo == linea.idRecibo }?.idLinea == linea.idLinea) {
                     TextButton(onClick = { selectedReceipt = linea.idRecibo }) {
                         Text(if (currentLanguage == "en") "Receipt PDF" else "Recibo PDF")
                     }
@@ -155,7 +155,7 @@ fun PestanaResumenVentas(
         }
     }
 
-    selectedReceipt?.let { es.nuskysoftware.marketsales.ui.recibos.ReceiptActions(it) { selectedReceipt = null } }
+    selectedReceipt?.let { es.nuskysoftware.marketsales.ui.recibos.ReceiptActions(it, onDismiss = { selectedReceipt = null }) }
 
     // Confirmar creación de abono
     val lineaConfirm = lineaParaConfirmar

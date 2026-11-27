@@ -148,5 +148,8 @@ class RecoveryGate(context: Context, private val db: AppDatabase = AppDatabase.g
     private suspend fun clearLocal(uid: String) = db.withTransaction {
         for ((table, owner) in listOf("empresa" to "userId", "categorias" to "userId", "articulos" to "userId", "mercadillos" to "userId", "recibos" to "idUsuario", "lineas_venta" to "idUsuario", "LineasGastos" to "idUsuario", "saldos_guardados" to "idUsuario", "stock_movements" to "idUsuario", "receipt_documents" to "owner", "receipt_mail" to "owner"))
             db.openHelper.writableDatabase.execSQL("DELETE FROM `$table` WHERE `$owner` = ?", arrayOf(uid))
+        // No conservar archivos locales de una generación de datos retirada; las copias externas son del usuario.
+        runCatching { es.nuskysoftware.marketsales.receipts.ReceiptFiles.folder(app,uid).deleteRecursively() }
+        Unit
     }
 }

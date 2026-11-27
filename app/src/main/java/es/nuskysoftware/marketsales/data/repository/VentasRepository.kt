@@ -154,6 +154,7 @@ class VentasRepository(
                     metodoPago = metodoPago,
                     totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(lineas.map { it.subtotal }),
                     estado = "COMPLETADO",
+                    pdfOriginal = isPremiumAtConfirmation,
                     lastModified = now,
                     sincronizadoFirebase = false
                 )

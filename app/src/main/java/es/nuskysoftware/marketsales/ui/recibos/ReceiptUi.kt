@@ -147,7 +147,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
 @Composable fun MailSettingsScreen(nav:NavController) {
     val context=LocalContext.current;val en=language();val scope=rememberCoroutineScope()
     val service=remember{ReceiptService(context)};val owner=service.owner();val settings=remember(owner){service.settings(owner)}
-    val previous=remember(owner){settings.mail()}
+    var previous by remember(owner){mutableStateOf(settings.mail())}
     var provider by remember{mutableStateOf(previous?.provider ?: "gmail")}
     var name by remember{mutableStateOf(previous?.name.orEmpty())}
     var address by remember{mutableStateOf(previous?.address.orEmpty())}
@@ -171,7 +171,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                     settings.save(result);result
                 }
                 if(tested.provider=="outlook")authorized=tested
-                secret="";message=t(en,"Prueba aceptada. Correo guardado.","Test accepted. Mail settings saved.")
+                previous=tested;secret="";message=t(en,"Prueba aceptada. Correo guardado.","Test accepted. Mail settings saved.")
                 ReceiptWorker.request(context)
             }catch(e:CancellationException){throw e}
             catch(e:Exception){message=t(en,"No se pudo confirmar la prueba. Revisa la configuración y conexión.","Could not confirm test. Check settings and connection.")}
@@ -182,7 +182,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
         navigationIcon={TextButton(onClick={nav.safePopBackStack()}){Text("←")}},
         colors=TopAppBarDefaults.topAppBarColors(containerColor=MaterialTheme.colorScheme.primary,titleContentColor=MaterialTheme.colorScheme.onPrimary,navigationIconContentColor=MaterialTheme.colorScheme.onPrimary))}){padding->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            if(previous!=null)Text(t(en,"Cuenta configurada en este dispositivo: ","Configured account on this device: ")+previous.address,style=MaterialTheme.typography.bodySmall)
+            previous?.let { saved -> Text(t(en,"Cuenta configurada en este dispositivo: ","Configured account on this device: ")+saved.address,style=MaterialTheme.typography.bodySmall) }
             listOf("gmail" to "Gmail","outlook" to "Outlook / Hotmail","smtp" to t(en,"Otro proveedor SMTP","Other SMTP provider")).forEach{(value,label)->
                 Row(verticalAlignment=Alignment.CenterVertically){
                     RadioButton(provider==value,{provider=value;if(value=="gmail"){host="smtp.gmail.com";port="587";tls="STARTTLS"}},enabled=!busy)
@@ -234,7 +234,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             if(message.isNotBlank())Text(message,style=MaterialTheme.typography.bodySmall)
             HorizontalDivider()
             Text(t(en,"Correo Market Sales · servicio adicional de pago previsto, aún no disponible.","Market Sales mail · planned paid add-on, not yet available."),style=MaterialTheme.typography.bodySmall)
-            TextButton(enabled=!busy,onClick={if(service.allowed(owner)){settings.clearMail();authorized=null;message=t(en,"Configuración eliminada","Settings removed")}}){Text(t(en,"Desconectar correo","Disconnect mail"))}
+            TextButton(enabled=!busy,onClick={if(service.allowed(owner)){settings.clearMail();previous=null;authorized=null;message=t(en,"Configuración eliminada","Settings removed")}}){Text(t(en,"Desconectar correo","Disconnect mail"))}
         }
     }
 }
@@ -245,8 +245,9 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     var show by remember(id){mutableStateOf(false)}
     LaunchedEffect(id){
         val owner=service.owner()
+        if(!service.allowed(owner) || !service.settings(owner).ask) { onDismiss();return@LaunchedEffect }
         val document=withContext(Dispatchers.IO){AppDatabase.getDatabase(context).receiptDocumentDao().find(owner,id)}
-        if(document!=null && service.allowed(owner) && service.settings(owner).ask)show=true else onDismiss()
+        if(document!=null)show=true else onDismiss()
     }
     if(show)ReceiptActions(id,onDismiss,afterSale=true)
 }

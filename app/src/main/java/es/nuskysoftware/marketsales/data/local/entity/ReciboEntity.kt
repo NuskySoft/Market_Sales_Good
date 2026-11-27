@@ -4,6 +4,7 @@ package es.nuskysoftware.marketsales.data.local.entity
 // Responsabilidad: Cabecera de recibo; vincula la operación con la cuenta y el mercadillo.
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "recibos")
@@ -27,7 +28,9 @@ data class ReciboEntity(
     // Indica si esta revisión local está confirmada en Firebase.
     val sincronizadoFirebase: Boolean = false,
     // Marca de actividad; permite distinguir datos vigentes de bajas.
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    // Solo se sincroniza este indicador de elegibilidad, nunca el archivo ni sus datos de envío.
+    @ColumnInfo(defaultValue = "0") val pdfOriginal: Boolean = false
 
 ){
     // Constructor vacío requerido por Firebase/Room

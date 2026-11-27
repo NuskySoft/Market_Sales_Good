@@ -33,14 +33,15 @@ class ReceiptService(private val context: Context) {
     /** Recupera un original local o la copia externa; jamás fabrica un PDF a partir de ventas históricas. */
     suspend fun original(owner:String,id:String):File=withContext(Dispatchers.IO) {
         DemoAccess.requireOwner(owner); DemoAccess.requirePremium()
-        check(db.recibosDao().obtenerReciboPorId(id,owner)!=null)
+        val receipt=db.recibosDao().obtenerReciboPorId(id,owner) ?: error("Recibo no disponible")
         val local=ReceiptFiles.file(context,owner,id)
         val doc=dao.find(owner,id)
         val result=when {
             local.isFile && local.length()>0 -> local
             doc!=null -> ReceiptFiles.render(context,doc)
-            else -> settings(owner).folder?.let { ReceiptFiles.external(context,owner,id,Uri.parse(it),null,true) }
+            receipt.pdfOriginal -> settings(owner).folder?.let { ReceiptFiles.external(context,owner,id,Uri.parse(it),null,true) }
                 ?: error("PDF original no disponible")
+            else -> error("Esta venta no generó PDF")
         }
         check(allowed(owner));result
     }

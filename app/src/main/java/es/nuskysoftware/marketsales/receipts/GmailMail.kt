@@ -18,7 +18,6 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Base64
 
 /**
  * Gmail mediante Google Identity Services y Gmail API. La cuenta de correo no es la sesión
@@ -111,7 +110,8 @@ object GmailMail {
     }
 
     /** Envío directo. Si una petición pudo ser aceptada, no se reenvía automáticamente. */
-    suspend fun send(context:Context,config:MailConfig,recipient:String,file:File?,english:Boolean):MailConfig=withContext(Dispatchers.IO){
+    suspend fun send(settings:ReceiptSettings,config:MailConfig,recipient:String,file:File?,english:Boolean,persisted:Boolean):MailConfig=withContext(Dispatchers.IO){
+        val context=settings.appContext
         val raw=try{GmailMessage.raw(config.address,recipient,file,english)}
         catch(e:Exception){throw MailFailure("ERROR","No se pudo preparar el correo o el PDF supera el tamaño admitido.")}
         val body=JSONObject().put("raw",raw).toString()
@@ -124,6 +124,9 @@ object GmailMail {
                 throw e
             }
             if(!actual.equals(config.address,true))throw MailFailure("ERROR","La cuenta Google ya no coincide con el remitente autorizado.")
+            // No iniciar la petición si durante la autorización cambió la sesión o la cuenta de correo.
+            if(!settings.activeOwner() || (persisted && settings.mail()!=config))
+                throw MailFailure("PENDING","La sesión o configuración de correo cambió durante la autorización.")
             val reply=try{http("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",access,body)}
             catch(e:Exception){throw MailFailure("UNCERTAIN","No se pudo confirmar la aceptación del mensaje por Gmail.")}
             when {

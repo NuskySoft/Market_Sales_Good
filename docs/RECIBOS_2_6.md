@@ -85,3 +85,7 @@ El usuario considera completa la definición funcional de 2.7, incluidas las inc
 ## Estado de la candidata 2.7
 
 El código de la candidata se ha incorporado a la rama feature/v2.7-recibos-pdf. Consultar docs/IMPLEMENTACION_2_7.md para limitaciones, configuración externa de Outlook/Hotmail y pruebas pendientes. Las referencias anteriores a la fase de definición son históricas, no indican el estado actual. No se han contratado servicios de pago.
+
+## Actualización aprobada durante las pruebas de 2.7: Gmail moderno
+
+Se sustituye la contraseña de aplicación de Gmail por OAuth2 con Google Identity Services y Gmail API (gmail.send), sin servidor intermediario. Los demás proveedores SMTP TLS y Outlook/Hotmail conservan su tratamiento. El código de la candidata está incorporado; queda habilitar Gmail API, verificar cliente Android, consentimiento y cuentas de prueba en Google Cloud, compilar y validar envío y renovación local. Véase IMPLEMENTACION_2_7.md.

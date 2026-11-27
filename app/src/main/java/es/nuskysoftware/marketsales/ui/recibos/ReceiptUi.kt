@@ -157,7 +157,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     val context=LocalContext.current;val en=language();val scope=rememberCoroutineScope()
     val service=remember{ReceiptService(context)};val owner=service.owner();val settings=remember(owner){service.settings(owner)}
     var previous by remember(owner){mutableStateOf(settings.mail())}
-    var provider by remember{mutableStateOf(previous?.provider?.let{if(it==GmailMail.PROVIDER)"gmail" else it} ?: "gmail")}
+    var provider by rememberSaveable(owner){mutableStateOf(previous?.provider?.let{if(it==GmailMail.PROVIDER)"gmail" else it} ?: "gmail")}
     var name by remember{mutableStateOf(previous?.name.orEmpty())}
     var address by remember{mutableStateOf(previous?.address.orEmpty())}
     var host by remember{mutableStateOf(previous?.host ?: "smtp.gmail.com")}
@@ -230,7 +230,8 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             scope.launch {
                 try{
                     DemoAccess.requireOwner(owner);DemoAccess.requirePremium()
-                    val auth=Identity.getAuthorizationClient(context).authorize(GmailMail.request(selected)).await()
+                    val auth=kotlinx.coroutines.withTimeoutOrNull(30_000L){Identity.getAuthorizationClient(context).authorize(GmailMail.request(selected)).await()}
+                        ?: throw MailFailure("PENDING","Google no respondió a tiempo.")
                     if(auth.hasResolution()){
                         val pending=auth.pendingIntent ?: error("Consentimiento no disponible")
                         googleConsent.launch(IntentSenderRequest.Builder(pending.intentSender).build())
@@ -239,7 +240,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                 catch(e:Exception){
                     busy=false;mailError=true
                     val status=(e as? com.google.android.gms.common.api.ApiException)?.statusCode
-                    message=t(en,"No se pudo conectar con Google. Comprueba los servicios de Google y la configuración OAuth.","Could not connect to Google. Check Google services and OAuth settings.")+(status?.let{" (Google "+it+")"}.orEmpty())
+                    message=if(e is MailFailure)e.message.orEmpty() else t(en,"No se pudo conectar con Google. Comprueba los servicios de Google y la configuración OAuth.","Could not connect to Google. Check Google services and OAuth settings.")+(status?.let{" (Google "+it+")"}.orEmpty())
                 }
             }
         }else{busy=false;message=t(en,"No se seleccionó una cuenta.","No account selected.")}
@@ -302,7 +303,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             if(message.isNotBlank())Text(message,style=MaterialTheme.typography.bodySmall,color=if(mailError)MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
             HorizontalDivider()
             Text(t(en,"Correo Market Sales · servicio adicional de pago previsto, aún no disponible.","Market Sales mail · planned paid add-on, not yet available."),style=MaterialTheme.typography.bodySmall)
-            TextButton(enabled=!busy,onClick={if(service.allowed(owner)){settings.clearMail();previous=null;authorized=null;message=t(en,"Configuración eliminada","Settings removed")}}){Text(t(en,"Desconectar correo","Disconnect mail"))}
+            TextButton(enabled=!busy,onClick={if(service.allowed(owner)){settings.clearMail();previous=null;authorized=null;message=t(en,"Configuración eliminada. Puedes retirar el permiso de Gmail en tu cuenta de Google.","Settings removed. You can revoke Gmail access in your Google account.")}}){Text(t(en,"Desconectar correo","Disconnect mail"))}
         }
     }
 }

@@ -77,7 +77,7 @@ object ReceiptMail {
     suspend fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
         require(validAddress(recipient) && validAddress(config.address))
         require(config.name.none { it=='\r' || it=='\n' })
-        if(config.provider==GmailMail.PROVIDER) return GmailMail.send(settings.appContext,config,recipient,file,english)
+        if(config.provider==GmailMail.PROVIDER) return GmailMail.send(settings,config,recipient,file,english,persistRefresh)
         if(config.provider=="gmail")throw MailFailure("ERROR","Conecta Gmail con Google en Configuración de correo. La contraseña de aplicación ya no se utiliza.")
         if(config.provider=="outlook") return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
         if(config.port !in 1..65535 || config.host.isBlank() || config.tls !in listOf("SSL","STARTTLS"))

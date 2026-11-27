@@ -15,6 +15,10 @@ import javax.crypto.spec.GCMParameterSpec
 class ReceiptSettings(private val context: Context, private val owner: String) {
     // Google Identity Services administra sus tokens en el dispositivo; no se guardan en nuestras preferencias.
     internal val appContext:Context get()=context.applicationContext
+    /** La sesión puede cambiar mientras Google renueva el token. Revalidar antes de transmitir. */
+    internal suspend fun activeOwner():Boolean =
+        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid==owner &&
+            es.nuskysoftware.marketsales.data.local.database.AppDatabase.getDatabase(appContext).configuracionDao().getUsuarioLogueado()==owner
     private val id = ReceiptFiles.key(owner)
     companion object {
         /** Identidad local no incluida en copias Android: evita reenviar colas restauradas en otro móvil. */

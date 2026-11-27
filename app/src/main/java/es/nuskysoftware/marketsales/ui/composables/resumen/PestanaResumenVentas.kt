@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/resumen/PestanaResumenVentas.kt
 package es.nuskysoftware.marketsales.ui.composables.resumen
 
+// Responsabilidad: Presenta las ventas registradas, sus métodos de pago y las acciones relacionadas con abonos.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 @Composable
+// Presenta las líneas de ventas y el detalle de pago y abono del mercadillo consultado.
 fun PestanaResumenVentas(
     mercadilloId: String,
     mostrarAbono: Boolean

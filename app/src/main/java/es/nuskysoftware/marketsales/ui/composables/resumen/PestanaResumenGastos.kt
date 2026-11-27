@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/resumen/PestanaResumenGastos.kt
 package es.nuskysoftware.marketsales.ui.composables.resumen
 
+// Responsabilidad: Muestra los gastos registrados y sus importes en el resumen del mercadillo.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +20,7 @@ import es.nuskysoftware.marketsales.utils.MonedaUtils
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Presenta las líneas de gastos y los totales del mercadillo consultado.
 fun PestanaResumenGastos(
     mercadilloId: String
 ) {

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaArticulos.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla de catálogo de artículos, precios, categorías y control de existencias.
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,6 +57,7 @@ import es.nuskysoftware.marketsales.utils.MonedaUtils   // ✅ nuevo import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta los artículos del catálogo y los diálogos de gestión; las operaciones se delegan al ViewModel.
 fun PantallaArticulos(
     navController: NavController? = null
 ) {
@@ -108,12 +111,14 @@ fun PantallaArticulos(
         colorNuevaCategoria = Color(0xFFD1C4E9)
     }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (articuloUiState.message).
     LaunchedEffect(articuloUiState.message) {
         articuloUiState.message?.let { message ->
             snackbarHostState.showSnackbar(message)
             articuloViewModel.limpiarMensaje()
         }
     }
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (articuloUiState.error).
     LaunchedEffect(articuloUiState.error) {
         articuloUiState.error?.let { error ->
             snackbarHostState.showSnackbar(error)
@@ -121,6 +126,7 @@ fun PantallaArticulos(
         }
     }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (categorias, pendingSeleccionarCategoriaPorNombre).
     LaunchedEffect(categorias, pendingSeleccionarCategoriaPorNombre) {
         val nombre = pendingSeleccionarCategoriaPorNombre ?: return@LaunchedEffect
         categorias.firstOrNull { it.nombre == nombre }?.let { nueva ->

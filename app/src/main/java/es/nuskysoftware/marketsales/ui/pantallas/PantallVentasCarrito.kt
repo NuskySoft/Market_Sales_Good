@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaVentasCarrito.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Presenta el contenido de la venta en preparación y permite revisar las líneas antes de confirmar.
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +36,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Permite revisar las líneas que componen la venta y acceder a las acciones previas a su confirmación.
 fun PantallaVentasCarrito(
     navController: NavController,
     // Para compartir el mismo VM de PantallaVentas, pásame su backStackEntry si lo usas así

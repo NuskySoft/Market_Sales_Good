@@ -1,6 +1,8 @@
 // PantallaConfiguracion.kt V10 - SIMPLIFICADO PARA SISTEMA MONOUSUARIO
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Interfaz de ajustes del dispositivo, idioma, apariencia, moneda y otras preferencias.
+
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz de ajustes del dispositivo, idioma, apariencia, moneda y otras preferencias.
 fun PantallaConfiguracion(
     navController: NavController? = null
 ) {

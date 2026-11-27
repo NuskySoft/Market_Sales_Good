@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaCategorias.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla para consultar, crear, editar y eliminar categorías del catálogo.
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta las categorías y las acciones disponibles para su gestión.
 fun PantallaCategorias(
     navController: NavController? = null
 ) {
@@ -82,6 +85,7 @@ fun PantallaCategorias(
         }
     }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (uiState.error).
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(error)

@@ -8,6 +8,8 @@
  */
 package es.nuskysoftware.marketsales.ui.navigation
 
+// Responsabilidad: Declara las rutas y argumentos del flujo de arqueo, resultado y asignación de saldo.
+
 import androidx.navigation.compose.composable
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder

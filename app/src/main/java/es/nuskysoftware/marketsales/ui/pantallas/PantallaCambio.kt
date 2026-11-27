@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaCambio.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Interfaz auxiliar para calcular o mostrar el cambio de efectivo.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -19,6 +21,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz auxiliar para calcular o mostrar el cambio de efectivo.
 fun PantallaCambio(
     totalFormateado: String,
     onBack: () -> Unit,

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Formulario de datos fiscales y de contacto de la empresa para la cuenta activa.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +25,7 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Formulario de datos fiscales y de contacto de la empresa para la cuenta activa.
 fun PantallaDatosEmpresa(navController: NavController? = null) {
     val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     val context = LocalContext.current
@@ -39,6 +42,7 @@ fun PantallaDatosEmpresa(navController: NavController? = null) {
     var pais by remember { mutableStateOf("") }
     var cargado by remember { mutableStateOf(false) }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (empresaState).
     LaunchedEffect(empresaState) {
         if (!cargado && empresaState != null) {
             nif = empresaState!!.nif

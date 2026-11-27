@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/TecladoNumerico.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Teclado numérico reutilizable para introducir importes y cantidades sin depender del teclado del sistema.
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +29,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
  * - Botón borrar con borde rojo (error)
  */
 @Composable
+// Teclado numérico reutilizable para introducir importes y cantidades sin depender del teclado del sistema.
 fun TecladoNumerico(
     onDigitClick: (String) -> Unit,
     onClearClick: () -> Unit,

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/LoginScreen.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Componentes de la interfaz de identificación y registro de usuario.
+
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,6 +26,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Componentes de la interfaz de identificación y registro de usuario.
 fun LoginScreen(
     viewModel: AuthViewModel,
     onLoggedIn: () -> Unit
@@ -47,22 +50,9 @@ fun LoginScreen(
     }
     val googleClient = remember(gso) { GoogleSignIn.getClient(context, gso) }
 
-//    val googleLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.StartActivityForResult()
 //    ) { result ->
-//        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-//        try {
-//            val account = task.getResult(ApiException::class.java)
-//            val idToken = account.idToken
-//            if (!idToken.isNullOrEmpty()) {
-//                viewModel.signInWithGoogle(idToken)
 //            } else {
-//                Log.e(TAG, "Google ID Token nulo/vacío")
-//            }
 //        } catch (e: ApiException) {
-//            Log.e(TAG, "Google Sign-In falló: code=${e.statusCode}", e)
-//        }
-//    }
     val googleLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->

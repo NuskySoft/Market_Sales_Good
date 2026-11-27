@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaSplash.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla inicial de carga e identidad visual de la aplicación.
+
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -24,6 +26,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.launch
 
 @Composable
+// Presenta la animación de arranque y ejecuta la preparación asociada a esta pantalla.
 fun PantallaSplash() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()

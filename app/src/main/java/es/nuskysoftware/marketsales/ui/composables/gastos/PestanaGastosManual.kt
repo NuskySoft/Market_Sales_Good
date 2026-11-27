@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/gastos/PestanaGastosManual.kt
 package es.nuskysoftware.marketsales.ui.composables.gastos
 
+// Responsabilidad: Permite introducir gastos manuales, incluyendo descripción e importe.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,6 +22,7 @@ import es.nuskysoftware.marketsales.utils.MonedaUtils
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Permite introducir gastos manuales, incluyendo descripción e importe.
 fun PestanaGastosManual(
     gastosViewModel: GastosViewModel,
     mercadilloActivo: MercadilloEntity,

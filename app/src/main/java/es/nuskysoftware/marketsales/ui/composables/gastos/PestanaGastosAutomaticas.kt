@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/gastos/PestanaGastosAutomaticas.kt
 package es.nuskysoftware.marketsales.ui.composables.gastos
 
+// Responsabilidad: Presenta las opciones de gastos automáticos del mercadillo.
+
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,6 +20,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Presenta las opciones de gastos automáticos del mercadillo.
 fun PestanaGastosAutomaticas(
     gastosViewModel: GastosViewModel,
     mercadilloActivo: MercadilloEntity

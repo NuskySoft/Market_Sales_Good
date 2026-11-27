@@ -8,6 +8,7 @@
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="receipt_secrets.xml" />
+    <exclude domain="sharedpref" path="receipt_settings.xml" />
     <exclude domain="file" path="receipts/" />
     <!--
    <include domain="sharedpref" path="."/>

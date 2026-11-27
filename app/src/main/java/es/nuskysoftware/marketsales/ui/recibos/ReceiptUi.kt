@@ -52,7 +52,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             try {
                 context.contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
                 settings.folder=uri.toString();folder=uri.toString()
-                ReceiptWorker.request(context)
+                ReceiptWorker.requestCopy(context)
             }catch(e:Exception){message=t(en,"La carpeta no permite acceso persistente","Folder does not allow persistent access")}
         }
     }
@@ -172,7 +172,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                 }
                 if(tested.provider=="outlook")authorized=tested
                 previous=tested;secret="";message=t(en,"Prueba aceptada. Correo guardado.","Test accepted. Mail settings saved.")
-                ReceiptWorker.request(context)
+                ReceiptWorker.requestMail(context)
             }catch(e:CancellationException){throw e}
             catch(e:Exception){message=t(en,"No se pudo confirmar la prueba. Revisa la configuración y conexión.","Could not confirm test. Check settings and connection.")}
             finally{busy=false}
@@ -368,7 +368,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
 @Composable fun MailQueueEntry(onClick:()->Unit) {
     val context=LocalContext.current;val en=language()
     val owner by ConfigurationManager.usuarioLogueado.collectAsState();val premium by ConfigurationManager.esPremium.collectAsState()
-    val rows by remember(owner){AppDatabase.getDatabase(context).receiptDocumentDao().observeMail(owner.orEmpty())}.collectAsState(initial=emptyList())
+    val rows by remember(owner){AppDatabase.getDatabase(context).receiptDocumentDao().observeMail(owner.orEmpty(),ReceiptSettings.deviceId(context))}.collectAsState(initial=emptyList())
     if(premium || rows.isNotEmpty()){
         val pending=rows.count{it.state in listOf("PENDING","SENDING","ERROR","UNCERTAIN")}
         OutlinedButton(onClick=onClick,modifier=Modifier.fillMaxWidth()){Text(t(en,"Envíos de recibos","Receipt deliveries") + if(pending>0)" ($pending)" else "")}
@@ -381,7 +381,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     val context=LocalContext.current;val en=language();val scope=rememberCoroutineScope()
     val service=remember{ReceiptService(context)};val owner=service.owner()
     val dao=remember{AppDatabase.getDatabase(context).receiptDocumentDao()}
-    val rows by remember(owner){dao.observeMail(owner)}.collectAsState(initial=emptyList())
+    val rows by remember(owner){dao.observeMail(owner,ReceiptSettings.deviceId(context))}.collectAsState(initial=emptyList())
     val premium by ConfigurationManager.esPremium.collectAsState()
     var retry by remember{mutableStateOf<es.nuskysoftware.marketsales.data.local.entity.ReceiptMailEntity?>(null)}
     var recipient by remember{mutableStateOf("")}
@@ -416,7 +416,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             if(mail.state=="UNCERTAIN")Text(t(en,"El correo podría haberse enviado ya. Reintentar puede duplicarlo.","Mail may already have been sent. Retrying may duplicate it."))
             OutlinedTextField(recipient,{recipient=it},label={Text(t(en,"Destinatario","Recipient"))},singleLine=true)
         }},confirmButton={TextButton(enabled=premium && ReceiptMail.validAddress(recipient.trim()),onClick={
-            scope.launch{DemoAccess.requireOwner(owner);DemoAccess.requirePremium();dao.retry(owner,mail.id,recipient.trim());ReceiptWorker.request(context);retry=null}
+            scope.launch{DemoAccess.requireOwner(owner);DemoAccess.requirePremium();dao.retry(owner,mail.id,recipient.trim());ReceiptWorker.requestMail(context);retry=null}
         }){Text(t(en,"Reintentar","Retry"))}},dismissButton={TextButton(onClick={retry=null}){Text(t(en,"Cancelar","Cancel"))}})
     }
 }

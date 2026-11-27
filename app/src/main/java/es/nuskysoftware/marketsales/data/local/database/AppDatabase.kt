@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE recibos ADD COLUMN pdfOriginal INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("CREATE TABLE IF NOT EXISTS receipt_documents (owner TEXT NOT NULL, receiptId TEXT NOT NULL, snapshot TEXT NOT NULL, copiedTo TEXT, PRIMARY KEY(owner, receiptId))")
-                db.execSQL("CREATE TABLE IF NOT EXISTS receipt_mail (owner TEXT NOT NULL, id TEXT NOT NULL, receiptId TEXT NOT NULL, recipient TEXT NOT NULL, created INTEGER NOT NULL, state TEXT NOT NULL, detail TEXT NOT NULL, sender TEXT NOT NULL, PRIMARY KEY(owner, id))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS receipt_mail (owner TEXT NOT NULL, id TEXT NOT NULL, receiptId TEXT NOT NULL, recipient TEXT NOT NULL, created INTEGER NOT NULL, state TEXT NOT NULL, detail TEXT NOT NULL, sender TEXT NOT NULL, device TEXT NOT NULL, PRIMARY KEY(owner, id))")
             }
         }
 

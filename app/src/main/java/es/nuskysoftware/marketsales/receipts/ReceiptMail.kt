@@ -26,7 +26,8 @@ object ReceiptMail {
     }.getOrDefault(false)
 
     fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
-        require(validAddress(recipient))
+        require(validAddress(recipient) && validAddress(config.address))
+        require(config.name.none { it=='\r' || it=='\n' })
         if(config.provider=="outlook") {
             return MicrosoftMail.send(config,recipient,file,settings,english,persistRefresh)
         }
@@ -103,7 +104,7 @@ object MicrosoftMail {
         check(available){"Outlook pendiente de registrar en Microsoft"}
         val r=request(BASE+"devicecode","POST",form("client_id" to BuildConfig.MS_MAIL_CLIENT_ID,"scope" to SCOPES))
         check(r.status==200){"No se pudo iniciar autorización"}
-        return DeviceCode(r.body.getString("user_code"),r.body.getString("device_code"),r.body.getString("verification_uri"),r.body.getInt("expires_in"),r.body.optInt("interval",5))
+        return DeviceCode(r.body.getString("user_code"),r.body.getString("device_code"),"https://microsoft.com/devicelogin",r.body.getInt("expires_in"),r.body.optInt("interval",5))
     }
     /** Espera únicamente durante la sesión explícita de autorización, respetando el intervalo del proveedor. */
     suspend fun authorize(code:DeviceCode):MailConfig {

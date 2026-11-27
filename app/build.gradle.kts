@@ -91,8 +91,8 @@ android {
 
 dependencies {
     // SMTP autenticado desde Android, sin intermediario de Market Sales.
-    implementation("com.sun.mail:android-mail:1.6.7")
-    implementation("com.sun.mail:android-activation:1.6.7")
+    implementation("com.sun.mail:android-mail:1.6.8")
+    implementation("com.sun.mail:android-activation:1.6.8")
     // ===== Compose BOM (versiona TODAS las libs de androidx.compose.*) =====
     implementation(platform(libs.androidx.compose.bom))
 

@@ -14,6 +14,18 @@ import javax.crypto.spec.GCMParameterSpec
 /** Configuración local por dispositivo/cuenta; las credenciales nunca se guardan en Room ni Firebase. */
 class ReceiptSettings(private val context: Context, private val owner: String) {
     private val id = ReceiptFiles.key(owner)
+    companion object {
+        /** Identidad local no incluida en copias Android: evita reenviar colas restauradas en otro móvil. */
+        @Synchronized fun deviceId(context:Context):String {
+            val file=java.io.File(context.noBackupFilesDir,"receipt-device-id")
+            if(file.isFile)file.readText().trim().takeIf{it.isNotBlank()}?.let{return it}
+            val id=java.util.UUID.randomUUID().toString()
+            val atomic=android.util.AtomicFile(file);val out=atomic.startWrite()
+            try{out.write(id.toByteArray(Charsets.UTF_8));atomic.finishWrite(out)}
+            catch(e:Exception){atomic.failWrite(out);throw e}
+            return id
+        }
+    }
     private val preferences = context.getSharedPreferences("receipt_settings", Context.MODE_PRIVATE)
     private val secrets = context.getSharedPreferences("receipt_secrets", Context.MODE_PRIVATE)
     var ask: Boolean

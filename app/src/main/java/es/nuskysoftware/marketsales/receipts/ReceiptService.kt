@@ -59,10 +59,11 @@ class ReceiptService(private val context: Context) {
             check(dao.find(owner,id)!=null || local.isFile){"PDF no disponible"}
             // El identificador de una solicitud es independiente del recibo para permitir reenvíos voluntarios.
             // Se conserva además la dirección autorizada para no enviar con otra cuenta tras una edición.
-            check(dao.activeRequest(owner,id,recipient)==0) { "Ya existe una solicitud pendiente o incierta" }
-            dao.enqueue(ReceiptMailEntity(owner,UUID.randomUUID().toString(),id,recipient,System.currentTimeMillis(),sender=config.address))
+            val device=ReceiptSettings.deviceId(context)
+            check(dao.activeRequest(owner,device,id,recipient)==0) { "Ya existe una solicitud pendiente o incierta" }
+            dao.enqueue(ReceiptMailEntity(owner,UUID.randomUUID().toString(),id,recipient,System.currentTimeMillis(),sender=config.address,device=device))
         }
-        runCatching { ReceiptWorker.request(context) }
+        runCatching { ReceiptWorker.requestMail(context) }
     }
 
     /** Exportación explícita: permite destinos que no soportan la selección de carpetas. */

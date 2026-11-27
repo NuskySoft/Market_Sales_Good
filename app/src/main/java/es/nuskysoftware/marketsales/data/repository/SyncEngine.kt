@@ -155,13 +155,16 @@ class SyncEngine(context: Context) {
             val raw = snap.data
             val remote = raw?.let { defaults(t) + it + mapOf("uid" to uid, "lastModified" to ((it["lastModified"] as? Number)?.toLong() ?: 0L)) }
             val selected = if (local != null && (remote == null || newer(local, remote))) local else remote ?: return@runTransaction null
-            val result = selected + mapOf("esPremium" to (raw?.get("esPremium") ?: false), "sincronizadoFirebase" to true)
+            val result = selected + mapOf("sincronizadoFirebase" to true)
             tx.set(ref, result)
             result
         }.await() ?: return
         if (!DemoAccess.canSync(uid)) return
         apply(t, uid, winner, local)
-        ConfigurationManager.updateUserPremium(winner["esPremium"] == true)
+        // apply() may reject an outdated snapshot; publish the actual committed row, not winner.
+        db.userDao().getUserById(uid)?.let { account ->
+            ConfigurationManager.applyAccountFromRoom(uid, account.esPremium, account.email, account.displayName)
+        }
     }
     private suspend fun syncStock(uid: String, generation: String) {
         val dao = db.stockMovementDao()

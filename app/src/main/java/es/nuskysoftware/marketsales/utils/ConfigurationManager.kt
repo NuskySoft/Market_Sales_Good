@@ -26,12 +26,29 @@ object ConfigurationManager {
 
     private val _isAuthenticated = MutableStateFlow(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null)
 
+    @Volatile private var roomAccountOwner: String? = null
+    @Volatile private var roomAccountPremium: Boolean? = null
+
+    /** Publish only the committed Room row of the currently selected account. */
+    @Synchronized
+    fun applyAccountFromRoom(uid: String, premium: Boolean?, email: String? = null, name: String? = null) {
+        if (uid != _usuarioLogueado.value) return
+        roomAccountOwner = uid
+        roomAccountPremium = premium
+        if (premium == null) { markPremiumUnknown(); return }
+        _esPremium.value = premium
+        _versionApp.value = if (premium) 1 else 0
+        email?.let { _usuarioEmail.value = it }
+        name?.let { _displayName.value = it }
+        _esPremiumReady.value = true
+    }
+
     private var lastSuccessfulPremiumState: Boolean? = null
 
     private var lastUpdateTimestamp = 0L
 
     // Gate de premium resuelto para evitar interstitials en transición (Solución B)
-    private val _esPremiumReady = MutableStateFlow(true)
+    private val _esPremiumReady = MutableStateFlow(AppModePolicy.isLocalOnly(_usuarioLogueado.value))
     val esPremiumReady: StateFlow<Boolean> = _esPremiumReady.asStateFlow()
 
     // ========== ESTADOS PÚBLICOS ==========
@@ -74,7 +91,7 @@ object ConfigurationManager {
         Log.d("ConfigurationManager", "🔧 SET PREMIUM (Development): ${_esPremium.value} → $isPremium")
 
         _esPremium.value = isPremium
-        _versionApp.value = if (isPremium) 1 else 0
+        _versionApp.value = if (_esPremium.value) 1 else 0
 
         Log.d("ConfigurationManager", "✅ Premium establecido: $isPremium")
     }
@@ -87,7 +104,7 @@ object ConfigurationManager {
 
     fun markPremiumKnown() {
         // Llamar cuando YA sepamos el estado real de premium (éxito o error)
-        _esPremiumReady.value = true
+        if (AppModePolicy.isLocalOnly(_usuarioLogueado.value) || (roomAccountOwner == _usuarioLogueado.value && roomAccountPremium != null)) _esPremiumReady.value = true
     }
 
     // ========== MÉTODOS PRINCIPALES ==========
@@ -150,13 +167,13 @@ object ConfigurationManager {
      * Login de usuario
      */
     fun login(userId: String, email: String?, displayName: String? = null, isPremium: Boolean = false) {
-        _usuarioLogueado.value = userId
+        setUsuarioLogueado(userId)
         _usuarioEmail.value = email
         _displayName.value = displayName
         //_esPremium.value = isPremium
         setEsPremiumProtected(isPremium, "updateUserConfiguration")
 
-        _versionApp.value = if (isPremium) 1 else 0
+        _versionApp.value = if (_esPremium.value) 1 else 0
         _isAuthenticated.value = true
 
         // premium resuelto tras login
@@ -172,7 +189,8 @@ object ConfigurationManager {
         Log.d("ConfigurationManager", "   - lastSuccessfulPremiumState: $lastSuccessfulPremiumState")
         Log.d("ConfigurationManager", "   - isAuthenticated: ${_isAuthenticated.value}")
 
-        _esPremium.value = newValue
+        // A transport result or fallback must never override a committed local account row.
+        _esPremium.value = if (roomAccountOwner == _usuarioLogueado.value && roomAccountPremium != null) roomAccountPremium!! else newValue
         Log.d("ConfigurationManager", "✅ esPremium cambiado: $oldValue → $newValue (fuente: $source)")
     }
 
@@ -230,7 +248,7 @@ object ConfigurationManager {
      */
     fun updateUserPremium(isPremium: Boolean) {
         setEsPremiumProtected(isPremium, "updateUserConfiguration")
-        _versionApp.value = if (isPremium) 1 else 0
+        _versionApp.value = if (_esPremium.value) 1 else 0
     }
 
     // ========== MÉTODOS UPDATE EXISTENTES ==========
@@ -244,7 +262,7 @@ object ConfigurationManager {
         _fuente.value = fuente
         _temaOscuro.value = modoOscuro
         setEsPremiumProtected(isPremium, "updateUserConfiguration")
-        _versionApp.value = if (isPremium) 1 else 0
+        _versionApp.value = if (_esPremium.value) 1 else 0
     }
 
     // Añade estos logs TEMPORALES en ConfigurationManager.kt en estos métodos:
@@ -277,6 +295,7 @@ object ConfigurationManager {
         Log.d("ConfigurationManager", "   - isAuthenticated: ${_isAuthenticated.value}")
         Log.d("ConfigurationManager", "   - esPremium: ${_esPremium.value}")
 
+        setUsuarioLogueado(if (isAuthenticated) usuarioId else AppModePolicy.DEMO_USER_ID)
         // Actualizar valores de configuración
         _idioma.value = idioma
         _fuente.value = fuente
@@ -289,14 +308,7 @@ object ConfigurationManager {
         // Calcular estado premium
         val isPremium = planUsuario == "PREMIUM" && isAuthenticated
         setEsPremiumProtected(isPremium, "updateUserConfiguration")
-        _versionApp.value = if (isPremium) 1 else 0
-
-        // Configurar usuario
-        _usuarioLogueado.value = if (isAuthenticated && usuarioId != null) {
-            usuarioId
-        } else {
-            es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
-        }
+        _versionApp.value = if (_esPremium.value) 1 else 0
 
         // 💾 Guardar último estado premium válido para protección
         if (isPremium) {
@@ -349,8 +361,17 @@ object ConfigurationManager {
         _usuarioEmail.value = email
     }
 
+    @Synchronized
     fun setUsuarioLogueado(userId: String?) {
-        _usuarioLogueado.value = userId ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
+        val next = userId ?: AppModePolicy.DEMO_USER_ID
+        if (_usuarioLogueado.value != next) {
+            roomAccountOwner = null
+            roomAccountPremium = null
+            _esPremium.value = false
+            _versionApp.value = 0
+            _esPremiumReady.value = AppModePolicy.isLocalOnly(next)
+        }
+        _usuarioLogueado.value = next
     }
 
     fun setUsuarioId(userId: String?) {
@@ -363,7 +384,7 @@ object ConfigurationManager {
 
     fun setIsPremium(isPremium: Boolean) {
         setEsPremiumProtected(isPremium, "updateUserConfiguration")
-        _versionApp.value = if (isPremium) 1 else 0
+        _versionApp.value = if (_esPremium.value) 1 else 0
     }
 
     fun setVersionApp(versionApp: Int) {

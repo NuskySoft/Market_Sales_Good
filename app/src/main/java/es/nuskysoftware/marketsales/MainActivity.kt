@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        es.nuskysoftware.marketsales.data.repository.AccountSession.start(applicationContext)
         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.start(applicationContext)
         iniciarAutoestados()
         runCatching { es.nuskysoftware.marketsales.work.StockMovementScheduler.start(applicationContext) }

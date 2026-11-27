@@ -68,3 +68,11 @@ El registro de Android Studio alcanza KSP y detecta `Unused parameter: now` en S
 ### Segundo registro de compilación
 
 Room/KSP supera el error anterior. El compilador Kotlin detecta una salida `return@launch` desde el bloque no inline de la transacción en AsignarSaldoViewModel. Se sustituye por validación del destino dentro de la transacción: si falta, se revierte y se muestra el error local, sin anunciar guardado correcto. Se conserva la cancelación de la corrutina. Revisadas las salidas etiquetadas de los bloques modificados. Compilación completa pendiente de repetir en Android Studio.
+
+## Compilación y discrepancia del plan — 27-11-2026
+
+- Registro aportado por el usuario: `assembleDebug` termina `BUILD SUCCESSFUL` en 3m21s sobre la corrección de asignación de saldo. Esto valida la compilación de esa revisión; no el funcionamiento ni los cambios siguientes.
+- Prueba real: Configuración muestra FREE mientras Room muestra esPremium=1. Causa encontrada en código: syncProfile forzaba el esPremium remoto sobre el perfil seleccionado por revisión; apply podía rechazar esa escritura local y después se publicaba el candidato en memoria sin comprobar qué quedó en Room. También existían fallbacks de arranque a FREE y faltaba observar los cambios locales de la cuenta para mantener la interfaz al día.
+- Corrección: se conserva el plan del perfil que gana por fecha/criterio estable, sin forzar esPremium remoto. Tras la escritura se publica la fila realmente guardada. AccountSession observa Room para el UID activo, también offline; los fallbacks de memoria no sustituyen una fila local conocida. Cambio de cuenta borra el estado anterior; mientras falta la fila se muestra cargando y no se muestran anuncios por un FREE supuesto.
+- Se añaden tres pruebas instrumentadas: Premium local frente a fallback FREE, aislamiento al cambiar de cuenta y transición a FREE por nueva fila local confirmada. Pendientes de ejecutar en Android. Mantener 2.4 y Room 20. No se cambian directamente cuentas ni datos del servidor para ocultar la discrepancia.
+- Pendiente repetir compilación tras esta corrección, abrir offline y verificar coherencia entre configuración, acceso a funciones, anuncios y usuarios de Room; repetir online y cambio de cuenta.

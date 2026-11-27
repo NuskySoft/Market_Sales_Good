@@ -9,6 +9,7 @@ internal object SpanishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "account_loading" -> "Cargando cuenta…"
         "recovery_decision_required" -> "Antes de guardar, decide si quieres recuperar los datos anteriores o empezar de cero."
         "category_protected" -> "La categoría Sin categorizar no se puede borrar."
         "category_delete_move" -> "¿Eliminar la categoría {nombre}? Si tiene productos, todos pasarán a Sin categorizar. Las ventas anteriores se conservarán."

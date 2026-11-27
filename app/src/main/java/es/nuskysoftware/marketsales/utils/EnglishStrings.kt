@@ -10,6 +10,7 @@ internal object EnglishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "account_loading" -> "Loading account…"
         "recovery_decision_required" -> "Before saving, choose whether to recover your previous data or start again."
         "category_protected" -> "The Uncategorized category cannot be deleted."
         "category_delete_move" -> "Delete category {nombre}? Any products in it will move to Uncategorized. Previous sales will be preserved."

@@ -43,6 +43,7 @@ fun PantallaConfiguracion(
     val isDarkTheme by ConfigurationManager.temaOscuro.collectAsState()
     val currentMoneda by ConfigurationManager.moneda.collectAsState()
     val esPremium by ConfigurationManager.esPremium.collectAsState()
+    val premiumReady by ConfigurationManager.esPremiumReady.collectAsState()
     val usuarioEmail by ConfigurationManager.usuarioEmail.collectAsState()
     val isAuthenticated by ConfigurationManager.isAuthenticated.collectAsState()
     val appVersionText = ConfigurationManager.versionAppValue
@@ -89,7 +90,9 @@ fun PantallaConfiguracion(
             ) {
                 // Información de cuenta V10
                 item {
-                    TarjetaInformacionCuenta(
+                    if (isAuthenticated && !premiumReady) {
+                        Text(StringResourceManager.getString("account_loading", currentLanguage))
+                    } else TarjetaInformacionCuenta(
                         email = usuarioEmail ?: if (isAuthenticated) "usuario@email.com" else StringResourceManager.getString("usuario_invitado", currentLanguage),
                         esPremium = esPremium,
                         isAuthenticated = isAuthenticated,
@@ -218,7 +221,7 @@ fun PantallaConfiguracion(
                 }
 
                 // Promoción Premium para usuarios FREE
-                if (!esPremium) {
+                if (premiumReady && !esPremium) {
                     item {
                         TarjetaPromocionPremium(language = currentLanguage)
                     }

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Contiene los textos españoles utilizados por el sistema de traducciones de la aplicación.
+
 internal object SpanishStrings {
 
     // ui/components/BarraAccionesVenta.kt

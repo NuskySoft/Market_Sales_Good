@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/GoogleAuthHelper.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Facilita el acceso a la autenticación Google desde los componentes Android.
+
 import android.content.Context
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient

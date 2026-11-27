@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/EnglishStrings.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Contiene las traducciones inglesas indexadas por las mismas claves que el catálogo de textos español.
+
 internal object EnglishStrings {
 
     // ui/components/BarraAccionesVenta.kt

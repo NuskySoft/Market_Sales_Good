@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Agrupa criterios de filtrado de mercadillos.
+
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 
 object MercadillosFilters {

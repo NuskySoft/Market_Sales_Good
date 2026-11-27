@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/FooterMarca.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Presenta el pie de marca utilizado en la interfaz.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text

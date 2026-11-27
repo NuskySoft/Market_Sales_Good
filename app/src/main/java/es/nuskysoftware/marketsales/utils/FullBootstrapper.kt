@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.utils
+
+// Responsabilidad: Agrupa el punto de entrada para inicializar los datos de la aplicación.
 import android.content.Context
 import es.nuskysoftware.marketsales.data.repository.SyncEngine
 object FullBootstrapper {

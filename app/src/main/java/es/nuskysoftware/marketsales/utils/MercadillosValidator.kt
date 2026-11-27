@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Comprueba los datos introducidos en la planificación de mercadillos.
+
 import android.os.Build
 import androidx.annotation.RequiresApi
 import java.time.LocalDate

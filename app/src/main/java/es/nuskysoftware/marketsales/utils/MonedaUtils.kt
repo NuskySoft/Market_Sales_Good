@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/MonedaUtils.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Agrupa funciones para mostrar los importes con el símbolo de moneda configurado.
+
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale

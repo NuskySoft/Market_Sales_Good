@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Resuelve las claves de texto según el idioma seleccionado.
+
 import java.util.Locale
 
 /**
@@ -9,6 +11,7 @@ import java.util.Locale
 
 
 object StringResourceManager {
+    // Obtiene la traducción asociada a la clave y al idioma solicitado.
     fun getString(key: String, language: String = "es"): String {
         return when (language) {
             "en" -> EnglishStrings.get(key)

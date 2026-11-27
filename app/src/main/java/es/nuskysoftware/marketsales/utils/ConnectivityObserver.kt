@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.utils
+
+// Responsabilidad: Observa el estado de conectividad mediante las APIs de Android.
 import android.content.Context
 import android.net.*
 import kotlinx.coroutines.flow.MutableStateFlow

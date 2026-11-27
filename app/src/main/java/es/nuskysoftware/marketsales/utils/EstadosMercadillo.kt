@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/EstadosMercadillo.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Define los códigos, presentación y reglas auxiliares de los estados de mercadillo.
+
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import java.text.SimpleDateFormat
@@ -121,6 +123,7 @@ object EstadosMercadillo {
     fun puedeRecibirVentas(estado: Estado): Boolean = estado == Estado.EN_CURSO
 
     /** Cálculo del estado automático (fecha/hora/arqueo) */
+    // Determina el código de estado a partir de las condiciones temporales y del mercadillo.
     fun calcularEstadoAutomatico(
         saldoInicial: Double?,
         fecha: String,

@@ -21,13 +21,13 @@ interface LineasVentaDao {
 
     // Líneas de un recibo (en orden de línea)
     //@Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo ORDER BY numeroLinea ASC")
-    @Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo AND activo = 1 ORDER BY numeroLinea ASC")
-    fun observarLineasPorRecibo(idRecibo: String): Flow<List<LineaVentaEntity>>
+    @Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY numeroLinea ASC")
+    fun observarLineasPorRecibo(idRecibo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<LineaVentaEntity>>
 
     // Líneas de un mercadillo (si lo necesitas para vistas agregadas)
     //@Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo ORDER BY numeroLinea ASC")
-    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY numeroLinea ASC")
-    fun observarLineasPorMercadillo(idMercadillo: String): Flow<List<LineaVentaEntity>>
+    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY numeroLinea ASC")
+    fun observarLineasPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<LineaVentaEntity>>
 
     @Upsert
     suspend fun upsert(linea: LineaVentaEntity)
@@ -37,18 +37,18 @@ interface LineasVentaDao {
     suspend fun existeAlgunoDeUsuario(uid: String): Boolean
 
     //@Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo ORDER BY numeroLinea")
-    @Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo AND activo = 1 ORDER BY numeroLinea")
-    fun obtenerLineasPorRecibo(idRecibo: String): Flow<List<LineaVentaEntity>>
+    @Query("SELECT * FROM lineas_venta WHERE idRecibo = :idRecibo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY numeroLinea")
+    fun obtenerLineasPorRecibo(idRecibo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<LineaVentaEntity>>
 
     //@Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo ORDER BY numeroLinea")
-    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY numeroLinea")
-    fun obtenerLineasPorMercadillo(idMercadillo: String): Flow<List<LineaVentaEntity>>
+    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY numeroLinea")
+    fun obtenerLineasPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<LineaVentaEntity>>
 
     // ⚠️ Con PK compuesta, una única 'idLinea' ya no identifica por sí sola; mantenemos el método por compatibilidad,
     // pero para lecturas puntuales es mejor usar ambos campos.
     //@Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND idLinea = :idLinea")
-    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND idLinea = :idLinea AND activo = 1")
-    suspend fun obtenerLineaPorId(idMercadillo: String, idLinea: String): LineaVentaEntity?
+    @Query("SELECT * FROM lineas_venta WHERE idMercadillo = :idMercadillo AND idLinea = :idLinea AND activo = 1 AND idUsuario = :sessionOwner ")
+    suspend fun obtenerLineaPorId(idMercadillo: String, idLinea: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): LineaVentaEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarLinea(linea: LineaVentaEntity)
@@ -62,29 +62,29 @@ interface LineasVentaDao {
     @Delete
     suspend fun eliminarLinea(linea: LineaVentaEntity)
 
-    @Query("DELETE FROM lineas_venta WHERE idRecibo = :idRecibo")
-    suspend fun eliminarLineasPorRecibo(idRecibo: String)
+    @Query("DELETE FROM lineas_venta WHERE idRecibo = :idRecibo AND idUsuario = :sessionOwner ")
+    suspend fun eliminarLineasPorRecibo(idRecibo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
-    @Query("DELETE FROM lineas_venta WHERE idMercadillo = :idMercadillo")
-    suspend fun eliminarLineasPorMercadillo(idMercadillo: String)
+    @Query("DELETE FROM lineas_venta WHERE idMercadillo = :idMercadillo AND idUsuario = :sessionOwner ")
+    suspend fun eliminarLineasPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     // ✅ Útil si alguna vez quieres contar (opcional)
     //@Query("SELECT COUNT(*) FROM lineas_venta WHERE idMercadillo = :idMercadillo")
-    @Query("SELECT COUNT(*) FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1")
-    suspend fun contarLineasPorMercadillo(idMercadillo: String): Int
+    @Query("SELECT COUNT(*) FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1 AND idUsuario = :sessionOwner ")
+    suspend fun contarLineasPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Int
 
     // ✅ Para reinicio por mercadillo: devuelve el mayor idLinea (lexicográfico funciona con 0-padding)
     //@Query("SELECT MAX(idLinea) FROM lineas_venta WHERE idMercadillo = :idMercadillo")
-    @Query("SELECT MAX(idLinea) FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1")
-    suspend fun obtenerMaxIdLineaPorMercadillo(idMercadillo: String): String?
+    @Query("SELECT MAX(idLinea) FROM lineas_venta WHERE idMercadillo = :idMercadillo AND activo = 1 AND idUsuario = :sessionOwner ")
+    suspend fun obtenerMaxIdLineaPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): String?
 
     // === Sincronización híbrida ===
     @Query("SELECT * FROM lineas_venta WHERE idUsuario = :userId AND sincronizadoFirebase = 0")
     suspend fun getPendientesSync(userId: String): List<LineaVentaEntity>
 
-    @Query("UPDATE lineas_venta SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idMercadillo = :mercadillo AND idLinea = :idLinea")
-    suspend fun marcarSincronizado(mercadillo: String, idLinea: String, timestamp: Long)
+    @Query("UPDATE lineas_venta SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idMercadillo = :mercadillo AND idLinea = :idLinea AND idUsuario = :sessionOwner ")
+    suspend fun marcarSincronizado(mercadillo: String, idLinea: String, timestamp: Long, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
-    @Query("UPDATE lineas_venta SET sincronizadoFirebase = 0 WHERE idMercadillo = :mercadillo AND idLinea = :idLinea")
-    suspend fun marcarPendiente(mercadillo: String, idLinea: String)
+    @Query("UPDATE lineas_venta SET sincronizadoFirebase = 0 WHERE idMercadillo = :mercadillo AND idLinea = :idLinea AND idUsuario = :sessionOwner ")
+    suspend fun marcarPendiente(mercadillo: String, idLinea: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 }

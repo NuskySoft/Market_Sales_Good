@@ -10,6 +10,23 @@ internal object EnglishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "account_loading" -> "Loading account…"
+        "recovery_decision_required" -> "Before saving, choose whether to recover your previous data or start again."
+        "category_protected" -> "The Uncategorized category cannot be deleted."
+        "category_delete_move" -> "Delete category {nombre}? Any products in it will move to Uncategorized. Previous sales will be preserved."
+        "no_pending_balances" -> "There are no balances awaiting assignment."
+        "balance_delete_confirm" -> "Delete this pending balance? The original market’s historical balance will remain unchanged."
+        "local_save_failed" -> "The data could not be saved on this device. Please try again."
+        "refund_payment_method" -> "How are you refunding the money?"
+        "permanent_delete_title" -> "WARNING: PERMANENT DELETION"
+        "permanent_delete_warning" -> "If you continue as a free user, all previous data stored on the server for your account will be permanently deleted. You will not be able to recover it, even if you become Premium later. Without a connection, deletion will remain pending. Do you confirm permanent deletion?"
+        "permanent_delete_action" -> "Delete permanently"
+        "recover_previous_data" -> "Recover previous data"
+        "recovery_first_chance" -> "Your account has previous data. Premium lets you recover it. If you continue free, you will start with an empty copy; previous data will be reserved until you decide to create new data."
+        "recovery_last_chance" -> "Before creating your first new record, you can still become Premium and recover previous data. If you continue free, we will ask for confirmation before deleting it permanently. You will then need to save again."
+        "continue_free" -> "Continue free"
+        "premium_recovery_info" -> "Your previous data remains reserved. This test version does not include Premium purchases. Once Premium is active on your account, data will be restored when connected, without mixing demo data."
+
         // Main screen
         "app_name" -> "Market Sales"
         "mercadillos" -> "Markets"

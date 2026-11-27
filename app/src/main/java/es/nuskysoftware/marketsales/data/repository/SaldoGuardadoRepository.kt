@@ -1,78 +1,56 @@
-// app/src/main/java/es/nuskysoftware/marketsales/data/repository/SaldoGuardadoRepository.kt
 package es.nuskysoftware.marketsales.data.repository
-import es.nuskysoftware.marketsales.utils.DemoAccess
-
-
 import android.content.Context
-import com.google.firebase.firestore.FirebaseFirestore
+import androidx.room.withTransaction
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.SaldoGuardadoEntity
-import es.nuskysoftware.marketsales.utils.ConfigurationManager
-import es.nuskysoftware.marketsales.utils.ConnectivityObserver
+import es.nuskysoftware.marketsales.utils.*
+import es.nuskysoftware.marketsales.work.BusinessSyncScheduler
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
-
 class SaldoGuardadoRepository(context: Context) {
-    private val db = AppDatabase.getDatabase(context)
-    private val dao = db.saldoGuardadoDao()                    // ✅ ahora existe
-    private val firestore = FirebaseFirestore.getInstance()
-    private val connectivity = ConnectivityObserver(context)
-
-    suspend fun getUltimoNoConsumido(): SaldoGuardadoEntity? = withContext(Dispatchers.IO) {
-        val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
-        dao.getUltimoNoConsumido(userId)
+    private val app = context.applicationContext
+    private val db = AppDatabase.getDatabase(app)
+    private val dao = db.saldoGuardadoDao()
+    fun pendientes(): Flow<List<SaldoGuardadoEntity>> = ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
+        dao.pendientes(uid ?: AppModePolicy.DEMO_USER_ID)
     }
-
+    suspend fun getUltimoNoConsumido(): SaldoGuardadoEntity? = pendientes().first().firstOrNull()
+    // Compatibility name: now appends instead of deleting any previous balance.
     suspend fun reemplazarGuardado(item: SaldoGuardadoEntity) = withContext(Dispatchers.IO) {
         DemoAccess.requireRegistered("demo_sin_asignar_saldo")
-        val userId = item.idUsuario
-        val previo = dao.getUltimoNoConsumido(userId)
-        if (previo != null) dao.deleteById(previo.idRegistro) // ✅ idRegistro existe en la Entity
-        dao.upsert(item.copy(sincronizadoFirebase = false))
-        sincronizar(item.idRegistro)
+        RecoveryGate(app).beforeWrite(item.idUsuario)
+        db.withTransaction {
+            DemoAccess.requireOwner(item.idUsuario)
+            dao.upsert(item.copy(saldoInicialGuardado = Money.round(item.saldoInicialGuardado), sincronizadoFirebase = false))
+        }
+        BusinessSyncScheduler.request(app)
     }
-
-    suspend fun marcarConsumido(id: String) = withContext(Dispatchers.IO) {
+    suspend fun asignar(id: String, destino: String) = withContext(Dispatchers.IO) {
         DemoAccess.requireRegistered("demo_sin_asignar_saldo")
-        dao.marcarConsumido(id)
-        sincronizar(id)
+        val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
+        db.withTransaction {
+            DemoAccess.requireOwner(uid)
+            val balance = dao.byId(id, uid) ?: error("Balance unavailable")
+            check(!balance.consumido && !balance.eliminado)
+            val market = db.mercadilloDao().getMercadilloById(destino) ?: error("Market unavailable")
+            check(market.userId == uid && market.estado in 1..3)
+            db.mercadilloDao().asignarSaldoInicial(destino, balance.saldoInicialGuardado)
+            dao.upsert(balance.copy(consumido = true, idMercadilloDestino = destino, version = balance.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        }
+        BusinessSyncScheduler.request(app)
     }
-
-    suspend fun borrarGuardado(id: String) = withContext(Dispatchers.IO) {
+    suspend fun marcarConsumido(id: String) = change(id, false)
+    suspend fun borrarGuardado(id: String) = change(id, true)
+    private suspend fun change(id: String, delete: Boolean) = withContext(Dispatchers.IO) {
         DemoAccess.requireRegistered("demo_sin_asignar_saldo")
-        dao.deleteById(id)
-        try {
-            firestore.collection("saldosGuardados").document(id).delete().await()
-        } catch (_: Exception) { }
-    }
-
-    private suspend fun sincronizar(id: String) {
-        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
-        try {
-            if (!connectivity.isConnected.first()) return
-            val userId = ConfigurationManager.getCurrentUserId() ?: return
-            val item = dao.getUltimoNoConsumido(userId) ?: return // si ya se consumió, no subimos nada
-            val datos = mapOf(
-                "idRegistro" to item.idRegistro,
-                "idUsuario" to item.idUsuario,
-                "idMercadilloOrigen" to item.idMercadilloOrigen,
-                "fechaMercadillo" to item.fechaMercadillo,
-                "lugarMercadillo" to item.lugarMercadillo,
-                "organizadorMercadillo" to item.organizadorMercadillo,
-                "horaInicioMercadillo" to item.horaInicioMercadillo,
-                "saldoInicialGuardado" to item.saldoInicialGuardado,
-                "consumido" to item.consumido,
-                "version" to item.version,
-                "lastModified" to item.lastModified,
-                "sincronizadoFirebase" to true
-            )
-            firestore.collection("saldosGuardados")
-                .document(item.idRegistro)
-                .set(datos).await()
-        } catch (_: Exception) { }
+        val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
+        db.withTransaction {
+            DemoAccess.requireOwner(uid)
+            val old = dao.byId(id, uid) ?: error("Balance unavailable")
+            check(!old.consumido && !old.eliminado)
+            dao.upsert(old.copy(consumido = !delete, eliminado = delete, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        }
+        BusinessSyncScheduler.request(app)
     }
 }
-
-

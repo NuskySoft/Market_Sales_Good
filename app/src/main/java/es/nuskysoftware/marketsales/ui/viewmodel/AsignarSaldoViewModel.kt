@@ -1,6 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AsignarSaldoViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+import androidx.room.withTransaction
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -107,7 +108,8 @@ class AsignarSaldoViewModel(
                     mercadilloOrigen = origen,
                     haySaldoGuardadoPrevio = hayGuardadoPrevio
                 )
-            } catch (_: Exception) {
+            } catch (failure: Exception) {
+                es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed")
                 _ui.value = UIStateAsignarSaldo(loading = false)
             }
         }
@@ -235,15 +237,15 @@ class AsignarSaldoViewModel(
                 lineas = buildList {
                     add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
                     add(LineaTexto(StringResourceManager.getString("guardar_saldo_uso", lang)))
-                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
+
                 }
             )
             ConfirmCaso.GUARDAR_CON_PROX -> TextoConfirm(
                 titulo = StringResourceManager.getString("guardar_saldo", lang),
                 lineas = buildList {
                     add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
-                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_limite", lang)))
-                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
+                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_uso", lang)))
+
                 }
             )
             ConfirmCaso.ASIGNAR_SIN_SALDO_DEST -> TextoConfirm(
@@ -275,48 +277,51 @@ class AsignarSaldoViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                when (d.modo) {
-                    IntermediaModo.GUARDAR -> {
-                        // 1) Guardar/replace en tabla control
-                        val item = SaldoGuardadoEntity(
-                            idRegistro = UUID.randomUUID().toString(),
-                            idUsuario = origen.userId ?: (ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID),
-                            idMercadilloOrigen = origen.idMercadillo,
-                            fechaMercadillo = origen.fecha,
-                            lugarMercadillo = origen.lugar,
-                            organizadorMercadillo = origen.organizador,
-                            horaInicioMercadillo = origen.horaInicio,
-                            saldoInicialGuardado = ajustado,
-                            consumido = false,
-                            version = (origen.version ?: 0L) + 1L,
-                            lastModified = System.currentTimeMillis(),
-                            sincronizadoFirebase = false,
-                            notas = null
-                        )
-                        saldoRepo.reemplazarGuardado(item)
+                db.withTransaction {
+                    es.nuskysoftware.marketsales.utils.DemoAccess.requireOwner(origen.userId)
+                    when (d.modo) {
+                        IntermediaModo.GUARDAR -> {
+                            // 1) Guardar/replace en tabla control
+                            val item = SaldoGuardadoEntity(
+                                idRegistro = UUID.randomUUID().toString(),
+                                idUsuario = origen.userId ?: (ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID),
+                                idMercadilloOrigen = origen.idMercadillo,
+                                fechaMercadillo = origen.fecha,
+                                lugarMercadillo = origen.lugar,
+                                organizadorMercadillo = origen.organizador,
+                                horaInicioMercadillo = origen.horaInicio,
+                                saldoInicialGuardado = ajustado,
+                                consumido = false,
+                                version = (origen.version ?: 0L) + 1L,
+                                lastModified = System.currentTimeMillis(),
+                                sincronizadoFirebase = false,
+                                notas = null
+                            )
+                            saldoRepo.reemplazarGuardado(item)
 
-                        // 2) Cerrar origen con saldoFinal ajustado (estado 6)
-                        mercRepo.confirmarArqueoCaja(
-                            mercadilloId = origen.idMercadillo,
-                            arqueoFinal = ajustado,
-                            nuevoEstado = 6
-                        )
+                            // 2) Cerrar origen con saldoFinal ajustado (estado 6)
+                            mercRepo.confirmarArqueoCaja(
+                                mercadilloId = origen.idMercadillo,
+                                arqueoFinal = ajustado,
+                                nuevoEstado = 6
+                            )
+                        }
+
+                        IntermediaModo.ASIGNAR -> {
+                            val destino = requireNotNull(d.destino)
+                            // 1) Asignar saldoInicial al destino (estado 2)
+                            db.mercadilloDao().asignarSaldoInicial(destino.idMercadillo, ajustado)
+
+                            // 2) Cerrar origen con saldoFinal ajustado (estado 6)
+                            mercRepo.confirmarArqueoCaja(
+                                mercadilloId = origen.idMercadillo,
+                                arqueoFinal = ajustado,
+                                nuevoEstado = 6
+                            )
+                        }
                     }
 
-                    IntermediaModo.ASIGNAR -> {
-                        val destino = d.destino ?: return@launch
-                        // 1) Asignar saldoInicial al destino (estado 2)
-                        db.mercadilloDao().asignarSaldoInicial(destino.idMercadillo, ajustado)
-
-                        // 2) Cerrar origen con saldoFinal ajustado (estado 6)
-                        mercRepo.confirmarArqueoCaja(
-                            mercadilloId = origen.idMercadillo,
-                            arqueoFinal = ajustado,
-                            nuevoEstado = 6
-                        )
-                    }
                 }
-
                 withContext(Dispatchers.Main) {
                     // limpiar diálogos y volver a home
                     _ui.value = _ui.value.copy(confirm = ConfirmState(), dialogoIntermedio = IntermediaState())
@@ -325,7 +330,10 @@ class AsignarSaldoViewModel(
                         launchSingleTop = true
                     }
                 }
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (_: Exception) {
+                es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed")
                 withContext(Dispatchers.Main) {
                     // fall-back: cerrar modales para que el usuario pueda reintentar
                     _ui.value = _ui.value.copy(confirm = ConfirmState(), dialogoIntermedio = IntermediaState())

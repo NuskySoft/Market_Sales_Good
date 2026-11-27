@@ -164,143 +164,18 @@ class ConfiguracionRepository(
      * Sincroniza la configuración completa con Firebase
      */
     private fun sincronizarConFirebase(config: ConfiguracionEntity) {
-        if (!DemoAccess.canSync(config.usuarioLogueado)) return
-        try {
-            val datos = mapOf(
-                "idioma" to config.idioma,
-                "temaOscuro" to config.temaOscuro,
-                "fuente" to config.fuente,
-                "moneda" to config.moneda,
-                "numeroVersion" to config.numeroVersion,
-                "ultimoDispositivo" to config.ultimoDispositivo,
-                "fechaUltimaSync" to dateFormat.format(Date()),
-                "version" to config.version,
-                "lastModified" to System.currentTimeMillis(),
-                "dispositivo" to android.os.Build.MODEL
-            )
-
-            // Usar "usuario_default" como documento para configuración global
-            val docRef = firestore.collection("configuraciones")
-                .document("configuracion_global")
-
-            docRef.set(datos)
-                .addOnSuccessListener {
-                    repositoryScope.launch {
-                        configuracionDao.updateFechaUltimaSync(dateFormat.format(Date()))
-                        configuracionDao.updatePendienteSync(false)
-                    }
-                }
-                .addOnFailureListener {
-                    repositoryScope.launch {
-                        configuracionDao.updatePendienteSync(true)
-                    }
-                }
-        } catch (e: Exception) {
-            repositoryScope.launch {
-                configuracionDao.updatePendienteSync(true)
-            }
-        }
+        repositoryScope.launch { configuracionDao.updatePendienteSync(false) }
     }
 
     /**
      * Sincroniza un campo específico con Firebase
      */
     private suspend fun sincronizarCampoEspecifico(campo: String, valor: Any) {
-        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
-        try {
-            val datos = mapOf(
-                campo to valor,
-                "fechaUltimaSync" to dateFormat.format(Date()),
-                "lastModified" to System.currentTimeMillis()
-            )
-
-            firestore.collection("configuraciones")
-                .document("configuracion_global")
-                .update(datos)
-                .addOnSuccessListener {
-                    repositoryScope.launch {
-                        configuracionDao.updateFechaUltimaSync(dateFormat.format(Date()))
-                        configuracionDao.updatePendienteSync(false)
-                    }
-                }
-                .addOnFailureListener {
-                    repositoryScope.launch {
-                        configuracionDao.updatePendienteSync(true)
-                    }
-                }
-        } catch (e: Exception) {
-            repositoryScope.launch {
-                configuracionDao.updatePendienteSync(true)
-            }
-        }
+        configuracionDao.updatePendienteSync(false)
     }
     suspend fun getHybridConfiguracion(): ConfiguracionEntity? = withContext(Dispatchers.IO) {
         if (DemoAccess.isDemo()) return@withContext ConfiguracionEntity()
-        try {
-            // 1. Verificar si hay cambios pendientes en Room
-            val roomConfig = configuracionDao.getConfiguracionSync()
-            val hasPendingChanges = roomConfig?.pendienteSync == true
-
-            if (hasPendingChanges) {
-                // ✅ HAY CAMBIOS PENDIENTES → Leer de Room (fuente de verdad)
-                Log.d("ConfiguracionRepository", "📱 Leyendo configuración de ROOM (cambios pendientes)")
-                return@withContext roomConfig
-            } else {
-                // ✅ NO HAY CAMBIOS PENDIENTES → Leer de Firebase (más actualizado)
-                Log.d("ConfiguracionRepository", "☁️ Leyendo configuración de FIREBASE (sin cambios pendientes)")
-
-                if (connectivityObserver.isConnected.first()) {
-                    try {
-                        val firebaseDoc = firestore.collection("configuraciones")
-                            .document("configuracion_global")
-                            .get()
-                            .await()
-
-                        if (firebaseDoc.exists()) {
-                            val firebaseData = firebaseDoc.data!!
-
-                            // Crear entidad híbrida: Firebase + datos locales importantes
-                            val hybridConfig = roomConfig?.copy(
-                                // Datos de Firebase (comunes)
-                                moneda = firebaseData["moneda"] as? String ?: roomConfig.moneda,
-                                idioma = firebaseData["idioma"] as? String ?: roomConfig.idioma,
-                                fuente = firebaseData["fuente"] as? String ?: roomConfig.fuente,
-                                temaOscuro = firebaseData["temaOscuro"] as? Boolean ?: roomConfig.temaOscuro,
-
-                                // Datos locales (específicos del dispositivo)
-                                usuarioLogueado = roomConfig.usuarioLogueado, // Mantener local
-                                pendienteSync = false // Marcar como sincronizado
-                            ) ?: ConfiguracionEntity(
-                               // moneda = firebaseData["moneda"] as? String ?: "€ Euro",
-                                moneda = firebaseData["moneda"] as? String ?: ConfigurationManager.getMoneda(),
-                                idioma = firebaseData["idioma"] as? String ?: "es",
-                                fuente = firebaseData["fuente"] as? String ?: "Montserrat",
-                                temaOscuro = firebaseData["temaOscuro"] as? Boolean ?: false
-                            )
-
-                            // Actualizar Room con datos frescos
-                            configuracionDao.insertOrUpdate(hybridConfig)
-
-                            Log.d("ConfiguracionRepository", "✅ Configuración fresca de Firebase aplicada")
-                            return@withContext hybridConfig
-                        }
-                    } catch (e: Exception) {
-                        Log.w("ConfiguracionRepository", "❌ Error leyendo Firebase, usando Room", e)
-                    }
-                }
-
-                // Fallback: usar Room
-                //return@withContext roomConfig ?: ConfiguracionEntity()
-                return@withContext roomConfig ?: ConfiguracionEntity(moneda = ConfigurationManager.getMoneda())
-            }
-
-        } catch (e: Exception) {
-            Log.e("ConfiguracionRepository", "Error en estrategia híbrida", e)
-            // En caso de error, devolver lo que tengamos en Room o crear configuración por defecto
-            val fallbackConfig = configuracionDao.getConfiguracionSync()
-            //return@withContext fallbackConfig ?: ConfiguracionEntity()
-            return@withContext fallbackConfig ?: ConfiguracionEntity(moneda = ConfigurationManager.getMoneda())
-        }
+        configuracionDao.getConfiguracionSync() ?: ConfiguracionEntity(moneda = ConfigurationManager.getMoneda())
     }
     // ========== MÉTODOS OBSOLETOS V10 (compatibilidad) ==========
 

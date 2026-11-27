@@ -361,7 +361,7 @@ fun PantallaArticulos(
 
                         OutlinedTextField(
                             value = precioVenta,
-                            onValueChange = { precioVenta = it },
+                            onValueChange = { if (es.nuskysoftware.marketsales.utils.Money.validInput(it)) precioVenta = it.replace(',', '.') },
                             label = { Text(StringResourceManager.getString("precio_venta", currentLanguage)) },
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -402,7 +402,7 @@ fun PantallaArticulos(
                         if (controlarCoste && esPremium) {
                             OutlinedTextField(
                                 value = precioCoste,
-                                onValueChange = { precioCoste = it },
+                                onValueChange = { if (es.nuskysoftware.marketsales.utils.Money.validInput(it)) precioCoste = it.replace(',', '.') },
                                 label = { Text(StringResourceManager.getString("precio_coste", currentLanguage)) },
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
@@ -695,4 +695,3 @@ private fun ArticuloCard(
         }
     }
 }
-

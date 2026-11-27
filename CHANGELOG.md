@@ -1,4 +1,23 @@
+# 2.4 — 27-11-2026 — candidata para pruebas
+
+- Lote conjunto de correcciones de sincronización local/Firebase, separación de cuentas y empresa, bajas de catálogo, categoría protegida, saldos múltiples y asignación transaccional.
+- Abonos por método real de devolución con recibo propio y stock persistente; movimientos de stock entre dispositivos.
+- Fechas comparables, importes de dos decimales, estados automáticos y migración Room 19→20 sin borrado de la base actual.
+- Restauración Premium reservada y reinicio con confirmación adicional y tarea persistente; la compra comercial de Premium continúa pendiente.
+- Firma privada y anuncios por variante. Preferencias visuales locales por dispositivo.
+- SQLite y revisión de consultas ejecutados; compilación Android/Firebase pendientes. Detalle y aceptación: docs/IMPLEMENTACION_2_4.md.
+
 # Historial de versiones
+
+## 2.3 — 2026-11-25
+
+- F07: guarda movimientos pendientes de stock en la misma transacción que el ticket y sus líneas. Un fallo posterior no invalida la venta.
+- Aplica cada descuento y su confirmación en una transacción independiente; reintenta en segundo plano y al abrir la app, también sin conexión.
+- Serializa subidas de artículos y confirma únicamente el estado enviado para no perder descuentos que entren durante una subida.
+- Room 18 → 19: añade la tabla de movimientos sin borrar datos ni reprocesar ventas antiguas. No admite volver a una base de datos anterior borrándola.
+- Incluye pruebas instrumentadas de recuperación, concurrencia y migración; pendientes de ejecutar en Android.
+- F11 de la versión 2.2 validada por el usuario.
+
 
 ## 2.2 — 2026-11-25
 

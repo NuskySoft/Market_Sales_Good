@@ -13,10 +13,13 @@ import es.nuskysoftware.marketsales.data.local.entity.ArticuloEntity
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.ConnectivityObserver
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * ArticuloRepository V11 - Market Sales
@@ -30,8 +33,10 @@ import kotlinx.coroutines.tasks.await
  */
 class ArticuloRepository(
     context: Context,
-    private val database: AppDatabase = AppDatabase.getDatabase(context)
-) {
+    private val database: AppDatabase = AppDatabase.getDatabase(context),
+    observeNetwork: Boolean = true
+) : java.io.Closeable {
+    private val appContext = context.applicationContext
     private val articuloDao: ArticuloDao = database.articuloDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
@@ -41,20 +46,21 @@ class ArticuloRepository(
 
     companion object {
         private const val TAG = "ArticuloRepository"
+        private val uploadMutex = Mutex()
     }
 
     init {
-        // Sincronización automática cuando volvemos online
-        repositoryScope.launch {
-            connectivityObserver.isConnected.collect { online ->
-                if (online) {
-                    val userId = ConfigurationManager.getCurrentUserId()
-                    if (userId != null) {
-                        sincronizarArticulosNoSincronizados(userId)
-                    }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+    }
+
+    override fun close() {
+        repositoryScope.cancel()
+        connectivityObserver.close()
+    }
+
+    /** Push only: a background stock retry must never pull a stale server snapshot. */
+    suspend fun sincronizarPendientesLocales(uid: String) {
+        if (DemoAccess.canSync(uid)) SyncEngine(appContext).sync(uid)
     }
 
     // ========== OPERACIONES PRINCIPALES ==========
@@ -63,11 +69,9 @@ class ArticuloRepository(
      * Obtiene todos los artículos del usuario actual
      */
     fun getArticulosUsuarioActual(): Flow<List<ArticuloEntity>> {
-        val userId = ConfigurationManager.getCurrentUserId()
-        return if (userId != null) {
-            articuloDao.getArticulosByUser(userId)
-        } else {
-            flowOf(emptyList())
+        return ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
+            val owner = uid ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
+            articuloDao.getArticulosByUser(owner)
         }
     }
 
@@ -75,11 +79,8 @@ class ArticuloRepository(
      * Obtiene artículos filtrados por categoría
      */
     fun getArticulosByCategoria(categoriaId: String): Flow<List<ArticuloEntity>> {
-        val userId = ConfigurationManager.getCurrentUserId()
-        return if (userId != null) {
-            articuloDao.getArticulosByUserAndCategoria(userId, categoriaId)
-        } else {
-            flowOf(emptyList())
+        return ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
+            articuloDao.getArticulosByUserAndCategoria(uid ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID, categoriaId)
         }
     }
 
@@ -100,14 +101,15 @@ class ArticuloRepository(
         val userId = ConfigurationManager.getCurrentUserId()
             ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_articulo", ConfigurationManager.idioma.value))
 
+        RecoveryGate(appContext).beforeWrite(userId)
         Log.d(TAG, "🔄 Creando artículo para usuario: $userId")
 
         val nuevoArticulo = ArticuloEntity(
             userId = userId,
             nombre = nombre,
-            idCategoria = idCategoria,
-            precioVenta = precioVenta,
-            precioCoste = precioCoste,
+            idCategoria = idCategoria.ifBlank { CatalogDefaults.ensure(database, userId) },
+            precioVenta = es.nuskysoftware.marketsales.utils.Money.round(precioVenta),
+            precioCoste = precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) },
             stock = stock,
             controlarStock = controlarStock,
             controlarCoste = controlarCoste,
@@ -142,7 +144,11 @@ class ArticuloRepository(
     suspend fun actualizarArticulo(articulo: ArticuloEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             DemoAccess.requireOwner(articulo.userId)
+            val applied = database.stockMovementDao().allForOwner(articulo.userId).filter { it.idArticulo == articulo.idArticulo && it.aplicado && !it.incorporadoEnBase }.sumOf { it.cantidad }
             val articuloActualizado = articulo.copy(
+                stockBase = articulo.stock?.plus(applied),
+                precioVenta = es.nuskysoftware.marketsales.utils.Money.round(articulo.precioVenta),
+                precioCoste = articulo.precioCoste?.let { es.nuskysoftware.marketsales.utils.Money.round(it) },
                 version = articulo.version + 1,
                 lastModified = System.currentTimeMillis(),
                 sincronizadoFirebase = false
@@ -169,7 +175,7 @@ class ArticuloRepository(
         try {
             DemoAccess.requireOwner(articulo.userId)
             // 1. ELIMINAR DE ROOM PRIMERO
-            articuloDao.deleteArticulo(articulo)
+            articuloDao.updateArticulo(articulo.copy(activo = false, version = articulo.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
             Log.d(TAG, "✅ Artículo eliminado de Room: ${articulo.nombre}")
 
             // 2. INTENTAR ELIMINAR DE FIREBASE
@@ -186,7 +192,7 @@ class ArticuloRepository(
      * Obtiene artículo por ID
      */
     suspend fun getArticuloById(id: String): ArticuloEntity? = withContext(Dispatchers.IO) {
-        articuloDao.getArticuloById(id)
+        articuloDao.getArticuloById(id)?.takeIf { it.userId == ConfigurationManager.getCurrentUserId() }
     }
 
     // ========== ESTRATEGIA HÍBRIDA INTELIGENTE ==========
@@ -195,43 +201,9 @@ class ArticuloRepository(
      * Obtiene datos híbridos: combina lo mejor de Room y Firebase
      */
     suspend fun getHybridArticulos(userId: String): List<ArticuloEntity> = withContext(Dispatchers.IO) {
-        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext articuloDao.getArticulosByUser(userId).first()
-
-        try {
-            // 1. Verificar cambios pendientes en Room
-            val articulosNoSincronizados = articuloDao.getArticulosNoSincronizadosByUser(userId)
-
-            if (articulosNoSincronizados.isNotEmpty()) {
-                // HAY CAMBIOS PENDIENTES → Room es fuente de verdad
-                Log.d(TAG, "📱 Usando Room (${articulosNoSincronizados.size} cambios pendientes)")
-                return@withContext articuloDao.getArticulosByUser(userId).first()
-            } else {
-                // NO HAY CAMBIOS PENDIENTES → Intentar Firebase
-                Log.d(TAG, "☁️ Intentando Firebase (sin cambios pendientes)")
-
-                if (connectivityObserver.isConnected.first()) {
-                    try {
-                        val firebaseArticulos = descargarArticulosDesdeFirebase(userId)
-                        if (firebaseArticulos.isNotEmpty()) {
-                            // Actualizar Room con datos frescos
-                            firebaseArticulos.forEach { articulo ->
-                                articuloDao.insertOrUpdate(articulo.copy(sincronizadoFirebase = true))
-                            }
-                            Log.d(TAG, "✅ Datos frescos de Firebase aplicados")
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "⚠️ Error con Firebase, usando Room como fallback", e)
-                    }
-                }
-
-                // Devolver datos de Room (actualizados o fallback)
-                return@withContext articuloDao.getArticulosByUser(userId).first()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en estrategia híbrida", e)
-            // Fallback total a Room
-            return@withContext articuloDao.getArticulosByUser(userId).first()
-        }
+        DemoAccess.requireOwner(userId)
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+        articuloDao.getArticulosByUser(userId).first()
     }
 
     // ========== SINCRONIZACIÓN CON FIREBASE ==========
@@ -239,63 +211,15 @@ class ArticuloRepository(
     /**
      * Sincroniza un artículo específico con Firebase
      */
-    private suspend fun sincronizarArticuloConFirebase(articulo: ArticuloEntity) {
-        if (!DemoAccess.canSync(articulo.userId)) return
-        try {
-            if (!connectivityObserver.isConnected.first()) {
-                Log.d(TAG, "⚠️ Sin conexión, artículo quedará pendiente de sincronización")
-                return
-            }
-
-            val datos = mapOf(
-                "idArticulo" to articulo.idArticulo,
-                "userId" to articulo.userId,
-                "nombre" to articulo.nombre,
-                "idCategoria" to articulo.idCategoria,
-                "precioVenta" to articulo.precioVenta,
-                "precioCoste" to articulo.precioCoste,
-                "stock" to articulo.stock,
-                "controlarStock" to articulo.controlarStock,
-                "controlarCoste" to articulo.controlarCoste,
-                "favorito" to articulo.favorito,
-                "fotoUri" to articulo.fotoUri,
-                "activo" to articulo.activo,
-                "version" to articulo.version,
-                "lastModified" to articulo.lastModified,
-                "fechaSync" to System.currentTimeMillis()
-            )
-
-            firestore.collection("articulos")
-                .document(articulo.idArticulo)
-                .set(datos)
-                .await()
-
-            // Marcar como sincronizado en Room
-            articuloDao.marcarComoSincronizado(articulo.idArticulo)
-            Log.d(TAG, "☁️ Artículo sincronizado con Firebase: ${articulo.nombre}")
-
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Error sincronizando con Firebase: ${articulo.nombre}", e)
-            // El artículo queda marcado como no sincronizado para reintento posterior
-        }
+    private suspend fun sincronizarArticuloConFirebase(snapshot: ArticuloEntity) = uploadMutex.withLock {
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
      * Elimina artículo de Firebase
      */
     private suspend fun eliminarArticuloDeFirebase(articuloId: String) {
-        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
-        try {
-            if (connectivityObserver.isConnected.first()) {
-                firestore.collection("articulos")
-                    .document(articuloId)
-                    .delete()
-                    .await()
-                Log.d(TAG, "☁️ Artículo eliminado de Firebase: $articuloId")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Error eliminando de Firebase: $articuloId", e)
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**

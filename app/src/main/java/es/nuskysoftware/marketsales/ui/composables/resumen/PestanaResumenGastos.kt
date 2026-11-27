@@ -29,7 +29,7 @@ fun PestanaResumenGastos(
         .collectAsState(initial = emptyList())
     val moneda by ConfigurationManager.moneda.collectAsState()
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
-    val totalGastos = remember(gastos) { gastos.sumOf { it.importe } }
+    val totalGastos = remember(gastos) { es.nuskysoftware.marketsales.utils.Money.sum(gastos.map { it.importe }) }
     val totalFmt = MonedaUtils.formatearImporte(totalGastos, moneda)
 
     Column(Modifier.fillMaxSize()) {

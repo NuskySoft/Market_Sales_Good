@@ -71,7 +71,7 @@ fun PantallaAltaMercadillo(
     fun parseDoubleFlexible(raw: String): Double? {
         val clean = raw.trim().replace(',', '.')
         if (clean.isBlank()) return null
-        return clean.toDoubleOrNull()
+        return clean.toDoubleOrNull()?.let { es.nuskysoftware.marketsales.utils.Money.round(it) }
     }
 
     // Cargar si edición
@@ -141,7 +141,7 @@ fun PantallaAltaMercadillo(
         else -> saldoOriginal != saldoEditado
     }
 
-    fun guardar() {
+    fun guardar(saldoGuardadoId: String? = null) {
         if (!camposHabilitados) return
         val saldoInicialDouble = parseDoubleFlexible(saldoInicial)
         val importeSuscripcionDouble =
@@ -184,7 +184,8 @@ fun PantallaAltaMercadillo(
                         hayPuntoLuz = hayPuntoLuz,
                         horaInicio = horaInicio,
                         horaFin = horaFin,
-                        saldoInicial = saldoInicialDouble
+                        saldoInicial = saldoInicialDouble,
+                        saldoGuardadoId = saldoGuardadoId
                     )
                 }
             } catch (_: Exception) {
@@ -449,6 +450,7 @@ fun PantallaAltaMercadillo(
             )
         }
 
+        val saldosDisponibles by remember(saldoRepo) { saldoRepo.pendientes() }.collectAsState(initial = emptyList())
         // Diálogo: saldo guardado pendiente
         if (mostrarDialogoSaldoGuardado && saldoPendiente != null) {
             AlertDialog(
@@ -460,20 +462,26 @@ fun PantallaAltaMercadillo(
                     )
                 },
                 text = {
+                    Column {
+                        saldosDisponibles.forEach { balance ->
+                            TextButton(onClick = { saldoPendiente = balance }) {
+                                Text((if (saldoPendiente?.idRegistro == balance.idRegistro) "✓ " else "") + balance.fechaMercadillo + " · " + balance.lugarMercadillo + " · " + es.nuskysoftware.marketsales.utils.MonedaUtils.formatearImporte(balance.saldoInicialGuardado, ConfigurationManager.moneda.value))
+                            }
+                        }
                     Text(
                         StringResourceManager.getString("saldo_pendiente_texto", currentLanguage)
                             .ifBlank {
                                 "Tienes un saldo guardado pendiente de asignar. ¿Quieres asignarlo a este mercadillo?"
                             }
                     )
+                    }
                 },
                 confirmButton = {
                     TextButton(onClick = {
                         mostrarDialogoSaldoGuardado = false
                         scope.launch {
                             saldoInicial = saldoPendiente!!.saldoInicialGuardado.toString()
-                            guardar()
-                            saldoRepo.borrarGuardado(saldoPendiente!!.idRegistro)
+                            guardar(saldoPendiente!!.idRegistro)
                             saldoPendiente = null
                         }
                     }) {

@@ -133,7 +133,7 @@ class ArqueoViewModel(
                         arqueoCaja = m.arqueoCaja,
                         saldoFinal = m.saldoFinal
                     ),
-                    destinosSaldo = (destinos1 + destinos2).sortedBy { it.fecha }
+                    destinosSaldo = (destinos1 + destinos2).sortedBy { es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(it.fecha) ?: Long.MAX_VALUE }
                 )
 
             } catch (e: Exception) {

@@ -24,7 +24,8 @@ data class MercadilloEntity(
     val userId: String = "",
 
     // ========== DATOS BÁSICOS (MÍNIMOS REQUERIDOS) ==========
-    val fecha: String = "", // Formato "dd-MM-yyyy"
+    val fecha: String = "",
+    val fechaEpochDay: Long? = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(fecha), // Formato "dd-MM-yyyy"
     val lugar: String = "",
     val organizador: String = "",
 

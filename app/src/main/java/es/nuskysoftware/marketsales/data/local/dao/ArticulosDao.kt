@@ -65,14 +65,14 @@ interface ArticuloDao {
     /**
      * Obtiene un artículo específico por ID
      */
-    @Query("SELECT * FROM articulos WHERE idArticulo = :id")
-    suspend fun getArticuloById(id: String): ArticuloEntity?
+    @Query("SELECT * FROM articulos WHERE idArticulo = :id AND userId = :sessionOwner ")
+    suspend fun getArticuloById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): ArticuloEntity?
 
     /**
      * Elimina artículo por ID
      */
-    @Query("DELETE FROM articulos WHERE idArticulo = :id")
-    suspend fun deleteArticuloById(id: String)
+    @Query("DELETE FROM articulos WHERE idArticulo = :id AND userId = :sessionOwner ")
+    suspend fun deleteArticuloById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     // ========== SINCRONIZACIÓN HÍBRIDA ==========
 
@@ -85,20 +85,24 @@ interface ArticuloDao {
     /**
      * Marca artículo como sincronizado
      */
-    @Query("UPDATE articulos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idArticulo = :id")
-    suspend fun marcarComoSincronizado(id: String, timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE articulos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idArticulo = :id AND userId = :sessionOwner ")
+    suspend fun marcarComoSincronizado(id: String, timestamp: Long = System.currentTimeMillis(), sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     /**
      * Marca artículo como no sincronizado (para cambios locales)
      */
-    @Query("UPDATE articulos SET sincronizadoFirebase = 0 WHERE idArticulo = :id")
-    suspend fun marcarComoNoSincronizado(id: String)
+    @Query("UPDATE articulos SET sincronizadoFirebase = 0 WHERE idArticulo = :id AND userId = :sessionOwner ")
+    suspend fun marcarComoNoSincronizado(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     /**
      * Obtiene la versión actual de un artículo
      */
-    @Query("SELECT version FROM articulos WHERE idArticulo = :id")
-    suspend fun getArticuloVersion(id: String): Long?
+    @Query("SELECT version FROM articulos WHERE idArticulo = :id AND userId = :sessionOwner ")
+    suspend fun getArticuloVersion(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Long?
+
+    // A stock adjustment during upload must remain dirty for another upload.
+    @Query("UPDATE articulos SET sincronizadoFirebase = 1 WHERE idArticulo = :id AND userId = :owner AND version = :version AND lastModified = :modified AND stock IS :stock")
+    suspend fun marcarSnapshotSincronizado(id: String, owner: String, version: Long, modified: Long, stock: Int?)
 
     // ========== UTILIDADES ==========
 

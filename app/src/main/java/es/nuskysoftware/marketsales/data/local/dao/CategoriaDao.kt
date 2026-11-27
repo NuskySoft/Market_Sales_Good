@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CategoriaDao {
-    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid")
+    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid AND idCategoria != 'uncategorized:' || :uid")
     suspend fun contarDemo(uid: String): Int
 
 
@@ -61,14 +61,14 @@ interface CategoriaDao {
     /**
      * Obtiene una categoría específica por ID
      */
-    @Query("SELECT * FROM categorias WHERE idCategoria = :id")
-    suspend fun getCategoriaById(id: String): CategoriaEntity?
+    @Query("SELECT * FROM categorias WHERE idCategoria = :id AND userId = :sessionOwner ")
+    suspend fun getCategoriaById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): CategoriaEntity?
 
     /**
      * Elimina categoría por ID
      */
-    @Query("DELETE FROM categorias WHERE idCategoria = :id")
-    suspend fun deleteCategoriaById(id: String)
+    @Query("DELETE FROM categorias WHERE idCategoria = :id AND userId = :sessionOwner ")
+    suspend fun deleteCategoriaById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     // ========== SINCRONIZACIÓN HÍBRIDA ==========
 
@@ -81,20 +81,20 @@ interface CategoriaDao {
     /**
      * Marca categoría como sincronizada
      */
-    @Query("UPDATE categorias SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idCategoria = :id")
-    suspend fun marcarComoSincronizada(id: String, timestamp: Long = System.currentTimeMillis())
+    @Query("UPDATE categorias SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idCategoria = :id AND userId = :sessionOwner ")
+    suspend fun marcarComoSincronizada(id: String, timestamp: Long = System.currentTimeMillis(), sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     /**
      * Marca categoría como no sincronizada (para cambios locales)
      */
-    @Query("UPDATE categorias SET sincronizadoFirebase = 0 WHERE idCategoria = :id")
-    suspend fun marcarComoNoSincronizada(id: String)
+    @Query("UPDATE categorias SET sincronizadoFirebase = 0 WHERE idCategoria = :id AND userId = :sessionOwner ")
+    suspend fun marcarComoNoSincronizada(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     /**
      * Obtiene la versión actual de una categoría
      */
-    @Query("SELECT version FROM categorias WHERE idCategoria = :id")
-    suspend fun getCategoriaVersion(id: String): Long?
+    @Query("SELECT version FROM categorias WHERE idCategoria = :id AND userId = :sessionOwner ")
+    suspend fun getCategoriaVersion(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Long?
 
     // ========== UTILIDADES ==========
 

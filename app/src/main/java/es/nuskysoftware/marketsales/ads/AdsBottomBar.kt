@@ -18,8 +18,9 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 fun AdsBottomBar() {
     val canRequestAds by AdsConsentManager.canRequestAds.collectAsState()
     val esPremium by ConfigurationManager.esPremium.collectAsState()
+    val premiumReady by ConfigurationManager.esPremiumReady.collectAsState()
 
-    if (canRequestAds && !esPremium) {
+    if (canRequestAds && premiumReady && !esPremium) {
         BannerAdBottom(
             adUnitId = stringResource(id = R.string.admob_banner_id)
         )

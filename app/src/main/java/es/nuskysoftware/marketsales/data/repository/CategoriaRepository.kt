@@ -13,6 +13,7 @@ import es.nuskysoftware.marketsales.data.local.entity.CategoriaEntity
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.ConnectivityObserver
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -32,6 +33,7 @@ class CategoriaRepository(
     context: Context,
     private val database: AppDatabase = AppDatabase.getDatabase(context)
 ) {
+    private val appContext = context.applicationContext
     private val categoriaDao: CategoriaDao = database.categoriaDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val connectivityObserver = ConnectivityObserver(context)
@@ -44,17 +46,7 @@ class CategoriaRepository(
     }
 
     init {
-        // Sincronización automática cuando volvemos online
-        repositoryScope.launch {
-            connectivityObserver.isConnected.collect { online ->
-                if (online) {
-                    val userId = ConfigurationManager.getCurrentUserId()
-                    if (userId != null) {
-                        sincronizarCategoriasNoSincronizadas(userId)
-                    }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     // ========== OPERACIONES PRINCIPALES ==========
@@ -63,11 +55,9 @@ class CategoriaRepository(
      * Obtiene todas las categorías del usuario actual
      */
     fun getCategoriasUsuarioActual(): Flow<List<CategoriaEntity>> {
-        val userId = ConfigurationManager.getCurrentUserId()
-        return if (userId != null) {
-            categoriaDao.getCategoriasByUser(userId)
-        } else {
-            flowOf(emptyList())
+        return ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
+            val owner = uid ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
+            categoriaDao.getCategoriasByUser(owner)
         }
     }
 
@@ -82,6 +72,7 @@ class CategoriaRepository(
         val userId = ConfigurationManager.getCurrentUserId()
             ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_categoria", ConfigurationManager.idioma.value))
 
+        RecoveryGate(appContext).beforeWrite(userId)
         Log.d(TAG, "🔄 Creando categoría para usuario: $userId")
 
         val nuevaCategoria = CategoriaEntity(
@@ -96,6 +87,7 @@ class CategoriaRepository(
             // 1. GUARDAR EN ROOM PRIMERO (respuesta inmediata)
             localDb.withTransaction {
                 DemoAccess.requireOwner(userId)
+                CatalogDefaults.ensure(database, userId)
                 DemoAccess.checkLimit("categorias", categoriaDao.contarDemo(userId))
                 categoriaDao.insertCategoria(nuevaCategoria)
             }
@@ -144,25 +136,23 @@ class CategoriaRepository(
     suspend fun eliminarCategoria(categoria: CategoriaEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             DemoAccess.requireOwner(categoria.userId)
-            // 1. ELIMINAR DE ROOM PRIMERO
-            categoriaDao.deleteCategoria(categoria)
-            Log.d(TAG, "✅ Categoría eliminada de Room: ${categoria.nombre}")
-
-            // 2. INTENTAR ELIMINAR DE FIREBASE
-            eliminarCategoriaDeFirebase(categoria.idCategoria)
-
+            check(!CatalogDefaults.isProtected(categoria)) { "Protected category" }
+            database.withTransaction {
+                val target = CatalogDefaults.ensure(database, categoria.userId)
+                val articles = database.articuloDao().getArticulosByUserAndCategoria(categoria.userId, categoria.idCategoria).first()
+                for (a in articles) database.articuloDao().updateArticulo(a.copy(idCategoria = target, version = a.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+                categoriaDao.updateCategoria(categoria.copy(activa = false, version = categoria.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+            }
+            es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
             true
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error eliminando categoría", e)
-            false
-        }
+        } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { false }
     }
 
     /**
      * Obtiene categoría por ID
      */
     suspend fun getCategoriaById(id: String): CategoriaEntity? = withContext(Dispatchers.IO) {
-        categoriaDao.getCategoriaById(id)
+        categoriaDao.getCategoriaById(id)?.takeIf { it.userId == ConfigurationManager.getCurrentUserId() }
     }
 
     // ========== ESTRATEGIA HÍBRIDA INTELIGENTE ==========
@@ -171,43 +161,9 @@ class CategoriaRepository(
      * Obtiene datos híbridos: combina lo mejor de Room y Firebase
      */
     suspend fun getHybridCategorias(userId: String): List<CategoriaEntity> = withContext(Dispatchers.IO) {
-        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext categoriaDao.getCategoriasByUser(userId).first()
-
-        try {
-            // 1. Verificar cambios pendientes en Room
-            val categoriasNoSincronizadas = categoriaDao.getCategoriasNoSincronizadasByUser(userId)
-
-            if (categoriasNoSincronizadas.isNotEmpty()) {
-                // HAY CAMBIOS PENDIENTES → Room es fuente de verdad
-                Log.d(TAG, "📱 Usando Room (${categoriasNoSincronizadas.size} cambios pendientes)")
-                return@withContext categoriaDao.getCategoriasByUser(userId).first()
-            } else {
-                // NO HAY CAMBIOS PENDIENTES → Intentar Firebase
-                Log.d(TAG, "☁️ Intentando Firebase (sin cambios pendientes)")
-
-                if (connectivityObserver.isConnected.first()) {
-                    try {
-                        val firebaseCategorias = descargarCategoriasDesdeFirebase(userId)
-                        if (firebaseCategorias.isNotEmpty()) {
-                            // Actualizar Room con datos frescos
-                            firebaseCategorias.forEach { categoria ->
-                                categoriaDao.insertOrUpdate(categoria.copy(sincronizadoFirebase = true))
-                            }
-                            Log.d(TAG, "✅ Datos frescos de Firebase aplicados")
-                        }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "⚠️ Error con Firebase, usando Room como fallback", e)
-                    }
-                }
-
-                // Devolver datos de Room (actualizados o fallback)
-                return@withContext categoriaDao.getCategoriasByUser(userId).first()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error en estrategia híbrida", e)
-            // Fallback total a Room
-            return@withContext categoriaDao.getCategoriasByUser(userId).first()
-        }
+        DemoAccess.requireOwner(userId)
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+        categoriaDao.getCategoriasByUser(userId).first()
     }
 
     // ========== SINCRONIZACIÓN CON FIREBASE ==========
@@ -216,56 +172,14 @@ class CategoriaRepository(
      * Sincroniza una categoría específica con Firebase
      */
     private suspend fun sincronizarCategoriaConFirebase(categoria: CategoriaEntity) {
-        if (!DemoAccess.canSync(categoria.userId)) return
-        try {
-            if (!connectivityObserver.isConnected.first()) {
-                Log.d(TAG, "⚠️ Sin conexión, categría quedará pendiente de sincronización")
-                return
-            }
-
-            val datos = mapOf(
-                "idCategoria" to categoria.idCategoria,
-                "userId" to categoria.userId,
-                "nombre" to categoria.nombre,
-                "colorHex" to categoria.colorHex,
-                "orden" to categoria.orden,
-                "activa" to categoria.activa,
-                "version" to categoria.version,
-                "lastModified" to categoria.lastModified,
-                "fechaSync" to System.currentTimeMillis()
-            )
-
-            firestore.collection("categorias")
-                .document(categoria.idCategoria)
-                .set(datos)
-                .await()
-
-            // Marcar como sincronizada en Room
-            categoriaDao.marcarComoSincronizada(categoria.idCategoria)
-            Log.d(TAG, "☁️ Categoría sincronizada con Firebase: ${categoria.nombre}")
-
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Error sincronizando con Firebase: ${categoria.nombre}", e)
-            // La categoría queda marcada como no sincronizada para reintento posterior
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
      * Elimina categoría de Firebase
      */
     private suspend fun eliminarCategoriaDeFirebase(categoriaId: String) {
-        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
-        try {
-            if (connectivityObserver.isConnected.first()) {
-                firestore.collection("categorias")
-                    .document(categoriaId)
-                    .delete()
-                    .await()
-                Log.d(TAG, "☁️ Categoría eliminada de Firebase: $categoriaId")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "⚠️ Error eliminando de Firebase: $categoriaId", e)
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**

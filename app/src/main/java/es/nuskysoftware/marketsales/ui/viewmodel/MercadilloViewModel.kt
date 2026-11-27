@@ -106,7 +106,8 @@ class MercadilloViewModel(
         hayPuntoLuz: Boolean = false,
         horaInicio: String = "09:00",
         horaFin: String = "14:00",
-        saldoInicial: Double? = null
+        saldoInicial: Double? = null,
+        saldoGuardadoId: String? = null
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
@@ -121,7 +122,7 @@ class MercadilloViewModel(
 
                 val mercadilloId = repository.crearMercadillo(
                     fecha, lugar, organizador, esGratis, importeSuscripcion,
-                    requiereMesa, requiereCarpa, hayPuntoLuz, horaInicio, horaFin, saldoInicial
+                    requiereMesa, requiereCarpa, hayPuntoLuz, horaInicio, horaFin, saldoInicial, saldoGuardadoId
                 )
 
                 val simbolo = (ConfigurationManager.moneda.value.split(" ").firstOrNull() ?: "€")

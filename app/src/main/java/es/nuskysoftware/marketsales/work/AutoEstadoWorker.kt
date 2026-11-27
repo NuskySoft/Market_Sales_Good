@@ -4,36 +4,46 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import es.nuskysoftware.marketsales.data.local.database.AppDatabase
+import es.nuskysoftware.marketsales.data.repository.AutoEstadoProcessor
 import es.nuskysoftware.marketsales.data.repository.MercadilloRepository
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
+import es.nuskysoftware.marketsales.utils.DemoAccess
+import es.nuskysoftware.marketsales.utils.AppModePolicy
+import kotlinx.coroutines.CancellationException
 
-/**
- * Worker que aplica los autoestados programados por AutoEstadoScheduler.
- * - Respeta tu lógica de 00:00 y 05:00 (la decide el propio repositorio).
- * - No muestra UI ni hace nada más.
- */
-class AutoEstadoWorker(
-    appContext: Context,
-    params: WorkerParameters
-) : CoroutineWorker(appContext, params) {
+class AutoEstadoWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result = try {
+        val uid = ConfigurationManager.getCurrentUserId()
+        if (!uid.isNullOrBlank() && uid != AppModePolicy.DEMO_USER_ID) {
+            AutoEstadoProcessor(AppDatabase.getDatabase(applicationContext)).apply(uid)
+            AutoEstadoScheduler.requestUpload(applicationContext)
+        }
+        Result.success()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (failure: Exception) {
+        Log.w("AutoEstadoWorker", "Reintento local", failure)
+        Result.retry()
+    }
+}
 
-    companion object { private const val TAG = "AutoEstadoWorker" }
-
+class AutoEstadoUploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
+        val uid = ConfigurationManager.getCurrentUserId() ?: return Result.success()
+        if (!DemoAccess.canSync(uid)) return Result.success()
         return try {
-            val uid = ConfigurationManager.getCurrentUserId()
-            if (uid.isNullOrBlank() || uid == es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID) {
-                Log.d(TAG, "Sin usuario válido; no se aplican autoestados")
-                Result.success()
-            } else {
-                MercadilloRepository(applicationContext).actualizarEstadosAutomaticos(uid)
-                Log.d(TAG, "Autoestados aplicados para $uid")
-                Result.success()
+            val db = AppDatabase.getDatabase(applicationContext)
+            MercadilloRepository(applicationContext, db, observeNetwork = false).use { repo ->
+                repo.sincronizarPendientesAutoestado(uid)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error aplicando autoestados", e)
+            if (db.mercadilloDao().getMercadillosNoSincronizadosByUser(uid).isEmpty()) Result.success()
+            else Result.retry()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            Log.w("AutoEstadoUploadWorker", "Reintento remoto", failure)
             Result.retry()
         }
     }
 }
-

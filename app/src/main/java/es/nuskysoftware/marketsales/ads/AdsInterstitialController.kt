@@ -10,8 +10,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.LoadAdError
-import com.google.firebase.BuildConfig
-//import es.nuskysoftware.marketsales.BuildConfig
+import es.nuskysoftware.marketsales.BuildConfig
 import es.nuskysoftware.marketsales.R
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import kotlinx.coroutines.flow.StateFlow

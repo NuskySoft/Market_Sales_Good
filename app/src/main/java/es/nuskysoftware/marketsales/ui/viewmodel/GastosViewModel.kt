@@ -74,7 +74,7 @@ class GastosViewModel(
         val nuevas = _ui.value.lineasCarrito + GastoCarritoUI(descripcion = desc, importe = imp)
         _ui.value = _ui.value.copy(
             lineasCarrito = nuevas,
-            totalCarrito = nuevas.sumOf { it.importe },
+            totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }),
             descripcionActual = "",
             importeActual = "0,00"
         )
@@ -90,37 +90,25 @@ class GastosViewModel(
         val cents = parts.getOrNull(1)?.padEnd(2, '0')?.take(2)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
         val nuevo = euros + (cents / 100.0)
         val nuevas = _ui.value.lineasCarrito.map { if (it.id == id) it.copy(importe = nuevo) else it }
-        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = nuevas.sumOf { it.importe })
+        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }))
     }
     fun eliminarLinea(id: String) {
         val nuevas = _ui.value.lineasCarrito.filterNot { it.id == id }
-        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = nuevas.sumOf { it.importe })
+        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }))
     }
     fun limpiarCarrito() { _ui.value = _ui.value.copy(lineasCarrito = emptyList(), totalCarrito = 0.0) }
 
     // Persistencia al elegir método de pago
     fun cargarGastos(mercadilloId: String, metodoPago: String, onFin: (() -> Unit)? = null) {
         val lineas = _ui.value.lineasCarrito
-        if (lineas.isEmpty()) return
+        if (lineas.isEmpty() || _ui.value.saving) return
+        _ui.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             _ui.update { it.copy(saving = true, error = null, message = null) }
             val lang = ConfigurationManager.idioma.value
             runCatching {
-                lineas.forEach { l ->
-                    // ✅ Solo efectivo puede descontar de caja; el resto nunca afecta caja
-                    val descontarDeCaja = if (metodoPago.equals("efectivo", ignoreCase = true)) {
-                        descontarDeCajaParaEfectivo
-                    } else {
-                        false
-                    }
-                    repo.guardarGasto(
-                        mercadilloId,
-                        l.descripcion.trim(),
-                        l.importe,
-                        metodoPago,
-                        descontarDeCaja
-                    ).getOrThrow()
-                }
+                val deCaja = metodoPago.equals("efectivo", ignoreCase = true) && descontarDeCajaParaEfectivo
+                repo.guardarGastos(mercadilloId, lineas.map { it.descripcion.trim() to it.importe }, metodoPago, deCaja).getOrThrow()
             }.onSuccess {
                 limpiarCarrito()
                 // volvemos a valor por defecto (true) para próximas cargas
@@ -143,11 +131,8 @@ class GastosViewModel(
         }
     }
 
-    fun formatearImporteEditable(importe: Double): String {
-        val euros = importe.toInt()
-        val cents = ((importe - euros) * 100).toInt()
-        return String.format(Locale("es","ES"), "%d,%02d", euros, cents)
-    }
+    fun formatearImporteEditable(importe: Double): String = String.format(Locale("es","ES"), "%.2f", es.nuskysoftware.marketsales.utils.Money.round(importe))
+
 }
 
 
@@ -221,7 +206,7 @@ class GastosViewModel(
 //        val nuevas = _ui.value.lineasCarrito + GastoCarritoUI(descripcion = desc, importe = imp)
 //        _ui.value = _ui.value.copy(
 //            lineasCarrito = nuevas,
-//            totalCarrito = nuevas.sumOf { it.importe },
+//            totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }),
 //            descripcionActual = "",
 //            importeActual = "0,00"
 //        )
@@ -237,11 +222,11 @@ class GastosViewModel(
 //        val cents = parts.getOrNull(1)?.padEnd(2, '0')?.take(2)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
 //        val nuevo = euros + (cents / 100.0)
 //        val nuevas = _ui.value.lineasCarrito.map { if (it.id == id) it.copy(importe = nuevo) else it }
-//        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = nuevas.sumOf { it.importe })
+//        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }))
 //    }
 //    fun eliminarLinea(id: String) {
 //        val nuevas = _ui.value.lineasCarrito.filterNot { it.id == id }
-//        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = nuevas.sumOf { it.importe })
+//        _ui.value = _ui.value.copy(lineasCarrito = nuevas, totalCarrito = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.importe }))
 //    }
 //    fun limpiarCarrito() { _ui.value = _ui.value.copy(lineasCarrito = emptyList(), totalCarrito = 0.0) }
 //

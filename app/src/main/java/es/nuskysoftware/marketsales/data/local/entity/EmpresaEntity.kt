@@ -6,9 +6,10 @@ import androidx.room.PrimaryKey
 /**
  * EmpresaEntity - Datos de empresa con sincronización híbrida
  */
-@Entity(tableName = "empresa")
+@Entity(tableName = "empresa", primaryKeys = ["userId"])
 data class EmpresaEntity(
-    @PrimaryKey val id: Int = 1,
+    val id: Int = 1,
+    val userId: String = "",
     val nif: String = "",
     val nombre: String = "",
     val razonSocial: String = "",
@@ -22,5 +23,5 @@ data class EmpresaEntity(
     val sincronizadoFirebase: Boolean = false
 ) {
     // Constructor sin argumentos requerido por Firebase
-    constructor() : this(1, "", "", "", "", "", "", "", "", 1, System.currentTimeMillis(), false)
+    constructor() : this(userId = "")
 }

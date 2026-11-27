@@ -32,3 +32,4 @@ app/release/
 *.jks
 *.keystore
 /.idea/deploymentTargetSelector.xml
+/keystore.properties

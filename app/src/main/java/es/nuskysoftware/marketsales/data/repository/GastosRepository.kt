@@ -7,7 +7,6 @@ import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import es.nuskysoftware.marketsales.data.local.dao.LineasGastosDao
 import es.nuskysoftware.marketsales.data.local.dao.MercadilloDao
 import es.nuskysoftware.marketsales.data.local.database.AppDatabase
@@ -29,6 +28,7 @@ class GastosRepository(context: Context) {
         private const val TAG = "GastosRepository"
     }
 
+    private val appContext = context.applicationContext
     private val db = AppDatabase.getDatabase(context)
     private val gastosDao: LineasGastosDao = db.lineasGastosDao()
     private val mercadilloDao: MercadilloDao = db.mercadilloDao()
@@ -37,14 +37,7 @@ class GastosRepository(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        scope.launch {
-            connectivity.isConnected.collect { online ->
-                if (online) {
-                    runCatching { pushPendientes() }
-                        .onFailure { e -> Log.w(TAG, "Reintento de sync fallido", e) }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     fun observarGastos(idMercadillo: String) =
@@ -59,41 +52,43 @@ class GastosRepository(context: Context) {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val userId = ConfigurationManager.getCurrentUserId() ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
+            RecoveryGate(appContext).beforeWrite(userId)
             DemoAccess.requireOwner(userId)
-            val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
-            DemoAccess.requireOwner(market.userId)
-            val now = System.currentTimeMillis()
+            val linea = db.withTransaction {
+                val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
+                DemoAccess.requireOwner(market.userId)
+                check(market.estado !in 4..7) { "Market does not allow expenses" }
+                val now = System.currentTimeMillis()
+                val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
+                val base = max?.substringBefore('-')?.toIntOrNull() ?: 0
+                val next = String.format("%04d", base + 1) + "-" + java.util.UUID.randomUUID().toString()
 
-            val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
-            val base = max?.toIntOrNull() ?: 0
-            val next = String.format("%04d", base + 1)
+                val linea = LineaGastoEntity(
+                    idMercadillo = idMercadillo,
+                    idUsuario = userId,
+                    numeroLinea = next,
+                    descripcion = descripcion,
+                    importe = es.nuskysoftware.marketsales.utils.Money.round(importe),
+                    fechaHora = now,
+                    formaPago = formaPago,
+                    descontarDeCaja = descontarDeCaja,
+                    lastModified = now,
+                    sincronizadoFirebase = false
+                )
 
-            val linea = LineaGastoEntity(
-                idMercadillo = idMercadillo,
-                idUsuario = userId,
-                numeroLinea = next,
-                descripcion = descripcion,
-                importe = importe,
-                fechaHora = now,
-                formaPago = formaPago,
-                descontarDeCaja = descontarDeCaja,
-                lastModified = now,
-                sincronizadoFirebase = false
-            )
-
-            db.withTransaction {
                 gastosDao.insertarLinea(linea)
                 val totalG = gastosDao.getTotalGastosMercadillo(idMercadillo)
-                val m = mercadilloDao.getMercadilloById(idMercadillo) ?: return@withTransaction
                 mercadilloDao.actualizarTotales(
                     id = idMercadillo,
-                    totalVentas = m.totalVentas,
+                    totalVentas = market.totalVentas,
                     totalGastos = totalG,
-                    arqueoMercadillo = m.arqueoMercadillo ?: 0.0,
+                    arqueoMercadillo = market.arqueoMercadillo ?: 0.0,
                     timestamp = System.currentTimeMillis()
                 )
+                linea
             }
 
+            es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
             if (connectivity.isConnected.first()) {
                 scope.launch {
                     runCatching { pushUno(linea) }
@@ -107,25 +102,18 @@ class GastosRepository(context: Context) {
         }
     }
 
+    suspend fun guardarGastos(idMercadillo: String, lineas: List<Pair<String, Double>>, formaPago: String, descontarDeCaja: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            db.withTransaction {
+                for ((descripcion, importe) in lineas) guardarGasto(idMercadillo, descripcion, importe, formaPago, descontarDeCaja).getOrThrow()
+            }
+            Result.success(Unit)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (failure: Exception) { Result.failure(failure) }
+    }
+
     private suspend fun pushUno(l: LineaGastoEntity) {
-        if (!DemoAccess.canSync(l.idUsuario)) return
-        val docId = "${l.idMercadillo}-${l.numeroLinea}"
-        val data = mapOf(
-            "idMercadillo" to l.idMercadillo,
-            "idUsuario" to l.idUsuario,
-            "numeroLinea" to l.numeroLinea,
-            "descripcion" to l.descripcion,
-            "importe" to l.importe,
-            "fechaHora" to l.fechaHora,
-            "formaPago" to l.formaPago,
-            "descontarDeCaja" to l.descontarDeCaja,   // ✅ nuevo campo en Firestore
-            "activo" to l.activo,
-            "version" to l.version,
-            "lastModified" to l.lastModified,
-            "fechaSync" to System.currentTimeMillis()
-        )
-        fs.collection("LineasGastos").document(docId).set(data, SetOptions.merge()).await()
-        gastosDao.marcarSincronizado(l.idMercadillo, l.numeroLinea, System.currentTimeMillis())
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     private suspend fun pushPendientes() {

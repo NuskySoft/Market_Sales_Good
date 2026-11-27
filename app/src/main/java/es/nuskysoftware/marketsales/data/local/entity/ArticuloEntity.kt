@@ -30,6 +30,7 @@ data class ArticuloEntity(
     // Campos Premium
     val precioCoste: Double? = null,
     val stock: Int? = null,
+    val stockBase: Int? = stock,
     val controlarStock: Boolean = false,
     val controlarCoste: Boolean = false,
 

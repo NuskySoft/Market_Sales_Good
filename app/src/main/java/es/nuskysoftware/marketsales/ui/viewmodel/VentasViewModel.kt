@@ -35,6 +35,7 @@ class VentasViewModel(
     private val articuloRepository: ArticuloRepository
 ) : ViewModel() {
 
+    private val ownerAtCreation = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId()
     private val _uiState = MutableStateFlow(VentasUiState())
     val uiState: StateFlow<VentasUiState> = _uiState.asStateFlow()
 
@@ -66,6 +67,7 @@ class VentasViewModel(
 
     // ---------- Persistencia en caché ----------
     private fun persistirSiProcede() {
+        if (es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId() != ownerAtCreation) return
         if (mercadilloId.isBlank()) return
         val s = _uiState.value
         if (s.loading) return
@@ -159,7 +161,7 @@ class VentasViewModel(
         actualizarState(
             _uiState.value.copy(
                 lineasTicket = lineasActualizadas,
-                totalTicket = lineasActualizadas.sumOf { it.subtotal },
+                totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(lineasActualizadas.map { it.subtotal }),
                 importeActual = "0,00",
                 descripcionActual = ""
             )
@@ -168,7 +170,7 @@ class VentasViewModel(
 
     fun eliminarLinea(lineaId: String) {
         val nuevas = _uiState.value.lineasTicket.filter { it.id != lineaId }
-        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = nuevas.sumOf { it.subtotal }))
+        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 
     fun editarCantidadLinea(idLinea: String, nuevaCantidad: Int) {
@@ -176,10 +178,10 @@ class VentasViewModel(
         val nuevas = actuales.map { l ->
             if (l.id == idLinea) {
                 if (nuevaCantidad <= 0) null
-                else l.copy(cantidad = nuevaCantidad, subtotal = l.precioUnitario * nuevaCantidad)
+                else l.copy(cantidad = nuevaCantidad, subtotal = es.nuskysoftware.marketsales.utils.Money.times(l.precioUnitario, nuevaCantidad))
             } else l
         }.filterNotNull()
-        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = nuevas.sumOf { it.subtotal }))
+        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 
     fun editarPrecioUnitarioLinea(idLinea: String, nuevoPrecio: Double) {
@@ -187,7 +189,7 @@ class VentasViewModel(
         val nuevas = _uiState.value.lineasTicket.map { l ->
             if (l.id == idLinea) l.copy(precioUnitario = nuevoPrecio, subtotal = nuevoPrecio * l.cantidad) else l
         }
-        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = nuevas.sumOf { it.subtotal }))
+        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 
     fun añadirProducto(idProducto: String, descripcion: String, precio: Double) {
@@ -208,18 +210,19 @@ class VentasViewModel(
                 subtotal = precio
             )
         }
-        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = nuevas.sumOf { it.subtotal }))
+        actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 
     // ---------- Finalizar venta ----------
     fun finalizarVenta(metodoPago: MetodoPago) {
         val s = _uiState.value
+        if (s.loading) return
         if (s.lineasTicket.isEmpty()) { mostrarError(t("no_hay_lineas_vender")); return }
         if (s.totalTicket <= 0.0) { mostrarError(t("total_mayor_cero")); return }
         if (mercadilloId.isBlank()) { mostrarError(t("mercadillo_no_inicializado")); return }
 
+        _uiState.value = s.copy(loading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = s.copy(loading = true, error = null)
             try {
                 val resultado = repository.guardarVenta(
                     idMercadillo = mercadilloId,
@@ -228,18 +231,7 @@ class VentasViewModel(
                     total = s.totalTicket
                 )
                 if (resultado.isSuccess) {
-                    if (ConfigurationManager.getIsPremium()) {
-                        s.lineasTicket.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.idProducto != null }
-                            .forEach { linea ->
-                                try {
-                                    val articulo = articuloRepository.getArticuloById(linea.idProducto!!)
-                                    if (articulo != null && articulo.controlarStock) {
-                                        val nuevoStock = (articulo.stock ?: 0) - linea.cantidad
-                                        articuloRepository.actualizarArticulo(articulo.copy(stock = nuevoStock))
-                                    }
-                                } catch (_: Exception) { }
-                            }
-                    }
+                    // Stock belongs to the durable sale outbox. Never discount here as well.
                     CarritoCache.clear(mercadilloId)
                     limpiarVenta()
                 } else {

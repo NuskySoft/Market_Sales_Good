@@ -40,11 +40,15 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Confirmado: Free podrá vender desde el catálogo, con un máximo de 10 unidades vendidas mediante catálogo por mercadillo, no 10 referencias distintas. Cuenta la cantidad vendida aunque se repita la misma referencia; ejemplo: vender 10 raciones de churros agota el límite aunque exista un único artículo de catálogo utilizado.
 - Premium: sin ese límite.
 - Las ventas manuales no están sujetas a este límite de catálogo.
-- Propuesta adicional aún por cerrar: una referencia distinta de catálogo por ticket en Free. El límite de 10 unidades se aplica al conjunto de tickets del mercadillo.
+- Confirmado: no se impone ningún límite adicional de referencias distintas por ticket. Se pueden combinar varios artículos y conceptos manuales en una misma venta, siempre que las unidades de catálogo acumuladas en el mercadillo no superen 10. Esta decisión sustituye la propuesta anterior de una sola referencia por ticket.
 - Precisar al implementar el tratamiento de abonos y el aviso al alcanzar el límite. No alterar ventas confirmadas.
 
 ### 2. Actualización manual / sincronización
 
-El gesto de deslizar hacia abajo en el calendario solicita una sincronización inmediata y actualmente está restringido a Premium. Se propone permitirlo también en Free, sin alterar la sincronización automática ni la restauración de una instalación vacía exclusiva de Premium. Pendiente de confirmación.
+Confirmado: el gesto de deslizar hacia abajo en el calendario estará disponible tanto en Free como en Premium. Ambas modalidades mantienen sincronización automática y actualización manual. La restauración de datos previos en instalación vacía sigue siendo exclusiva de Premium.
+
+### 3. Siguiente cuestión: saldos guardados y asignación
+
+Actualmente las pantallas de gestión de saldos guardados y asignación a otros mercadillos son Premium. Se propone mantener el arqueo, cierre y saldo inicial introducido manualmente en Free y Premium, reservando guardar/remitir saldos entre mercadillos y gestionar saldos pendientes a Premium. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

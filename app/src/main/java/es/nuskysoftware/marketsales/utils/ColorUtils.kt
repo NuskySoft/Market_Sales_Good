@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/ColorUtils.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Agrupa funciones auxiliares para manejar colores de la interfaz.
+
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import kotlin.random.Random

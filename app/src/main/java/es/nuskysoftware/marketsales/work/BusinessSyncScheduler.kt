@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.work
 
+// Responsabilidad: Programa la sincronización de negocio con WorkManager, separada del guardado local.
+
 import android.content.Context
 import androidx.work.*
 import java.util.concurrent.TimeUnit
@@ -21,6 +23,7 @@ object BusinessSyncScheduler {
     }
 }
 class BusinessSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    // Ejecuta el trabajo programado; el resultado determina si WorkManager debe reintentar.
     override suspend fun doWork(): Result = try {
         val uid = ConfigurationManager.getCurrentUserId()
         if (uid != null && DemoAccess.canSync(uid)) SyncEngine(applicationContext).sync(uid)

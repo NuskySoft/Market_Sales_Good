@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.work
 
+// Responsabilidad: Programa los reintentos de movimientos de stock locales y de su subida a Firebase.
+
 import android.content.Context
 import androidx.work.*
 import java.util.concurrent.TimeUnit
@@ -23,6 +25,7 @@ object StockMovementScheduler {
         requestUpload(context)
     }
 
+    // Encola un trabajo de subida condicionado por la disponibilidad de red.
     fun requestUpload(context: Context) {
         WorkManager.getInstance(context).enqueueUniqueWork(
             "stock-pending-upload", ExistingWorkPolicy.APPEND_OR_REPLACE,

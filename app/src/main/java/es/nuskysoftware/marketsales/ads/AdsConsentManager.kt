@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ads/AdsConsentManager.kt
 package es.nuskysoftware.marketsales.ads
 
+// Responsabilidad: Centraliza la obtención y actualización del consentimiento publicitario mediante UMP.
+
 import android.app.Activity
 import android.content.Context
 import com.google.android.ump.ConsentDebugSettings

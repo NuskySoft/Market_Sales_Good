@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.work
 
+// Responsabilidad: Ejecuta la recuperación de movimientos de existencias y su sincronización en trabajos independientes.
+
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -12,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 
 /** Local retry must work without internet and even if the user has explicitly signed out. */
 class StockMovementWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    // Ejecuta el trabajo programado; el resultado determina si WorkManager debe reintentar.
     override suspend fun doWork(): Result = try {
         val finished = StockMovementProcessor(AppDatabase.getDatabase(applicationContext)).processPending()
         StockMovementScheduler.requestUpload(applicationContext)
@@ -26,6 +29,7 @@ class StockMovementWorker(context: Context, params: WorkerParameters) : Coroutin
 
 /** Network work is separate, so lack of internet never delays the local stock adjustment. */
 class StockUploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    // Ejecuta el trabajo programado; el resultado determina si WorkManager debe reintentar.
     override suspend fun doWork(): Result {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return Result.success()
         return try {

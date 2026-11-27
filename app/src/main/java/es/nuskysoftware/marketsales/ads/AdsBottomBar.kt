@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ads
 
+// Responsabilidad: Controla la visibilidad de la banda publicitaria según consentimiento y estado del plan.
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue

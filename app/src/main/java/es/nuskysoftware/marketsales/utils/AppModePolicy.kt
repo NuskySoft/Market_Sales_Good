@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Define las modalidades Demo, gratuita y Premium, los límites y la autorización de sincronización.
+
 /** Product rules independent of Android and Firebase. */
 enum class AppMode { DEMO, FREE, PREMIUM }
 object AppModePolicy {
@@ -16,6 +18,7 @@ object AppModePolicy {
         return if (count >= limit) "demo_limite_$resource" else null
     }
     fun canSell(mode: AppMode, stateAllowsSales: Boolean) = mode == AppMode.DEMO || stateAllowsSales
+    // Comprueba si se permite sincronizar sin mezclar datos Demo con cuentas registradas.
     fun canSync(uid: String?, authenticatedUid: String?) = !isLocalOnly(uid) && uid == authenticatedUid
     fun canRefund(mode: AppMode) = mode != AppMode.DEMO
     fun canAssignBalance(mode: AppMode) = mode != AppMode.DEMO

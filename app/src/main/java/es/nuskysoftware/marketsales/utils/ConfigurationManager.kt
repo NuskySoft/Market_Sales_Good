@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Expone el estado de configuración y cuenta que observan las pantallas Compose.
+
 import android.content.ContentValues.TAG
 import android.util.Log
 import es.nuskysoftware.marketsales.BuildConfig
@@ -146,6 +148,7 @@ object ConfigurationManager {
     /**
      * Obtiene el ID del usuario actual
      */
+    // Devuelve el identificador de propietario que utiliza la sesión activa.
     fun getCurrentUserId(): String? {
         return _usuarioLogueado.value
     }

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.work
 
+// Responsabilidad: Programa las comprobaciones periódicas de estados y solicita su ejecución o subida cuando procede.
+
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -30,6 +32,7 @@ object AutoEstadoScheduler {
     private const val WORK_ONCE = "autoEstado_once"
 
     @RequiresApi(Build.VERSION_CODES.O)
+    // Registra trabajos periódicos únicos para que la programación no se duplique.
     fun scheduleDaily(context: Context) {
         val wm = WorkManager.getInstance(context)
 
@@ -46,6 +49,7 @@ object AutoEstadoScheduler {
         )
     }
 
+    // Cancela los trabajos diarios identificados por sus nombres únicos.
     fun cancelDaily(context: Context) {
         val wm = WorkManager.getInstance(context)
         wm.cancelUniqueWork(WORK_00)
@@ -53,6 +57,7 @@ object AutoEstadoScheduler {
     }
 
     /** Disparo inmediato para ponerse al día. */
+    // Solicita una comprobación inmediata mediante WorkManager.
     fun runOnceNow(context: Context) {
         val wm = WorkManager.getInstance(context)
         wm.enqueueUniqueWork(
@@ -62,6 +67,7 @@ object AutoEstadoScheduler {
         )
     }
 
+    // Encola un trabajo de subida condicionado por la disponibilidad de red.
     fun requestUpload(context: Context) {
         val request = OneTimeWorkRequest.Builder(AutoEstadoUploadWorker::class.java)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
@@ -74,6 +80,7 @@ object AutoEstadoScheduler {
     // ---------- helpers ----------
 
     @RequiresApi(Build.VERSION_CODES.O)
+    // Calcula la demora hasta la siguiente hora prevista; WorkManager no garantiza ejecución exacta.
     private fun periodicAt(hour: Int, minute: Int): PeriodicWorkRequest {
         val now = ZonedDateTime.now(ZoneId.of("Europe/Madrid"))
         var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)

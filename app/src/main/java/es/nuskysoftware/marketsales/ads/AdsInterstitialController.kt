@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ads
 
+// Responsabilidad: Gestiona precarga, presentación y frecuencia de anuncios intersticiales, con identificadores de prueba en debug.
+
 import android.app.Activity
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -50,6 +52,7 @@ object AdsInterstitialController {
     private val isLoading = AtomicBoolean(false)
     @Volatile private var onAfterClose: (() -> Unit)? = null
 
+    // Selecciona el identificador de anuncio según la variante de compilación.
     private fun adUnitId(context: Context): String =
         if (BuildConfig.DEBUG) {
             // Test ID oficial de Google para Interstitials
@@ -59,6 +62,7 @@ object AdsInterstitialController {
         }
 
     /** Llama tras MobileAds.initialize() y cada vez que quieras tener uno preparado. */
+    // Solicita un anuncio intersticial si las condiciones permiten hacerlo y no hay otro preparado.
     fun preload(context: Context) {
         if (isLoading.get() || interstitial != null) return
         if (!canServeAds()) return
@@ -96,6 +100,7 @@ object AdsInterstitialController {
      *  - y está precargado.
      * Si no cumple, ejecuta inmediatamente [onFinished].
      */
+    // Intenta mostrar el intersticial respetando modalidad, consentimiento y frecuencia.
     fun maybeShow(activity: Activity, onFinished: () -> Unit = {}) {
         if (!canServeAds() || !isWithinPolicy(activity)) {
             preload(activity)
@@ -117,6 +122,7 @@ object AdsInterstitialController {
     }
 
     // 💡 NUEVO: permitir “tirar” el interstitial precargado (cuando el usuario pasa a premium)
+    // Descarta la referencia al anuncio preparado.
     fun dropPreloaded() {
         interstitial = null
         isLoading.set(false)
@@ -150,6 +156,7 @@ object AdsInterstitialController {
     }
 
     /** Verifica consentimiento + premium de forma síncrona. */
+    // Comprueba las condiciones de consentimiento y plan antes de servir publicidad.
     private fun canServeAds(): Boolean {
         val consentOk = try {
             AdsConsentManager.canRequestAds.value

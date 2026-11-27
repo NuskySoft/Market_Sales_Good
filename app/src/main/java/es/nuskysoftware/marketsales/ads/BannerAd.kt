@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ads/BannerAd.kt
 package es.nuskysoftware.marketsales.ads
 
+// Responsabilidad: Crea y libera la vista publicitaria adaptativa del pie de pantalla.
+
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -19,6 +21,7 @@ import com.google.android.gms.ads.AdView
  * Crea un AdView nuevo cuando cambian el ID o el ancho para fijar el tamaño SOLO una vez.
  */
 @Composable
+// Crea la vista adaptativa de banner y vincula su liberación al ciclo de composición.
 fun BannerAdBottom(
     modifier: Modifier = Modifier,
     adUnitId: String, // usa el TEST ID de Google en desarrollo

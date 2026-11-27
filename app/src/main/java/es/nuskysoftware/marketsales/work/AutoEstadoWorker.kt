@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.work
 
+// Responsabilidad: Ejecuta el recálculo de estados y el envío pendiente como trabajos separados de WorkManager.
+
 import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
@@ -13,6 +15,7 @@ import es.nuskysoftware.marketsales.utils.AppModePolicy
 import kotlinx.coroutines.CancellationException
 
 class AutoEstadoWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    // Ejecuta el trabajo programado; el resultado determina si WorkManager debe reintentar.
     override suspend fun doWork(): Result = try {
         val uid = ConfigurationManager.getCurrentUserId()
         if (!uid.isNullOrBlank() && uid != AppModePolicy.DEMO_USER_ID) {
@@ -29,6 +32,7 @@ class AutoEstadoWorker(context: Context, params: WorkerParameters) : CoroutineWo
 }
 
 class AutoEstadoUploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    // Ejecuta el trabajo programado; el resultado determina si WorkManager debe reintentar.
     override suspend fun doWork(): Result {
         val uid = ConfigurationManager.getCurrentUserId() ?: return Result.success()
         if (!DemoAccess.canSync(uid)) return Result.success()

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/PestanaVentaManual.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Permite introducir conceptos de venta que no pertenecen al catálogo.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +23,7 @@ import es.nuskysoftware.marketsales.utils.MonedaUtils
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Gestiona la introducción de conceptos manuales y transmite las acciones al estado de venta.
 fun PestanaVentaManual(
     navController: NavController,
     ventasViewModel: VentasViewModel,

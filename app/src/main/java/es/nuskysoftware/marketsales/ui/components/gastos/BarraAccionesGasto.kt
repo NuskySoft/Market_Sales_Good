@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/gastos/BarraAccionesGasto.kt
 package es.nuskysoftware.marketsales.ui.components.gastos
 
+// Responsabilidad: Acciones del flujo de gastos.
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +27,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Acciones del flujo de gastos.
 fun BarraAccionesGasto(
     enabledCargar: Boolean,
     numLineas: Int,

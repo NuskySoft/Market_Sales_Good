@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Dibuja el icono del carrito y su información visual de contenido.
+
 import androidx.compose.runtime.collectAsState
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager

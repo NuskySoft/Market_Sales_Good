@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/PestanaVentaProductos.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Presenta el catálogo y permite seleccionar artículos y cantidades para la venta.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -44,6 +46,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 @Composable
+// Observa los artículos y las categorías para construir la selección de productos del carrito.
 fun PestanaVentaProductos(
     ventasViewModel: VentasViewModel,
     navController: NavController,

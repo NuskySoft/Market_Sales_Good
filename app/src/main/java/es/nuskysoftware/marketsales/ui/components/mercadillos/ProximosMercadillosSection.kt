@@ -2,6 +2,8 @@
 
 package es.nuskysoftware.marketsales.ui.components.mercadillos
 
+// Responsabilidad: Presenta la sección de próximos mercadillos a partir de los datos observables.
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,6 +17,7 @@ import es.nuskysoftware.marketsales.ui.viewmodel.ProximosMercadillosViewModelFac
 import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 
 @Composable
+// Presenta la sección de próximos mercadillos a partir de los datos observables.
 fun ProximosMercadillosSection(
     navController: NavController?,
     modifier: Modifier = Modifier
@@ -24,6 +27,7 @@ fun ProximosMercadillosSection(
         viewModel(factory = ProximosMercadillosViewModelFactory(context))
     val ui by vm.ui.collectAsState()
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (Unit).
     LaunchedEffect(Unit) { vm.cargar() }
 
     when {

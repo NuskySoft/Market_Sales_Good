@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.ui.components
+
+// Responsabilidad: Menú principal con accesos que dependen de la modalidad y la sesión.
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +33,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.launch
 
 @Composable
+// Construye las opciones de navegación y refleja el acceso permitido por modalidad.
 fun MenuHamburguesa(
     navController: NavController,
     drawerState: DrawerState
@@ -146,27 +149,7 @@ fun MenuHamburguesa(
                     )
                 }
 
-//            item {
-//                MenuOption(
-//                    iconRes = R.drawable.ic_inventory,
-//                    title = StringResourceManager.getString("inventario", currentLanguage),
-//                    onClick = {
-//                        scope.launch { drawerState.close() }
-//                        navController.navigate("inventario")
-//                    }
-//                )
-//            }
 //
-//            item {
-//                MenuOption(
-//                    iconRes = R.drawable.ic_list,
-//                    title = StringResourceManager.getString("listados", currentLanguage),
-//                    onClick = {
-//                        scope.launch { drawerState.close() }
-//                        navController.navigate("listados")
-//                    }
-//                )
-//            }
 
                 item {
                     MenuOption(

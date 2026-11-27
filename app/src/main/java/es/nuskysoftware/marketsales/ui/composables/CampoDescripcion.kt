@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/CampoDescripcion.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Campo reutilizable de descripción de conceptos introducidos por el usuario.
+
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -13,6 +15,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Campo reutilizable de descripción de conceptos introducidos por el usuario.
 fun CampoDescripcion(
     descripcion: String,
     onDescripcionChange: (String) -> Unit,

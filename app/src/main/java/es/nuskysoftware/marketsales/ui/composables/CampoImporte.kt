@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/CampoImporte.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Campo reutilizable de importe con control de entrada y presentación monetaria.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,6 +16,7 @@ import es.nuskysoftware.marketsales.utils.MonedaUtils
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Campo reutilizable de importe con control de entrada y presentación monetaria.
 fun CampoImporte(
     importe: String,
     modifier: Modifier = Modifier

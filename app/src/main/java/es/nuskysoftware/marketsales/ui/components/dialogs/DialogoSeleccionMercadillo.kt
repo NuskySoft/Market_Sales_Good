@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/dialogs/DialogoSeleccionMercadillo.kt
 package es.nuskysoftware.marketsales.ui.components.dialogs
 
+// Responsabilidad: Diálogo de selección de un mercadillo para la operación que lo invoca.
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +19,7 @@ import es.nuskysoftware.marketsales.utils.MercadillosFilters
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Diálogo de selección de un mercadillo para la operación que lo invoca.
 fun DialogoSeleccionMercadillo(
     mercadillos: List<MercadilloEntity>,
     currentUserId: String?,                 // 👈 para evitar mostrar mercadillos de otros usuarios

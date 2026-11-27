@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Presenta las opciones de navegación lateral y sus acciones.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -25,6 +27,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Presenta las opciones de navegación y los eventos de cierre del menú.
 fun MenuLateral(
     configuracionViewModel: ConfiguracionViewModel,
     authViewModel: AuthViewModel,
@@ -41,12 +44,6 @@ fun MenuLateral(
     var mostrarDialogoLogout by remember { mutableStateOf(false) }
 
     // ✅ TODO: Implementar PantallaConfiguracion como Modal o Dialog
-    // if (mostrarConfiguracion) {
-    //     PantallaConfiguracion(
-    //         configuracionViewModel = configuracionViewModel,
-    //         onCloseConfiguration = { mostrarConfiguracion = false }
-    //     )
-    // }
 
     if (mostrarDialogoLogout) {
         AlertDialog(

@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.ui.composables
+
+// Responsabilidad: Presenta las decisiones de recuperación de datos o reinicio de cuenta.
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
+// Observa el estado de recuperación pendiente y muestra la decisión que debe tomar el usuario.
 fun RecoveryDialogs() {
     val context = LocalContext.current
     val gate = remember { RecoveryGate(context) }

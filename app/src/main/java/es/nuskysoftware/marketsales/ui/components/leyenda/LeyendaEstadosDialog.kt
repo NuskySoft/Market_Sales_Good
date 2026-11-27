@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.components.leyenda
 
+// Responsabilidad: Presenta la leyenda de estados y colores del calendario.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape

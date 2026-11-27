@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/proximos/CardMercadillosProximos.kt
 package es.nuskysoftware.marketsales.ui.components.proximos
 
+// Responsabilidad: Representa un mercadillo próximo y permite interactuar con su ficha.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,6 +29,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 @Composable
+// Representa un mercadillo próximo y permite interactuar con su ficha.
 fun CardMercadillosProximos(
     mercadillosProximos: List<MercadilloEntity>,
     onMercadilloClick: (MercadilloEntity) -> Unit

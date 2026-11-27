@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.components.calendario
 
+// Responsabilidad: Distribuye los días del mes en la cuadrícula del calendario.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,6 +23,7 @@ import es.nuskysoftware.marketsales.utils.EstadosMercadillo
 import java.util.Calendar
 
 @Composable
+// Distribuye los días del mes y delega las pulsaciones en el manejador recibido.
 fun CalendarioGrid(
     ano: Int,
     mes: Int, // 1..12

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/ventas/BarraAccionesVenta.kt
 package es.nuskysoftware.marketsales.ui.components.ventas
 
+// Responsabilidad: Barra de acciones para las pantallas del flujo de venta.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +18,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Barra de acciones para las pantallas del flujo de venta.
 fun BarraAccionesVenta(
     ventasViewModel: VentasViewModel,
     totalFormateado: String,

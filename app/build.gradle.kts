@@ -1,3 +1,4 @@
+// Configuración del módulo Android: plugins, firma, variantes, SDK, versión y dependencias.
 import java.util.Properties
 
 plugins {
@@ -13,12 +14,14 @@ plugins {
 
 }
 
+// Lee la configuración de firma privada si existe. Debug no necesita la clave release.
 val signingProperties = Properties().apply {
     val signingFile = rootProject.file("keystore.properties")
     if (signingFile.isFile) signingFile.inputStream().use { load(it) }
 }
 
 android {
+    // La firma release se conserva fuera del repositorio para no publicar contraseñas.
     signingConfigs {
         create("release") {
             storeFile = signingProperties.getProperty("storeFile")?.let { rootProject.file(it) }
@@ -37,15 +40,19 @@ android {
             isMinifyEnabled = false
         }
     }
+    // Espacio de nombres Kotlin/Android y SDK utilizado para compilar.
     namespace = "es.nuskysoftware.marketsales"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "es.nuskysoftware.marketsales"
+        // Android 8 (API 26) es el mínimo declarado por la aplicación.
         minSdk = 26
+        // Nivel de API para el que se declara el comportamiento objetivo.
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.4"
+        // El código numérico aumenta en cada entrega; la interfaz muestra VERSION_NAME.
+        versionCode = 9
+        versionName = "2.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -62,6 +69,7 @@ android {
         debug { }
     }
 
+    // Mantiene el nivel de bytecode de Java y Kotlin configurado en la versión anterior.
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -70,6 +78,7 @@ android {
         jvmTarget = "11"
     }
 
+    // Habilita Compose y la generación de BuildConfig, fuente de versión y variante.
     buildFeatures {
         compose = true
         buildConfig = true
@@ -96,27 +105,29 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
 
-    // ===== Tu stack existente =====
+    // Integración Android, ciclo de vida, actividad Compose y navegación.
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
 
+    // Room: acceso a SQLite y generación de código de las consultas y entidades mediante KSP.
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
 
-    // (mantén tus otras dependencias tal cual)
+    // Selector de color, ViewModel Compose y extensiones Kotlin de Room.
     implementation("com.github.skydoves:colorpicker-compose:1.1.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
     implementation("androidx.room:room-ktx:2.7.1")
 
-    // Firebase BOM + artefactos (si ya los usabas así)
+    // Firebase: BOM, Firestore para datos remotos y Auth para autenticación de cuentas.
     implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth:22.3.0")
     // (tenías también una segunda firestore con 24.9.1; conserva solo una línea para evitar duplicados)
     // implementation("com.google.firebase:firebase-firestore:24.9.1")
 
+    // WorkManager: trabajos persistentes de sincronización, stock y estados.
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Google Auth / Credentials
@@ -126,7 +137,7 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-    // Dependencias que dejaste duplicadas con otras versiones:
+    // Dependencias ya presentes en 2.4. Se conservan sus declaraciones para no alterar la resolución de Gradle.
     implementation("androidx.room:room-ktx:2.6.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
@@ -141,7 +152,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
 
-    // Tests
+    // JUnit para pruebas locales; AndroidX y Espresso para pruebas instrumentadas.
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -160,105 +171,3 @@ IMPORTANTE:
 - Usa SIEMPRE los nuevos imports de Material 3:
     androidx.compose.material3.pulltorefresh.*
 */
-
-
-//plugins {
-//    id("com.android.application")
-//    id("org.jetbrains.kotlin.android")
-//    id("org.jetbrains.kotlin.plugin.compose")
-//    id("com.google.devtools.ksp")
-//    id("com.google.gms.google-services")
-//    id ("kotlin-kapt")
-//}
-//
-//android {
-//    namespace = "es.nuskysoftware.marketsales"
-//    compileSdk = 36
-//
-//    defaultConfig {
-//        applicationId = "es.nuskysoftware.marketsales"
-//        minSdk = 24
-//        targetSdk = 36
-//        versionCode = 1
-//        versionName = "1.0"
-//        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-//    }
-//
-//    buildTypes {
-//        release {
-//            isMinifyEnabled = false
-//            proguardFiles(
-//                getDefaultProguardFile("proguard-android-optimize.txt"),
-//                "proguard-rules.pro"
-//            )
-//        }
-//    }
-//
-//    compileOptions {
-//        sourceCompatibility = JavaVersion.VERSION_11
-//        targetCompatibility = JavaVersion.VERSION_11
-//    }
-//
-//    kotlinOptions {
-//        jvmTarget = "11"
-//    }
-//
-//    buildFeatures {
-//        compose = true
-//    }
-//}
-//
-//dependencies {
-//    implementation(libs.androidx.core.ktx)
-//    implementation(libs.androidx.lifecycle.runtime.ktx)
-//    implementation(libs.androidx.activity.compose)
-//    implementation(platform(libs.androidx.compose.bom))
-//    implementation(libs.androidx.ui)
-//    implementation(libs.androidx.ui.graphics)
-//    implementation(libs.androidx.ui.tooling.preview)
-//    implementation(libs.androidx.material3)
-//    implementation(libs.androidx.navigation.compose)
-//    implementation(libs.androidx.room.runtime)
-//    implementation(libs.androidx.foundation)
-//    implementation(libs.material3)
-//
-//
-//    testImplementation(libs.junit)
-//    androidTestImplementation(libs.androidx.junit)
-//    androidTestImplementation(libs.androidx.espresso.core)
-//    androidTestImplementation(platform(libs.androidx.compose.bom))
-//    androidTestImplementation(libs.androidx.ui.test.junit4)
-//    debugImplementation(libs.androidx.ui.tooling)
-//    debugImplementation(libs.androidx.ui.test.manifest)
-//    ksp(libs.androidx.room.compiler)
-//
-//    implementation("com.github.skydoves:colorpicker-compose:1.1.2")
-//
-//    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-//
-//    implementation("androidx.room:room-ktx:2.7.1")
-//
-//    // ✅ Firebase BOM (maneja versiones automáticamente)
-//    implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
-//    implementation("com.google.firebase:firebase-firestore")
-//
-//    implementation("androidx.work:work-runtime-ktx:2.9.0")
-//
-//    // ✅ FIREBASE AUTH PARA FASE 2
-//    implementation("com.google.firebase:firebase-auth:22.3.0")
-//    implementation("com.google.firebase:firebase-firestore:24.9.1")
-//
-//    // ✅ GOOGLE AUTH V8 - NUEVAS DEPENDENCIAS AGREGADAS
-//    implementation("com.google.android.gms:play-services-auth:20.7.0")
-//    implementation("androidx.credentials:credentials:1.3.0")
-//    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-//    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
-//
-//    // ✅ AGREGADO SOLO LO NECESARIO PARA FASE 2:
-//    implementation("androidx.room:room-ktx:2.6.0")
-//    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-//    implementation("androidx.compose.material:material-icons-extended:1.5.4")
-//
-//    implementation("com.github.skydoves:colorpicker-compose:1.0.5")
-//}

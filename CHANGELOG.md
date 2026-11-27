@@ -1,3 +1,10 @@
+# 2.5 — 27-11-2026 — limpieza y documentación interna
+
+- Base: 2.4 aceptada por el usuario; respaldo `backup/v2.4-validada`.
+- Limpieza de implementaciones comentadas y documentación en castellano dentro de los archivos Kotlin y Gradle. Se conservan los comentarios explicativos.
+- No se cambia deliberadamente la lógica, dependencias, esquema Room ni reglas de negocio. versionCode 9, versionName 2.5.
+- Compilación y pruebas de ejecución Android pendientes de validar.
+
 # 2.4 — 27-11-2026 — candidata para pruebas
 
 - Lote conjunto de correcciones de sincronización local/Firebase, separación de cuentas y empresa, bajas de catálogo, categoría protegida, saldos múltiples y asignación transaccional.

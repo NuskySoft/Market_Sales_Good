@@ -11,6 +11,11 @@ internal object SpanishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        // Límites Free y alta desde calendario.
+        "free_catalog_limit" -> "Has alcanzado el límite de 10 unidades de catálogo por mercadillo. Ajusta las cantidades o continúa con venta manual; Premium no tiene este límite."
+        "free_catalog_remaining" -> "Unidades de catálogo disponibles: {0} de 10"
+        "free_market_year_limit" -> "Has alcanzado el máximo de 50 mercadillos para ese año. Premium permite altas ilimitadas."
+        "premium_calendar_create" -> "El alta directa desde el calendario es exclusiva de Premium."
         "account_loading" -> "Cargando cuenta…"
         "recovery_decision_required" -> "Antes de guardar, decide si quieres recuperar los datos anteriores o empezar de cero."
         "category_protected" -> "La categoría Sin categorizar no se puede borrar."

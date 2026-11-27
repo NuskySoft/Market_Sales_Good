@@ -12,6 +12,11 @@ internal object EnglishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        // Free quotas and calendar shortcut.
+        "free_catalog_limit" -> "The Free limit is 10 catalogue units per market. Adjust quantities or continue with manual sales; Premium has no such limit."
+        "free_catalog_remaining" -> "Catalogue units available: {0} of 10"
+        "free_market_year_limit" -> "You have reached the limit of 50 markets for that year. Premium allows unlimited markets."
+        "premium_calendar_create" -> "Creating a market directly from the calendar is exclusive to Premium."
         "account_loading" -> "Loading account…"
         "recovery_decision_required" -> "Before saving, choose whether to recover your previous data or start again."
         "category_protected" -> "The Uncategorized category cannot be deleted."

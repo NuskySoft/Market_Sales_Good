@@ -5,6 +5,13 @@ package es.nuskysoftware.marketsales.utils
 /** Product rules independent of Android and Firebase. */
 enum class AppMode { DEMO, FREE, PREMIUM }
 object AppModePolicy {
+    // Cupos de la modalidad gratuita; la Demo mantiene sus propios límites.
+    const val FREE_CATALOG_UNITS = 10L
+    const val FREE_MARKETS_YEAR = 50
+    fun catalogRemaining(sold: Long): Long = (FREE_CATALOG_UNITS - sold).coerceIn(0L, FREE_CATALOG_UNITS)
+    fun canUseCatalog(mode: AppMode, sold: Long, requested: Long): Boolean =
+        requested <= 0L || mode == AppMode.PREMIUM || (mode == AppMode.FREE && requested <= catalogRemaining(sold))
+
     const val DEMO_USER_ID = "demo_local_v2"
     fun mode(authenticated: Boolean, premium: Boolean) = when {
         !authenticated -> AppMode.DEMO

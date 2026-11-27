@@ -113,9 +113,12 @@ fun PantallaVentas(
                         navController = navController,
                         mercadilloActivo = mercadilloActivo,
                         onRealizarCargo = { totalFmt ->
-                            navController.navigate(
-                                "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
-                            )
+                            // Comprobar el cupo antes de pedir el método de pago.
+                            ventasViewModel.antesDeCobrar {
+                                navController.navigate(
+                                    "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
+                                )
+                            }
                         }
                     )
                 }
@@ -125,9 +128,12 @@ fun PantallaVentas(
                         navController = navController,
                         mercadilloActivo = mercadilloActivo,
                         onRealizarCargo = { totalFmt ->
-                            navController.navigate(
-                                "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
-                            )
+                            // Comprobar el cupo antes de pedir el método de pago.
+                            ventasViewModel.antesDeCobrar {
+                                navController.navigate(
+                                    "metodo_pago/${mercadilloActivo.idMercadillo}/${Uri.encode(totalFmt)}"
+                                )
+                            }
                         }
                     )
                 }

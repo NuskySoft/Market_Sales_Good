@@ -71,6 +71,22 @@ class VentasRepository(
      * @param total Importe recibido desde la interfaz, utilizado por la validación Demo.
      * @return Identificador del recibo confirmado, o fallo de la operación local.
      */
+    /** Unidades confirmadas del catálogo; el borrador se suma aparte en la interfaz. */
+    fun observarUnidadesCatalogo(uid: String, market: String): Flow<Long> =
+        lineasVentaDao.observarUnidadesCatalogoVendidas(uid, market)
+
+    // Consulta previa al cobro; la comprobación definitiva se repite dentro de la transacción.
+    suspend fun admiteCatalogo(uid: String, market: String, lineas: List<LineaVentaUI>): Boolean {
+        DemoAccess.requireOwner(uid)
+        val requested = unidadesCatalogo(lineas)
+        if (requested == 0L) return true
+        val mode = DemoAccess.mode()
+        return es.nuskysoftware.marketsales.utils.AppModePolicy.canUseCatalog(mode, lineasVentaDao.unidadesCatalogoVendidas(uid, market), requested)
+    }
+
+    private fun unidadesCatalogo(lineas: List<LineaVentaUI>): Long =
+        lineas.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.cantidad > 0 && it.idLineaOriginalAbonada == null }.sumOf { it.cantidad.toLong() }
+
     suspend fun guardarVenta(
         idMercadillo: String,
         lineas: List<LineaVentaUI>,
@@ -95,6 +111,12 @@ class VentasRepository(
                     val previous = lineasVentaDao.obtenerLineasPorMercadillo(idMercadillo).first()
                     check(previous.none { it.idLineaOriginalAbonada == refund.idLineaOriginalAbonada }) { "Already refunded" }
                 }
+                // El cupo se comprueba bajo la misma transacción que guarda el ticket para evitar
+                // que dos confirmaciones locales simultáneas consuman las mismas unidades.
+                if (!admiteCatalogo(userId, idMercadillo, lineas)) {
+                    DemoAccess.deny("free_catalog_limit")
+                }
+                check(market.activo) { "Market unavailable" }
                 // El límite Demo cuenta recibos existentes y se verifica dentro de la transacción.
                 DemoAccess.checkLimit("ventas", recibosDao.contarDemo(userId))
                 if (DemoAccess.isDemo() && (total <= 0 || lineas.any { it.cantidad <= 0 || it.subtotal < 0 || it.idLineaOriginalAbonada != null })) {

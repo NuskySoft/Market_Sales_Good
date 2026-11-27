@@ -10,6 +10,15 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface LineasVentaDao {
+    /** Cuenta unidades positivas de catálogo de tickets confirmados, incluso si luego se abonan.
+     * El propietario y el mercadillo delimitan el cupo; las líneas manuales no consumen unidades. */
+    @Query("SELECT COALESCE(SUM(l.cantidad), 0) FROM lineas_venta l JOIN recibos r ON r.idRecibo = l.idRecibo AND r.idMercadillo = l.idMercadillo AND r.idUsuario = l.idUsuario WHERE l.idUsuario = :uid AND l.idMercadillo = :market AND l.tipoLinea = 'PRODUCTO' AND l.cantidad > 0 AND l.idLineaOriginalAbonada IS NULL AND r.estado = 'COMPLETADO'")
+    suspend fun unidadesCatalogoVendidas(uid: String, market: String): Long
+
+    // Mismo cómputo reactivo para informar del cupo antes del cobro.
+    @Query("SELECT COALESCE(SUM(l.cantidad), 0) FROM lineas_venta l JOIN recibos r ON r.idRecibo = l.idRecibo AND r.idMercadillo = l.idMercadillo AND r.idUsuario = l.idUsuario WHERE l.idUsuario = :uid AND l.idMercadillo = :market AND l.tipoLinea = 'PRODUCTO' AND l.cantidad > 0 AND l.idLineaOriginalAbonada IS NULL AND r.estado = 'COMPLETADO'")
+    fun observarUnidadesCatalogoVendidas(uid: String, market: String): Flow<Long>
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<LineaVentaEntity>)

@@ -51,8 +51,8 @@ fun PantallaConfiguracion(
     val isAuthenticated by ConfigurationManager.isAuthenticated.collectAsState()
     val appVersionText = ConfigurationManager.versionAppValue
 
-    // Permisos V10 simplificados
-    val canChangeAdvanced = esPremium // En lugar de ConfigurationManager.canChangeConfiguration()
+    // Idioma, fuente y moneda son opciones básicas de toda cuenta registrada; Demo es de solo lectura.
+    val canChangeAdvanced = isAuthenticated && !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()
 
     Scaffold(
         topBar = {

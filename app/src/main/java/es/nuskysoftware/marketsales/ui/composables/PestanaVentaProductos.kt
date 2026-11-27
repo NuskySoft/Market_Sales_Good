@@ -63,7 +63,8 @@ fun PestanaVentaProductos(
     val esPremium by ConfigurationManager.esPremium.collectAsState()
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
-    if (!esPremium) {
+    // La Demo conserva el catálogo de venta bloqueado; Free dispone de un cupo de unidades.
+    if (es.nuskysoftware.marketsales.utils.AppModePolicy.isLocalOnly(userId)) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -118,6 +119,9 @@ fun PestanaVentaProductos(
         }
     }
 
+    val sold by ventasViewModel.catalogSold.collectAsState()
+    // El contador muestra unidades disponibles, incluidas las ya reservadas en el carrito.
+    val draftUnits = uiState.lineasTicket.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.cantidad > 0 }.sumOf { it.cantidad.toLong() }
     val totalFmt = MonedaUtils.formatearImporte(uiState.totalTicket, moneda)
 
     Column(
@@ -125,6 +129,15 @@ fun PestanaVentaProductos(
             .fillMaxSize()
             .padding(bottom = 8.dp)
     ) {
+        if (!esPremium) {
+            val remaining = sold?.let { (es.nuskysoftware.marketsales.utils.AppModePolicy.catalogRemaining(it) - draftUnits).coerceAtLeast(0L) }
+            Text(
+                text = if (remaining == null) StringResourceManager.getString("account_loading", currentLanguage)
+                    else StringResourceManager.getString("free_catalog_remaining", currentLanguage).replace("{0}", remaining.toString()),
+                modifier = Modifier.padding(8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         // ===== Título + Lupa / Buscador =====
         if (!mostrandoBusqueda) {
             Row(

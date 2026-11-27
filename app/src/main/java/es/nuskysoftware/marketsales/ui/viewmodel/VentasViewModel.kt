@@ -18,6 +18,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class VentasUiState(
@@ -43,6 +44,35 @@ class VentasViewModel(
 
     private var mercadilloId: String = ""
     private var usuarioId: String = ""
+    // Unidades de catálogo ya confirmadas en Room; no se contabilizan borradores ni devoluciones.
+    private val _catalogSold = MutableStateFlow<Long?>(null)
+    val catalogSold: StateFlow<Long?> = _catalogSold.asStateFlow()
+    private var catalogJob: kotlinx.coroutines.Job? = null
+
+    /** Valida el carrito antes de abrir el cobro, conservándolo si se supera el cupo. */
+    fun antesDeCobrar(onAllowed: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                if (repository.admiteCatalogo(usuarioId, mercadilloId, _uiState.value.lineasTicket)) onAllowed()
+                else mostrarError(t("free_catalog_limit"))
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                mostrarError(e.message ?: t("local_save_failed"))
+            }
+        }
+    }
+
+    // Evita aumentar el borrador por encima del cupo conocido; las reducciones siempre se admiten.
+    private fun admiteAumento(actuales: List<LineaVentaUI>, nuevas: List<LineaVentaUI>): Boolean {
+        if (ConfigurationManager.getIsPremium()) return true
+        fun units(items: List<LineaVentaUI>) = items.filter { it.tipoLinea == TipoLinea.PRODUCTO && it.cantidad > 0 && it.idLineaOriginalAbonada == null }.sumOf { it.cantidad.toLong() }
+        val wanted = units(nuevas)
+        if (wanted <= units(actuales)) return true
+        val sold = _catalogSold.value
+        if (sold != null && es.nuskysoftware.marketsales.utils.AppModePolicy.canUseCatalog(es.nuskysoftware.marketsales.utils.DemoAccess.mode(), sold, wanted)) return true
+        mostrarError(t(if (sold == null) "account_loading" else "free_catalog_limit"))
+        return false
+    }
 
     // Idioma actual (para StringResourceManager)
     private val currentLanguage get() = ConfigurationManager.idioma.value
@@ -54,6 +84,11 @@ class VentasViewModel(
     fun inicializar(mercadilloId: String, usuarioId: String) {
         this.mercadilloId = mercadilloId
         this.usuarioId = usuarioId
+        catalogJob?.cancel()
+        _catalogSold.value = null
+        catalogJob = viewModelScope.launch {
+            repository.observarUnidadesCatalogo(usuarioId, mercadilloId).collect { _catalogSold.value = it }
+        }
 
         // Restaurar borrador si existe
         CarritoCache.load(mercadilloId)?.let { draft ->
@@ -183,6 +218,7 @@ class VentasViewModel(
                 else l.copy(cantidad = nuevaCantidad, subtotal = es.nuskysoftware.marketsales.utils.Money.times(l.precioUnitario, nuevaCantidad))
             } else l
         }.filterNotNull()
+        if (!admiteAumento(actuales, nuevas)) return
         actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 
@@ -212,6 +248,7 @@ class VentasViewModel(
                 subtotal = precio
             )
         }
+        if (!admiteAumento(actuales, nuevas)) return
         actualizarState(_uiState.value.copy(lineasTicket = nuevas, totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(nuevas.map { it.subtotal })))
     }
 

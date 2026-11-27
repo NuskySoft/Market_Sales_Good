@@ -228,7 +228,8 @@ object ConfigurationManager {
      * Verifica si el usuario puede cambiar configuración
      */
     fun canChangeConfiguration(): Boolean {
-        return _esPremium.value
+        // Free y Premium comparten los ajustes locales; Demo solo consulta.
+        return _isAuthenticated.value && !AppModePolicy.isLocalOnly(_usuarioLogueado.value)
     }
 
     /**

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/MercadilloEntity.kt
 package es.nuskysoftware.marketsales.data.local.entity
 
+// Responsabilidad: Mercadillo y su planificación, estado, información económica y control de sincronización.
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
@@ -18,9 +20,11 @@ import java.util.UUID
 @Entity(tableName = "mercadillos")
 data class MercadilloEntity(
     @PrimaryKey
+    // Identificador del mercadillo al que pertenece la operación.
     val idMercadillo: String = UUID.randomUUID().toString(),
 
     // ✅ Campo para vincular con usuario
+    // Identificador de la cuenta propietaria.
     val userId: String = "",
 
     // ========== DATOS BÁSICOS (MÍNIMOS REQUERIDOS) ==========
@@ -55,11 +59,15 @@ data class MercadilloEntity(
     val arqueoMercadillo: Double? = null, // saldoInicial + totalVentas - totalGastos - importeSuscripcion
 
     // ========== CAMPOS DE CONTROL ==========
+    // Marca de actividad; permite distinguir datos vigentes de bajas.
     val activo: Boolean = true,
 
     // ========== CAMPOS SINCRONIZACIÓN HÍBRIDA ==========
+    // Revisión del registro utilizada para el control de cambios.
     val version: Long = 1,
+    // Marca temporal de la modificación; no debe confundirse con la hora de subida.
     val lastModified: Long = System.currentTimeMillis(),
+    // Indica si esta revisión local está confirmada en Firebase.
     val sincronizadoFirebase: Boolean = false
 ) {
     // Constructor vacío para Firestore

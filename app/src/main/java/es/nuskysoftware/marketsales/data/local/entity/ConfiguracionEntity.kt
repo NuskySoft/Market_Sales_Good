@@ -1,6 +1,8 @@
     // app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/ConfiguracionEntity.kt
 package es.nuskysoftware.marketsales.data.local.entity
 
+// Responsabilidad: Preferencias de funcionamiento y presentación guardadas localmente.
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -32,9 +34,12 @@ data class ConfiguracionEntity(
     val fechaUltimaSync: String? = null,
 
     // ========== SINCRONIZACIÓN V10 ==========
+    // Revisión del registro utilizada para el control de cambios.
     val version: Long = 1,
+    // Marca temporal de la modificación; no debe confundirse con la hora de subida.
     val lastModified: Long = System.currentTimeMillis(),
     val pendienteSync: Boolean = false,
+    // Indica si esta revisión local está confirmada en Firebase.
     val sincronizadoFirebase: Boolean = false
 )
 

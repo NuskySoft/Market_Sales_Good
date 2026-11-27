@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/local/entity/UserEntity.kt
 package es.nuskysoftware.marketsales.data.local.entity
 
+// Responsabilidad: Perfil de cuenta autenticada y datos de plan de usuario persistidos en Room.
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -21,6 +23,8 @@ data class UserEntity(
 
     val fechaCreacion: Long = System.currentTimeMillis(),
     val fechaUltimaSync: String? = null,
+    // Indica si esta revisión local está confirmada en Firebase.
     val sincronizadoFirebase: Boolean = false,
+    // Marca de actividad; permite distinguir datos vigentes de bajas.
     val activo: Boolean = true
 )

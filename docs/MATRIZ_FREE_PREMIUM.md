@@ -28,8 +28,8 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - PDF: generación, consulta, personalización y envío exclusivos de Premium; registro y consulta de ventas comunes. Confirmado (ver RECIBOS_2_6.md).
 - Inventario: exclusivo de Premium, confirmado; incluye entradas y ajustes, historial, valoración y avisos de stock mínimo.
 - Listados e informes: distribución confirmada. Free conserva listados y resúmenes individuales; Premium añade informes agregados, estadísticas, comparativas y exportaciones.
-- Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
-- Leyenda del calendario: común, propuesta (ya existe un diálogo accesible desde calendario).
+- Contratar/cancelar Premium: modelo comercial confirmado en el apartado 16; precios definitivos pendientes.
+- Leyenda del calendario: común a Free y Premium, confirmada (ya existe un diálogo accesible desde calendario).
 - Integraciones con cualquier plataforma de venta online: exclusivamente Premium, confirmado; no implementadas.
 - Usuarios colaboradores/roles de empresa: exclusivo de Premium, confirmado; fase final junto con multiempresa.
 
@@ -107,8 +107,16 @@ Confirmada la salvedad de conservación indicada en el apartado 13. No introduci
 
 Confirmado: mantener abonos y devoluciones en Free y Premium. El límite Free de 10 unidades vendidas mediante catálogo por mercadillo se computa sobre las ventas positivas confirmadas, sin recuperar cupo al abonar una unidad; no contar borradores o ventas no confirmadas. Permitir siempre la devolución de ventas válidas sin consumir cupo. Informar de las unidades restantes antes de confirmar la venta; si excede el cupo, permitir ajustar las líneas de catálogo o continuar mediante conceptos manuales, sin rechazar una venta manual por el límite. Confirmado. No modificar código funcional todavía.
 
-### 16. Siguiente cuestión: contratación Premium e idiomas de pago
+### 16. Contratación Premium e idiomas de pago
 
-Pendiente decidir modelo comercial: suscripción mensual y/o anual, posible periodo de prueba, y tratamiento de compras independientes de idiomas. Propuesta: ofrecer mensual y anual, sin fijar precios todavía; conservar Premium hasta terminar el periodo ya pagado al cancelar renovación. Definir precios y condiciones antes de implementar facturación. No activar pagos ni cambiar permisos en esta fase.
+Confirmado: suscripción mensual renovable, suscripción anual renovable abonada de una sola vez con descuento respecto a doce mensualidades, y prueba gratuita de 15 días una sola vez por cuenta registrada. Sin permanencia obligatoria; cancelar la renovación conserva Premium hasta el final de la vigencia correspondiente. Reactivar recupera las funcionalidades y datos conservados según los apartados 13 y 14. Los módulos de idiomas se adquieren por pago único, independiente de la suscripción.
 
-No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.
+Ejemplo orientativo aprobado como ilustración del descuento anual: si la mensualidad fuera 10 EUR, la anualidad podría ser 100 EUR en vez de 120 EUR. No son precios definitivos ni un porcentaje de descuento obligatorio. Precios, condiciones de activación de la prueba e implementación de facturación por concretar en la fase comercial. No activar cobros en esta fase.
+
+## Cierre de la revisión general de modalidades
+
+Las 16 cuestiones están acordadas. Las tablas de comportamiento actual describen la base 2.5, no el resultado de la futura implementación. Aplicar las decisiones confirmadas en los apartados anteriores como especificación de producto.
+
+Propuesta de orden: primero adaptar las funciones existentes y límites Free/Premium (incluido el alta rápida desde calendario), sin introducir aún facturación ni recibos nuevos; después recibos PDF, inventario, informes, contratación y módulos de idiomas. Las integraciones online quedan para una fase posterior; multiempresa y colaboradores para las últimas fases. Concretar los detalles de cada módulo cuando llegue su turno. Actualizar comentarios internos del código con cada modificación.
+
+En esta revisión solo se ha actualizado documentación; todavía no se han modificado permisos ni código funcional.

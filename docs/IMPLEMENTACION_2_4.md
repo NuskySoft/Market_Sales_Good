@@ -64,3 +64,7 @@ Estado final de este documento: **cambios preparados para revisión/compilación
 ## Corrección de compilación — 27-11-2026
 
 El registro de Android Studio alcanza KSP y detecta `Unused parameter: now` en StockMovementDao.applyStock. Se retira el argumento obsoleto del DAO y de StockMovementProcessor. No se cambia la lógica de negocio ni la versión 2.4. Se amplía la comprobación de SQL para contrastar todos los parámetros de las consultas Room con los argumentos de sus métodos; pasa. Las pruebas SQLite de stock siguen pasando. Pendiente repetir assembleDebug en Android Studio.
+
+### Segundo registro de compilación
+
+Room/KSP supera el error anterior. El compilador Kotlin detecta una salida `return@launch` desde el bloque no inline de la transacción en AsignarSaldoViewModel. Se sustituye por validación del destino dentro de la transacción: si falta, se revierte y se muestra el error local, sin anunciar guardado correcto. Se conserva la cancelación de la corrutina. Revisadas las salidas etiquetadas de los bloques modificados. Compilación completa pendiente de repetir en Android Studio.

@@ -27,7 +27,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 
 - PDF: generación, consulta, personalización y envío exclusivos de Premium; registro y consulta de ventas comunes. Confirmado (ver RECIBOS_2_6.md).
 - Inventario: exclusivo de Premium, confirmado; incluye entradas y ajustes, historial, valoración y avisos de stock mínimo.
-- Listados e informes: propuesta Free = resúmenes básicos ya existentes; Premium = informes agregados, estadísticas, comparativas y exportaciones. Concretar el alcance de cada informe.
+- Listados e informes: distribución confirmada. Free conserva listados y resúmenes individuales; Premium añade informes agregados, estadísticas, comparativas y exportaciones.
 - Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
 - Leyenda del calendario: común, propuesta (ya existe un diálogo accesible desde calendario).
 - Integración WooCommerce: Premium, propuesta; no implementada.
@@ -69,8 +69,12 @@ Confirmado: Premium podrá gestionar varias empresas desde una misma cuenta en e
 
 Confirmado: Free y Premium permiten crear categorías y artículos sin límite general (salvo Demo), establecer precios de venta y marcar favoritos. Free puede vender hasta 10 unidades de catálogo por mercadillo; Premium sin ese límite. Control de coste, existencias, descuento automático, entradas de mercancía, ajustes, historial de movimientos, valoración económica y avisos de stock mínimo son exclusivos de Premium.
 
-### 8. Siguiente cuestión: listados, estadísticas e informes
+### 8. Listados, estadísticas e informes
 
-Propuesta: Free y Premium pueden consultar los resúmenes individuales de cada mercadillo, sus ventas, gastos, arqueos y totales, así como listados básicos de mercadillos. Reservar a Premium los informes agregados por periodos, comparativas entre mercadillos, clasificación de artículos vendidos, análisis por métodos de pago a través de varios mercadillos, rentabilidad basada en costes y gastos, gráficos y exportaciones PDF/CSV. Pendiente de confirmación.
+Confirmado: Free y Premium pueden consultar los resúmenes individuales de cada mercadillo, sus ventas, gastos, arqueos y totales, así como listados básicos de mercadillos. Premium exclusivamente: informes por intervalo de fechas, estadísticas mensuales/anuales, comparativas entre mercadillos, artículos más vendidos, análisis agregado por métodos de pago, rentabilidad de artículos, evolución de ingresos/gastos, gráficos y exportaciones PDF/CSV. Se mantienen los desgloses básicos de cada mercadillo ya existentes.
+
+### 9. Siguiente cuestión: límites de mercadillos
+
+Actualmente Free puede crear un mercadillo por fecha y Premium varios. Propuesta: conservar esa diferencia, sin imponer un máximo mensual/anual ni histórico a Free. Calendario, leyenda de estados y consulta del historial disponibles en ambas modalidades. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

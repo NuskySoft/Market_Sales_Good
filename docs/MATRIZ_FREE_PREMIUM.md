@@ -96,11 +96,15 @@ Confirmado: Premium permitirá invitar a otros usuarios con cuentas individuales
 ### 13. Descenso de Premium a Free
 
 Confirmado: al terminar la vigencia Premium, pasar a Free conservando ventas, gastos, categorías, artículos, datos de empresa, costes, stock y PDF históricos. Costes, control de stock, consulta de PDF y estadísticas avanzadas se deshabilitan; se activa publicidad. Los recibos ya solicitados y pendientes de envío se completan, sin nuevos envíos. Los idiomas adquiridos separadamente se mantienen. Al reactivar Premium se recupera el acceso a funciones y datos conservados; puede ser necesario ajustar stock por ventas durante el periodo Free.
-- Mercadillos ya programados: se mantienen aunque superen 50 al año; las nuevas altas se sujetan a los límites Free. Excepción confirmada: si hay dos o más mercadillos programados para una misma fecha, se conserva el creado primero y se eliminan de la planificación los creados después. No aplicar esta excepción a mercadillos históricos. Precisar si alguno de los posteriores ya contiene operaciones antes de efectuar su baja, para evitar pérdida de información y respetar los estados definitivos. No borrar datos históricos asociados.
+- Mercadillos ya programados: se mantienen aunque superen 50 al año; las nuevas altas se sujetan a los límites Free. Excepción confirmada: si hay dos o más mercadillos programados para una misma fecha, se conserva el creado primero y se eliminan de la planificación los creados después. No aplicar esta excepción a mercadillos históricos. Salvedad confirmada: solo se dan de baja los mercadillos futuros posteriores que no tengan operaciones registradas; se conservan los mercadillos con ventas o gastos, y todos los históricos, aunque coincidan en fecha. Si caduca Premium durante dos mercadillos simultáneos con operaciones, ambos se conservan. No borrar datos históricos asociados.
 
 
-### 14. Siguiente cuestión: mercadillos duplicados al descender de plan
+### 14. Mercadillos duplicados al descender de plan
 
-Precisar el caso de mercadillos posteriores de una misma fecha con ventas/gastos registrados: propuesta de baja lógica de la planificación para los posteriores sin operaciones, conservando el historial de los que ya tengan operaciones. Pendiente de confirmación. No introducir borrado irreversible de operaciones ni modificación de estados definitivos.
+Confirmada la salvedad de conservación indicada en el apartado 13. No introducir borrado irreversible de operaciones ni modificación de estados definitivos.
+
+### 15. Siguiente cuestión: abonos y límite de ventas de catálogo Free
+
+Propuesta: mantener abonos y devoluciones en Free y Premium. El límite Free de 10 unidades vendidas mediante catálogo por mercadillo se computa sobre las ventas positivas confirmadas, sin recuperar cupo al abonar una unidad; no contar borradores o ventas no confirmadas. Permitir siempre la devolución de ventas válidas sin consumir cupo. Informar de las unidades restantes antes de confirmar la venta; si excede el cupo, permitir ajustar las líneas de catálogo o continuar mediante conceptos manuales, sin rechazar una venta manual por el límite. Pendiente de confirmación. No modificar código funcional todavía.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

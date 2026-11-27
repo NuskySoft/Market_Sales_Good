@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Regresiones instrumentadas de la persistencia del plan de cuenta y su actualización.
+
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import org.junit.Assert.*

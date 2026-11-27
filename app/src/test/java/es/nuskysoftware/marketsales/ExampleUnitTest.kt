@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales
 
+// Finalidad de las pruebas: Prueba unitaria básica de la configuración de JUnit.
+
 import org.junit.Test
 
 import org.junit.Assert.*

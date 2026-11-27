@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Comprueba que el identificador de gasto y los campos de su representación conservan los datos necesarios.
+
 import es.nuskysoftware.marketsales.data.local.entity.LineaGastoEntity
 import es.nuskysoftware.marketsales.data.repository.GastoSync
 import org.junit.Assert.assertEquals

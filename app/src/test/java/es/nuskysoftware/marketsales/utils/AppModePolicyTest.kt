@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Finalidad de las pruebas: Prueba las modalidades y restricciones de acceso definidas por las reglas de negocio.
+
 import org.junit.Assert.*
 import org.junit.Test
 

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Regresiones de movimientos de stock, persistencia, recuperación y migración.
+
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Pruebas instrumentadas de los límites Demo y el aislamiento de sus datos.
+
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry

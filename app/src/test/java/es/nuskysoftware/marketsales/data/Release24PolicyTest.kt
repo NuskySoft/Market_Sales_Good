@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.data
+
+// Finalidad de las pruebas: Pruebas unitarias de reglas introducidas o revisadas en la versión 2.4.
 import es.nuskysoftware.marketsales.utils.CalendarDates
 import es.nuskysoftware.marketsales.utils.Money
 import org.junit.Assert.*

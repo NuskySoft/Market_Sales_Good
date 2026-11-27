@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales
 
+// Finalidad de las pruebas: Prueba instrumental básica del contexto Android y paquete de la aplicación.
+
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 

@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Comprueba que los mercadillos cancelados conservan los datos necesarios para su consulta.
+
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry

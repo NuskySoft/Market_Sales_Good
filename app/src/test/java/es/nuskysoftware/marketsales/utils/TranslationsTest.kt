@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Finalidad de las pruebas: Comprueba la coherencia entre los catálogos de traducción utilizados por la aplicación.
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test

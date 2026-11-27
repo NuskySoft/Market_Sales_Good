@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data
 
+// Finalidad de las pruebas: Prueba las transiciones temporales de estados, sus límites horarios y fechas inválidas.
+
 import es.nuskysoftware.marketsales.data.repository.AutoEstadoPolicy
 import java.time.Instant
 import org.junit.Assert.assertEquals

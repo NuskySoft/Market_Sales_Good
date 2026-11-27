@@ -26,13 +26,4 @@ internal object GastoSync {
         "fechaSync" to System.currentTimeMillis()
     )
 
-    suspend fun push(fs: FirebaseFirestore, dao: LineasGastosDao, gasto: LineaGastoEntity) {
-        if (!DemoAccess.canSync(gasto.idUsuario)) return
-        fs.collection("LineasGastos").document(documentId(gasto))
-            .set(fields(gasto), SetOptions.merge()).await()
-        dao.marcarSincronizado(
-            gasto.idUsuario, gasto.idMercadillo, gasto.numeroLinea,
-            gasto.lastModified, gasto.version
-        )
-    }
 }

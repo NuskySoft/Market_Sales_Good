@@ -7,6 +7,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SaldoGuardadoDao {
+    @Query("SELECT * FROM saldos_guardados WHERE idRegistro = :id AND idUsuario = :uid")
+    suspend fun byId(id: String, uid: String): SaldoGuardadoEntity?
+    @Query("SELECT * FROM saldos_guardados WHERE idUsuario = :uid AND consumido = 0 AND eliminado = 0 ORDER BY fechaEpochDay DESC, lastModified DESC")
+    fun pendientes(uid: String): Flow<List<SaldoGuardadoEntity>>
+
 
     @Upsert
     suspend fun upsert(item: SaldoGuardadoEntity)
@@ -33,7 +38,7 @@ interface SaldoGuardadoDao {
     @Query("SELECT * FROM saldos_guardados WHERE idUsuario = :userId ORDER BY lastModified DESC")
     fun getAllByUser(userId: String): Flow<List<SaldoGuardadoEntity>>
 
-    @Query("SELECT * FROM saldos_guardados WHERE idUsuario = :userId AND consumido = 0 ORDER BY lastModified DESC LIMIT 1")
+    @Query("SELECT * FROM saldos_guardados WHERE idUsuario = :userId AND consumido = 0 AND eliminado = 0 ORDER BY lastModified DESC LIMIT 1")
     suspend fun getUltimoNoConsumido(userId: String): SaldoGuardadoEntity?
 
     @Query("SELECT COUNT(*) > 0 FROM saldos_guardados WHERE idUsuario = :userId")

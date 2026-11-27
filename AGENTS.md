@@ -26,3 +26,11 @@
 - Regla F11 confirmada: en cuenta Premium, descontar las líneas PRODUCTO con artículo que controle stock, independientemente de la pestaña seleccionada. Los conceptos manuales no descuentan existencias. No ampliar el control de stock a gratuito o Demo.
 
 - Regla F07 confirmada: una venta confirmada nunca se convierte en fallida por stock o red. Guardar la obligación de stock junto al ticket y aplicar descuento + confirmación en otra transacción, con reintentos persistentes y sin dobles descuentos. No recalcular ventas antiguas ni cambiar abonos.
+
+## Lote 2.4 autorizado
+
+- Las correcciones de esta ronda se entregan juntas como 2.4; no aumentar versión por cada hallazgo.
+- Decisiones y comprobaciones actuales en docs/IMPLEMENTACION_2_4.md. No dar por validadas compilación, pruebas Android o reglas Firebase pendientes.
+- Demo dispone de categoría protegida Sin categorizar adicional a su única categoría propia. No integrar WooCommerce ni leyenda de estados en este lote.
+- Al comparar ediciones, conservar el lastModified del dispositivo de origen; movimientos de stock independientes se suman por identificador, no se descartan por fecha.
+- Las versiones del esquema Room son independientes: esta candidata usa 20. Respaldo 2.3 conserva código, no datos del dispositivo; no hacer downgrade sobre Room 20.

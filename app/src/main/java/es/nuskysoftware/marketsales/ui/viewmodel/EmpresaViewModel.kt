@@ -24,8 +24,10 @@ class EmpresaViewModel(private val repository: EmpresaRepository) : ViewModel() 
         onComplete: () -> Unit
     ) {
         viewModelScope.launch {
-            repository.guardarOActualizar(nif, nombre, razon, direccion, poblacion, codigoPostal, provincia, pais)
-            onComplete()
+            try {
+                repository.guardarOActualizar(nif, nombre, razon, direccion, poblacion, codigoPostal, provincia, pais)
+                onComplete()
+            } catch (_: Exception) { es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed") }
         }
     }
 }

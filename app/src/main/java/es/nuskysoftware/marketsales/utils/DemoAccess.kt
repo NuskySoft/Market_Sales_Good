@@ -15,10 +15,7 @@ object DemoAccess {
     fun canSync(uid: String?): Boolean = AppModePolicy.canSync(uid, FirebaseAuth.getInstance().currentUser?.uid)
     suspend fun mayRestore(db: es.nuskysoftware.marketsales.data.local.database.AppDatabase, uid: String): Boolean {
         if (!canSync(uid)) return false
-        if (ConfigurationManager.getIsPremium()) return true
-        return db.categoriaDao().existeAlgunoDeUsuario(uid) || db.articuloDao().existeAlgunoDeUsuario(uid) ||
-            db.mercadilloDao().existeAlgunoDeUsuario(uid) || db.recibosDao().existeAlgunoDeUsuario(uid) ||
-            db.lineasGastosDao().existeAlgunoDeUsuario(uid) || db.lineasVentaDao().existeAlgunoDeUsuario(uid)
+        return es.nuskysoftware.marketsales.data.repository.RecoveryGate.currentCanPull(uid)
     }
     fun requireOwner(uid: String?) {
         check(!uid.isNullOrBlank() && uid == ConfigurationManager.getCurrentUserId()) { "Session changed" }

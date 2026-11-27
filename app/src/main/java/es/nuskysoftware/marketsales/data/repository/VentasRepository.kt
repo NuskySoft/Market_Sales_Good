@@ -21,6 +21,9 @@ import es.nuskysoftware.marketsales.utils.ConnectivityObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -57,14 +60,7 @@ class VentasRepository(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        scope.launch {
-            connectivity.isConnected.collect { online ->
-                if (online) {
-                    runCatching { sincronizarPendientes() }
-                        .onFailure { Log.w(TAG, "Error sincronizando pendientes", it) }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
 
@@ -81,11 +77,17 @@ class VentasRepository(
         val userId = ConfigurationManager.getCurrentUserId() ?: return Result.failure(IllegalStateException("No owner"))
         val isPremiumAtConfirmation = ConfigurationManager.getIsPremium() && !DemoAccess.isDemo()
         val idRecibo = try {
+            RecoveryGate(appContext, db).beforeWrite(userId)
             //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
             db.withTransaction {
                 DemoAccess.requireOwner(userId)
                 val market = db.mercadilloDao().getMercadilloById(idMercadillo) ?: error("Market not found")
                 DemoAccess.requireOwner(market.userId)
+                check(DemoAccess.isDemo() || market.estado !in 4..7) { "Market does not allow sales" }
+                for (refund in lineas.filter { it.idLineaOriginalAbonada != null }) {
+                    val previous = lineasVentaDao.obtenerLineasPorMercadillo(idMercadillo).first()
+                    check(previous.none { it.idLineaOriginalAbonada == refund.idLineaOriginalAbonada }) { "Already refunded" }
+                }
                 DemoAccess.checkLimit("ventas", recibosDao.contarDemo(userId))
                 if (DemoAccess.isDemo() && (total <= 0 || lineas.any { it.cantidad <= 0 || it.subtotal < 0 || it.idLineaOriginalAbonada != null })) {
                     DemoAccess.deny("demo_abonos_registrados")
@@ -116,7 +118,7 @@ class VentasRepository(
                     idUsuario = userId,
                     fechaHora = now,
                     metodoPago = metodoPago,
-                    totalTicket = total,
+                    totalTicket = es.nuskysoftware.marketsales.utils.Money.sum(lineas.map { it.subtotal }),
                     estado = "COMPLETADO",
                     lastModified = now,
                     sincronizadoFirebase = false
@@ -128,7 +130,7 @@ class VentasRepository(
                     val numeroLineaRecibo = index + 1
                     val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)
                     LineaVentaEntity(
-                        idLinea = idLineaSecuencial,
+                        idLinea = java.util.UUID.randomUUID().toString(),
                         idRecibo = idRecibo,
                         idMercadillo = idMercadillo,
                         idUsuario = userId,
@@ -137,8 +139,8 @@ class VentasRepository(
                         descripcion = l.descripcion,
                         idProducto = l.idProducto,
                         cantidad = l.cantidad,
-                        precioUnitario = l.precioUnitario,
-                        subtotal = l.subtotal,
+                        precioUnitario = es.nuskysoftware.marketsales.utils.Money.round(l.precioUnitario),
+                        subtotal = es.nuskysoftware.marketsales.utils.Money.round(l.subtotal),
                         idLineaOriginalAbonada = l.idLineaOriginalAbonada,
                         lastModified = now,
                         sincronizadoFirebase = false
@@ -197,10 +199,10 @@ class VentasRepository(
     }
 
     fun obtenerVentasMercadillo(idMercadillo: String): Flow<List<ReciboEntity>> =
-        recibosDao.obtenerRecibosPorMercadillo(idMercadillo)
+        ConfigurationManager.usuarioLogueado.flatMapLatest { uid -> recibosDao.obtenerRecibosPorMercadillo(idMercadillo).map { rows -> rows.filter { it.idUsuario == uid } } }
 
     fun obtenerLineasVenta(idRecibo: String): Flow<List<LineaVentaEntity>> =
-        lineasVentaDao.obtenerLineasPorRecibo(idRecibo)
+        ConfigurationManager.usuarioLogueado.flatMapLatest { uid -> lineasVentaDao.obtenerLineasPorRecibo(idRecibo).map { rows -> rows.filter { it.idUsuario == uid } } }
 
     /**
      * Crea un abono por la línea original indicada.
@@ -209,109 +211,22 @@ class VentasRepository(
     suspend fun crearAbono(
         lineaOriginal: LineaVentaEntity,
         cantidadAbonar: Int,
-        idMercadillo: String
-    ): Result<String> {
-        return try {
-            DemoAccess.requireRegistered("demo_abonos_registrados")
-            DemoAccess.requireOwner(lineaOriginal.idUsuario)
-            //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
-            val userId = auth.currentUser?.uid
-                ?: ConfigurationManager.usuarioLogueado.value
-                ?: es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
-            val now = System.currentTimeMillis()
+        idMercadillo: String,
+        metodoDevolucion: String
+    ): Result<String> = try {
+        DemoAccess.requireRegistered("demo_abonos_registrados")
+        DemoAccess.requireOwner(lineaOriginal.idUsuario)
+        require(metodoDevolucion.uppercase(Locale.ROOT) in setOf("EFECTIVO", "BIZUM", "TARJETA"))
+        require(cantidadAbonar == lineaOriginal.cantidad && cantidadAbonar > 0)
+        require(lineaOriginal.idMercadillo == idMercadillo && lineaOriginal.idLineaOriginalAbonada == null)
+        val refund = LineaVentaUI(tipoLinea = TipoLinea.valueOf(lineaOriginal.tipoLinea), descripcion = lineaOriginal.descripcion,
+            idProducto = lineaOriginal.idProducto, cantidad = -cantidadAbonar, precioUnitario = lineaOriginal.precioUnitario,
+            subtotal = -lineaOriginal.subtotal, idLineaOriginalAbonada = lineaOriginal.idLinea)
+        guardarVenta(idMercadillo, listOf(refund), metodoDevolucion.uppercase(Locale.ROOT), refund.subtotal)
+    } catch (cancelled: CancellationException) { throw cancelled } catch (failure: Exception) { Result.failure(failure) }
 
-            val idiomaCfgPersistido = if (DemoAccess.isDemo()) null else configuracionDao.getConfiguracionSync()?.idioma
-            val idioma2Letras = (idiomaCfgPersistido ?: ConfigurationManager.idioma.value)
-                .trim()
-                .split('-', '_')
-                .firstOrNull()
-                ?.take(2)
-                ?.uppercase(Locale.ROOT)
-                ?: "ES"
-
-            val idRecibo = "RC${java.util.UUID.randomUUID()}-$idioma2Letras"
-
-            val maxId = lineasVentaDao.obtenerMaxIdLineaPorMercadillo(idMercadillo)
-            val base = maxId?.toIntOrNull() ?: 0
-            fun nextSeq(n: Int) = String.format("%04d", n)
-
-            val reciboAbono = ReciboEntity(
-                idRecibo = idRecibo,
-                idMercadillo = idMercadillo,
-                idUsuario = userId,
-                fechaHora = now,
-                metodoPago = "ABONO", // Recibo de abono
-                totalTicket = -(lineaOriginal.precioUnitario * cantidadAbonar),
-                estado = "COMPLETADO",
-                lastModified = now,
-                sincronizadoFirebase = false
-            )
-
-            val lineaAbono = LineaVentaEntity(
-                idLinea = nextSeq(base + 1),
-                idRecibo = idRecibo,
-                idMercadillo = idMercadillo,
-                idUsuario = userId,
-                numeroLinea = 1,
-                tipoLinea = lineaOriginal.tipoLinea, // respeta el tipo original (MANUAL/PRODUCTO)
-                descripcion = "ABONO: ${lineaOriginal.descripcion}",
-                idProducto = lineaOriginal.idProducto,
-                cantidad = -cantidadAbonar,
-                precioUnitario = lineaOriginal.precioUnitario,
-                subtotal = -(lineaOriginal.precioUnitario * cantidadAbonar),
-                idLineaOriginalAbonada = lineaOriginal.idLinea,
-                lastModified = now,
-                sincronizadoFirebase = false
-            )
-
-            recibosDao.insertarRecibo(reciboAbono)
-            lineasVentaDao.insertarLinea(lineaAbono)
-
-            scope.launch {
-            try {
-                firestore.collection("recibos")
-                    .document(idRecibo)
-                    .set(reciboAbono)
-                    .await()
-                recibosDao.marcarSincronizado(idRecibo, System.currentTimeMillis())
-
-                val docId = "${lineaAbono.idMercadillo}_${lineaAbono.idLinea}"
-                firestore.collection("lineas_venta")
-                    .document(docId)
-                    .set(lineaAbono)
-                    .await()
-            } catch (e: Exception) {
-                // Silencioso: ya quedó persistido en Room
-                println("Error subiendo abono a Firestore: ${e.message}")
-                Log.w(TAG, "Error subiendo abono a Firebase", e)
-            }
-
-            }
-            Result.success(idRecibo)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
     private suspend fun sincronizarPendientes() {
-        val uid = auth.currentUser?.uid ?: return
-        if (!DemoAccess.canSync(uid)) return
-        val recibosPend = recibosDao.getPendientesSync(uid)
-        recibosPend.forEach { r ->
-            if (!DemoAccess.canSync(uid)) return
-            runCatching {
-                firestore.collection("recibos").document(r.idRecibo).set(r).await()
-                recibosDao.marcarSincronizado(r.idRecibo, System.currentTimeMillis())
-            }
-        }
-        val lineasPend = lineasVentaDao.getPendientesSync(uid)
-        lineasPend.forEach { l ->
-            if (!DemoAccess.canSync(uid)) return
-            runCatching {
-                val docId = "${l.idMercadillo}_${l.idLinea}"
-                firestore.collection("lineas_venta").document(docId).set(l).await()
-                lineasVentaDao.marcarSincronizado(l.idMercadillo, l.idLinea, System.currentTimeMillis())
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 }
 data class LineaVentaUI(
@@ -328,4 +243,3 @@ data class LineaVentaUI(
 enum class TipoLinea { MANUAL, PRODUCTO }
 enum class MetodoPago { EFECTIVO, BIZUM, TARJETA }
 enum class PestanaVenta { MANUAL, PRODUCTOS }
-

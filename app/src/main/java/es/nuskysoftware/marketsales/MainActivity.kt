@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.start(applicationContext)
         iniciarAutoestados()
         runCatching { es.nuskysoftware.marketsales.work.StockMovementScheduler.start(applicationContext) }
             .onFailure { Log.w(TAG, "Stock retry will be scheduled on next startup", it) }
@@ -122,7 +123,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val configuracionRepository = ConfiguracionRepository(this@MainActivity)
+            val configuracionRepository = remember { ConfiguracionRepository(this@MainActivity) }
             val configuracionViewModel: ConfiguracionViewModel =
                 viewModel(factory = ConfiguracionViewModelFactory(configuracionRepository))
 
@@ -133,6 +134,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val owner by ConfigurationManager.usuarioLogueado.collectAsState()
                     key(owner) { NavigationSystem(configuracionViewModel) }
+                    es.nuskysoftware.marketsales.ui.composables.RecoveryDialogs()
                 }
             }
         }
@@ -144,8 +146,11 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 ConfigurationManager.usuarioLogueado.collectLatest { owner ->
-                    if (owner.isNullOrBlank() || owner == AppModePolicy.DEMO_USER_ID) return@collectLatest
+                    if (owner.isNullOrBlank()) return@collectLatest
+                    es.nuskysoftware.marketsales.data.repository.CatalogDefaults.ensure(AppDatabase.getDatabase(applicationContext), owner)
+                    if (owner == AppModePolicy.DEMO_USER_ID) return@collectLatest
                     while (isActive) {
+                        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(applicationContext)
                         try {
                             if (processor.apply(owner) > 0) AutoEstadoScheduler.requestUpload(applicationContext)
                         } catch (cancelled: CancellationException) {
@@ -702,7 +707,7 @@ fun pingFirestoreProd() {
 //        }
 //
 //        setContent {
-//            val configuracionRepository = ConfiguracionRepository(this@MainActivity)
+//            val configuracionRepository = remember { ConfiguracionRepository(this@MainActivity) }
 //            val configuracionViewModel: ConfiguracionViewModel =
 //                viewModel(factory = ConfiguracionViewModelFactory(configuracionRepository))
 //

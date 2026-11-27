@@ -47,18 +47,7 @@ class MercadilloRepository(
     companion object { private const val TAG = "MercadilloRepository" }
 
     init {
-        // Sincronización básica al recuperar conexión
-        if (observeNetwork) repositoryScope.launch {
-            connectivityObserver.isConnected.collect { online ->
-                if (online) {
-                    val userId = ConfigurationManager.getCurrentUserId()
-                    if (userId != null) {
-                        sincronizarMercadillosNoSincronizados(userId)
-                        //actualizarEstadosAutomaticos(userId)
-                    }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     // ===== Flows =====
@@ -88,11 +77,13 @@ class MercadilloRepository(
         hayPuntoLuz: Boolean = false,
         horaInicio: String = "09:00",
         horaFin: String = "14:00",
-        saldoInicial: Double? = null
+        saldoInicial: Double? = null,
+        saldoGuardadoId: String? = null
     ): String = withContext(Dispatchers.IO) {
         val userId = ConfigurationManager.getCurrentUserId()
             ?: throw IllegalStateException(es.nuskysoftware.marketsales.utils.StringResourceManager.getString("sin_usuario_mercadillo", ConfigurationManager.idioma.value))
 
+        RecoveryGate(appContext).beforeWrite(userId)
         val esPremium = ConfigurationManager.getIsPremium()
         if (!esPremium) {
             val yaHayEseDia = mercadilloDao.existeMercadilloEnFecha(userId, fecha)
@@ -130,6 +121,11 @@ class MercadilloRepository(
                 DemoAccess.requireOwner(userId)
                 DemoAccess.checkLimit("mercadillos", mercadilloDao.contarDemo(userId))
                 mercadilloDao.insertMercadillo(nuevo)
+                if (saldoGuardadoId != null) {
+                    val saved = database.saldoGuardadoDao().byId(saldoGuardadoId, userId) ?: error("Balance not available")
+                    check(!saved.consumido && !saved.eliminado)
+                    database.saldoGuardadoDao().upsert(saved.copy(consumido = true, idMercadilloDestino = nuevo.idMercadillo, version = saved.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+                }
             }
         repositoryScope.launch { sincronizarMercadilloConFirebase(nuevo) }
         nuevo.idMercadillo
@@ -137,7 +133,9 @@ class MercadilloRepository(
 
     suspend fun actualizarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
         DemoAccess.requireOwner(mercadillo.userId)
+        check(mercadilloDao.getMercadilloById(mercadillo.idMercadillo)?.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
         val actualizado = mercadillo.copy(
+            fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),
             version = mercadillo.version + 1,
             lastModified = System.currentTimeMillis(),
             sincronizadoFirebase = false
@@ -149,7 +147,8 @@ class MercadilloRepository(
 
     suspend fun eliminarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
         DemoAccess.requireRegistered("demo_no_borrar_mercadillo")
-        mercadilloDao.deleteMercadillo(mercadillo)
+        DemoAccess.requireOwner(mercadillo.userId)
+        mercadilloDao.updateMercadillo(mercadillo.copy(activo = false, version = mercadillo.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
         eliminarMercadilloDeFirebase(mercadillo.idMercadillo)
         true
     }
@@ -168,6 +167,10 @@ class MercadilloRepository(
     // ===== SALDOS / ARQUEO =====
     suspend fun asignarSaldoInicial(mercadilloId: String, saldoInicial: Double, esAsignacionAutomatica: Boolean = false): Boolean =
         withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
             mercadilloDao.asignarSaldoInicial(mercadilloId, saldoInicial)
             mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
             true
@@ -185,6 +188,10 @@ class MercadilloRepository(
 
     suspend fun realizarArqueoCaja(mercadilloId: String, saldoFinal: Double, ventasEfectivo: Double, gastosEfectivo: Double): Boolean =
         withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
             val m = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
             val si = m.saldoInicial ?: return@withContext false
             val arqueoCaja = si + ventasEfectivo - gastosEfectivo
@@ -195,6 +202,10 @@ class MercadilloRepository(
 
     /** Cierra con saldo final y marca estado=6 (pendienteAsignarSaldo=0). */
     suspend fun cerrarConSaldoFinal(mercadilloId: String, saldoFinal: Double): Boolean = withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
         mercadilloDao.marcarSaldoAsignado(mercadilloId)
         val m = mercadilloDao.getMercadilloById(mercadilloId)
         if (m != null) sincronizarMercadilloConFirebase(m)
@@ -212,7 +223,7 @@ class MercadilloRepository(
     }
 
     suspend fun sincronizarPendientesAutoestado(userId: String) =
-        sincronizarMercadillosNoSincronizados(userId)
+        SyncEngine(appContext).sync(userId)
 
     override fun close() {
         repositoryScope.cancel()
@@ -223,6 +234,10 @@ class MercadilloRepository(
         arqueoFinal: Double,
         nuevoEstado: Int
     ): Boolean = withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
         // 1) Room primero: fija arqueo + saldoFinal y deja el mercadillo en estado=5 (pendiente de asignar)
         mercadilloDao.realizarArqueoCaja(
             id = mercadilloId,
@@ -280,6 +295,10 @@ class MercadilloRepository(
      * - Lanza sync con Firebase.
      */
     suspend fun finalizarMercadilloEnCurso(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
         try {
             val m = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
             val estado = EstadosMercadillo.Estado.fromCodigo(m.estado)
@@ -318,77 +337,18 @@ class MercadilloRepository(
 
     // ===== Híbrido Room/Firebase =====
     suspend fun getHybridMercadillos(userId: String): List<MercadilloEntity> = withContext(Dispatchers.IO) {
-        if (!DemoAccess.mayRestore(localDb, userId)) return@withContext mercadilloDao.getMercadillosByUser(userId).first()
-
-        try {
-            val pendientes = mercadilloDao.getMercadillosNoSincronizadosByUser(userId)
-            if (pendientes.isNotEmpty()) return@withContext mercadilloDao.getMercadillosByUser(userId).first()
-            if (connectivityObserver.isConnected.first()) {
-                try {
-                    val remote = descargarMercadillosDesdeFirebase(userId)
-                    if (remote.isNotEmpty()) {
-                        remote.forEach { mercadilloDao.insertOrUpdate(it.copy(sincronizadoFirebase = true)) }
-                        Log.d(TAG, "✅ Merge desde Firebase")
-                    }
-                } catch (_: Exception) { }
-            }
-            mercadilloDao.getMercadillosByUser(userId).first()
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Hybrid", e)
-            mercadilloDao.getMercadillosByUser(userId).first()
-        }
+        DemoAccess.requireOwner(userId)
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+        mercadilloDao.getMercadillosByUser(userId).first()
     }
 
     // ===== Sync Firebase =====
     private suspend fun sincronizarMercadilloConFirebase(mercadillo: MercadilloEntity) {
-        if (!DemoAccess.canSync(mercadillo.userId)) return
-        try {
-            if (!connectivityObserver.isConnected.first()) return
-            val datos = mapOf(
-                "idMercadillo" to mercadillo.idMercadillo,
-                "userId" to mercadillo.userId,
-                "fecha" to mercadillo.fecha,
-                "lugar" to mercadillo.lugar,
-                "organizador" to mercadillo.organizador,
-                "esGratis" to mercadillo.esGratis,
-                "importeSuscripcion" to mercadillo.importeSuscripcion,
-                "requiereMesa" to mercadillo.requiereMesa,
-                "requiereCarpa" to mercadillo.requiereCarpa,
-                "hayPuntoLuz" to mercadillo.hayPuntoLuz,
-                "horaInicio" to mercadillo.horaInicio,
-                "horaFin" to mercadillo.horaFin,
-                "estado" to mercadillo.estado,
-                "pendienteArqueo" to mercadillo.pendienteArqueo,
-                "pendienteAsignarSaldo" to mercadillo.pendienteAsignarSaldo,
-                "saldoInicial" to mercadillo.saldoInicial,
-                "saldoFinal" to mercadillo.saldoFinal,
-                "arqueoCaja" to mercadillo.arqueoCaja,
-                "totalVentas" to mercadillo.totalVentas,
-                "totalGastos" to mercadillo.totalGastos,
-                "arqueoMercadillo" to mercadillo.arqueoMercadillo,
-                "activo" to mercadillo.activo,
-                "version" to mercadillo.version,
-                "lastModified" to mercadillo.lastModified,
-                "fechaSync" to System.currentTimeMillis()
-            )
-            FirebaseFirestore.getInstance()
-                .collection("mercadillos")
-                .document(mercadillo.idMercadillo)
-                .set(datos).await()
-            mercadilloDao.marcarComoSincronizado(mercadillo.idMercadillo)
-        } catch (_: Exception) { }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     private suspend fun eliminarMercadilloDeFirebase(mercadilloId: String) {
-        if (!DemoAccess.canSync(ConfigurationManager.getCurrentUserId())) return
-        try {
-            if (connectivityObserver.isConnected.first()) {
-                FirebaseFirestore.getInstance()
-                    .collection("mercadillos")
-                    .document(mercadilloId)
-                    .delete().await()
-            }
-        } catch (_: Exception) { }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     private suspend fun sincronizarMercadillosNoSincronizados(userId: String) {
@@ -468,6 +428,10 @@ class MercadilloRepository(
      */
 
     suspend fun corregirTotalVentasSiIncongruente(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
+            val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
+            DemoAccess.requireOwner(ownedMarket.userId)
+            check(ownedMarket.estado !in 6..7 || DemoAccess.isDemo()) { "Final market" }
+
         try {
             val m = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
 

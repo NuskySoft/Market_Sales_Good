@@ -46,12 +46,12 @@ fun PestanaResumenVentas(
 
     // 1) Separar originales y abonos
     val originalesOrdenadas = remember(lineas) {
-        lineas.filter { it.idLineaOriginalAbonada == null }.sortedBy { it.idLinea }
+        lineas.filter { it.idLineaOriginalAbonada == null }.sortedBy { line -> recibos.firstOrNull { it.idRecibo == line.idRecibo }?.fechaHora ?: line.lastModified }
     }
     val abonosPorOriginal = remember(lineas) {
         lineas.filter { it.idLineaOriginalAbonada != null }
             .groupBy { it.idLineaOriginalAbonada!! } // clave = id de la línea original
-            .mapValues { (_, lista) -> lista.sortedBy { it.idLinea } }
+            .mapValues { (_, lista) -> lista.sortedBy { it.lastModified } }
     }
 
     // Para ocultar botón "Abonar" si ya existe al menos un abono
@@ -67,11 +67,15 @@ fun PestanaResumenVentas(
         }
     }
 
-    val totalMercadillo = remember(lineas) { lineas.sumOf { it.subtotal } }
+    val totalMercadillo = remember(lineas) { es.nuskysoftware.marketsales.utils.Money.sum(lineas.map { it.subtotal }) }
     val totalFmt = MonedaUtils.formatearImporte(totalMercadillo, moneda)
 
     // Diálogo de confirmación
     var lineaParaConfirmar by remember { mutableStateOf<LineaVentaEntity?>(null) }
+    var metodoDevolucion by remember { mutableStateOf<String?>(null) }
+    var refundBusy by remember { mutableStateOf(false) }
+    var refundError by remember { mutableStateOf<String?>(null) }
+    val salesRepository = remember { es.nuskysoftware.marketsales.data.repository.VentasRepository(context) }
 
     Column(Modifier.fillMaxSize()) {
         Text(
@@ -108,7 +112,7 @@ fun PestanaResumenVentas(
                         mostrarBotonAbono = puedeAbonar,
                         onAbonarClick = {
                             if (es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()) es.nuskysoftware.marketsales.utils.DemoAccess.show("demo_abonos_registrados")
-                            else lineaParaConfirmar = linea
+                            else { metodoDevolucion = null; lineaParaConfirmar = linea }
                         }
                     )
                 }
@@ -147,6 +151,14 @@ fun PestanaResumenVentas(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(StringResourceManager.getString("confirmar_abono_pregunta", currentLanguage))
+                    Text(StringResourceManager.getString("refund_payment_method", currentLanguage))
+                    listOf("EFECTIVO", "BIZUM", "TARJETA").forEach { method ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = metodoDevolucion == method, onClick = { metodoDevolucion = method })
+                            Text(StringResourceManager.getString(method.lowercase(), currentLanguage))
+                        }
+                    }
+                    refundError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                     Text("• ${lineaConfirm.descripcion}")
                     Text("• " + StringResourceManager.getString("cantidad", currentLanguage) + ": ${lineaConfirm.cantidad}")
                     Text("• " + StringResourceManager.getString("total_linea", currentLanguage) + ": $totalLineaFmt")
@@ -154,48 +166,16 @@ fun PestanaResumenVentas(
             },
             confirmButton = {
                 TextButton(
+                    enabled = metodoDevolucion != null && !refundBusy,
                     onClick = {
                         val l = lineaConfirm
-                        lineaParaConfirmar = null
-                        scope.launch(Dispatchers.IO) {
-                            try {
-                                es.nuskysoftware.marketsales.utils.DemoAccess.requireRegistered("demo_abonos_registrados")
-                                es.nuskysoftware.marketsales.utils.DemoAccess.requireOwner(l.idUsuario)
-                                val maxId = lineasDao.obtenerMaxIdLineaPorMercadillo(l.idMercadillo)
-                                val nuevoId = siguienteIdLinea(maxId)
-                                val nextNumero = (lineas.maxOfOrNull { it.numeroLinea } ?: 0) + 1
-
-                                val abono = LineaVentaEntity(
-                                    idLinea = nuevoId,
-                                    idRecibo = l.idRecibo,
-                                    idMercadillo = l.idMercadillo,
-                                    idUsuario = l.idUsuario,
-                                    numeroLinea = nextNumero,
-                                    tipoLinea = l.tipoLinea,
-                                    descripcion = l.descripcion,
-                                    idProducto = l.idProducto,
-                                    cantidad = -abs(l.cantidad),
-                                    precioUnitario = l.precioUnitario,
-                                    subtotal = -abs(l.subtotal),
-                                    idLineaOriginalAbonada = l.idLinea
-                                )
-                                lineasDao.insertarLinea(abono)
-                                if (
-                                    ConfigurationManager.getIsPremium() &&
-                                    l.tipoLinea == TipoLinea.PRODUCTO.name &&
-                                    l.idProducto != null
-                                ) {
-                                    try {
-                                        val articulo = articuloRepository.getArticuloById(l.idProducto!!)
-                                        if (articulo != null && articulo.controlarStock) {
-                                            val nuevoStock = (articulo.stock ?: 0) + abs(l.cantidad)
-                                            articuloRepository.actualizarArticulo(
-                                                articulo.copy(stock = nuevoStock)
-                                            )
-                                        }
-                                    } catch (_: Exception) { }
-                                }
-                            } catch (_: Exception) { /* Silencio: se mostrará al refrescar */ }
+                        val method = metodoDevolucion ?: return@TextButton
+                        refundBusy = true
+                        scope.launch {
+                            val result = salesRepository.crearAbono(l, l.cantidad, l.idMercadillo, method)
+                            refundBusy = false
+                            result.onSuccess { lineaParaConfirmar = null; refundError = null }
+                                .onFailure { refundError = it.message ?: StringResourceManager.getString("local_save_failed", currentLanguage) }
                         }
                     }
                 ) { Text(StringResourceManager.getString("si_abonar", currentLanguage)) }

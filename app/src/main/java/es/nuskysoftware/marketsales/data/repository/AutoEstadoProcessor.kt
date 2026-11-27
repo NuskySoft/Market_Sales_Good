@@ -31,7 +31,7 @@ internal class AutoEstadoProcessor(private val db: AppDatabase) {
         var changed = 0
         for (market in dao.pendientesAutoestado(uid)) {
             val next = AutoEstadoPolicy.next(market.estado, market.fecha, now,
-                db.lineasVentaDao().contarLineasPorMercadillo(market.idMercadillo) > 0)
+                db.lineasVentaDao().contarLineasPorMercadillo(market.idMercadillo, uid) > 0)
             if (next == market.estado) continue
             when (next) {
                 3 -> dao.actualizarEstado(market.idMercadillo, next, now.toEpochMilli())

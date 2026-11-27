@@ -46,7 +46,7 @@ interface UserDao {
     /**
      * Obtener usuario actual (dummy - UserRepository lo maneja)
      */
-    @Query("SELECT * FROM usuarios WHERE uid != 'dummy'")
+    @Query("SELECT * FROM usuarios WHERE uid = (SELECT usuarioLogueado FROM configuracion WHERE id = 1)")
     fun getCurrentUserFlow(): Flow<UserEntity?>
 
     /**
@@ -128,4 +128,3 @@ interface UserDao {
     @Query("UPDATE usuarios SET sincronizadoFirebase = 0 WHERE uid = :uid")
     suspend fun markUserNotSynced(uid: String)
 }
-

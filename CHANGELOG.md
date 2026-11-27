@@ -1,3 +1,12 @@
+# 2.4 — 27-11-2026 — candidata para pruebas
+
+- Lote conjunto de correcciones de sincronización local/Firebase, separación de cuentas y empresa, bajas de catálogo, categoría protegida, saldos múltiples y asignación transaccional.
+- Abonos por método real de devolución con recibo propio y stock persistente; movimientos de stock entre dispositivos.
+- Fechas comparables, importes de dos decimales, estados automáticos y migración Room 19→20 sin borrado de la base actual.
+- Restauración Premium reservada y reinicio con confirmación adicional y tarea persistente; la compra comercial de Premium continúa pendiente.
+- Firma privada y anuncios por variante. Preferencias visuales locales por dispositivo.
+- SQLite y revisión de consultas ejecutados; compilación Android/Firebase pendientes. Detalle y aceptación: docs/IMPLEMENTACION_2_4.md.
+
 # Historial de versiones
 
 ## 2.3 — 2026-11-25

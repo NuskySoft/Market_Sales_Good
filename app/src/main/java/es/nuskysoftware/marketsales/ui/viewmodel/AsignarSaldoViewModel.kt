@@ -1,6 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/viewmodel/AsignarSaldoViewModel.kt
 package es.nuskysoftware.marketsales.ui.viewmodel
 
+import androidx.room.withTransaction
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -107,7 +108,8 @@ class AsignarSaldoViewModel(
                     mercadilloOrigen = origen,
                     haySaldoGuardadoPrevio = hayGuardadoPrevio
                 )
-            } catch (_: Exception) {
+            } catch (failure: Exception) {
+                es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed")
                 _ui.value = UIStateAsignarSaldo(loading = false)
             }
         }
@@ -235,15 +237,15 @@ class AsignarSaldoViewModel(
                 lineas = buildList {
                     add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
                     add(LineaTexto(StringResourceManager.getString("guardar_saldo_uso", lang)))
-                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
+
                 }
             )
             ConfirmCaso.GUARDAR_CON_PROX -> TextoConfirm(
                 titulo = StringResourceManager.getString("guardar_saldo", lang),
                 lineas = buildList {
                     add(LineaTexto(StringResourceManager.getString("confirmar_guardar_saldo", lang)))
-                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_limite", lang)))
-                    if (hayPrevio) add(LineaTexto(StringResourceManager.getString("guardar_saldo_reemplazar_aviso", lang), esAvisoFinal = true))
+                    add(LineaTexto(StringResourceManager.getString("guardar_saldo_uso", lang)))
+
                 }
             )
             ConfirmCaso.ASIGNAR_SIN_SALDO_DEST -> TextoConfirm(
@@ -275,6 +277,8 @@ class AsignarSaldoViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                db.withTransaction {
+                es.nuskysoftware.marketsales.utils.DemoAccess.requireOwner(origen.userId)
                 when (d.modo) {
                     IntermediaModo.GUARDAR -> {
                         // 1) Guardar/replace en tabla control
@@ -317,6 +321,7 @@ class AsignarSaldoViewModel(
                     }
                 }
 
+                }
                 withContext(Dispatchers.Main) {
                     // limpiar diálogos y volver a home
                     _ui.value = _ui.value.copy(confirm = ConfirmState(), dialogoIntermedio = IntermediaState())

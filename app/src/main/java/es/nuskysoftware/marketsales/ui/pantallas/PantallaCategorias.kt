@@ -330,8 +330,12 @@ fun PantallaCategorias(
                                     modoEdicion = categoria
                                 },
                                 onEliminar = {
-                                    categoriaAEliminar = categoria
-                                    mostrarDialogoEliminar = true
+                                    if (es.nuskysoftware.marketsales.data.repository.CatalogDefaults.isProtected(categoria)) {
+                                        es.nuskysoftware.marketsales.utils.DemoAccess.show("category_protected")
+                                    } else {
+                                        categoriaAEliminar = categoria
+                                        mostrarDialogoEliminar = true
+                                    }
                                 }
                             )
                         }
@@ -370,7 +374,7 @@ fun PantallaCategorias(
             },
             text = {
                 Text(
-                    StringResourceManager.getString("confirmar_eliminar_categoria", currentLanguage)
+                    StringResourceManager.getString("category_delete_move", currentLanguage)
                         .replace("{nombre}", categoriaAEliminar!!.nombre)
                 )
             },

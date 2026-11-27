@@ -71,7 +71,7 @@ class StockSQLTest(unittest.TestCase):
         with self.connect() as db:
             db.execute(SYNC,dict(id='item',owner='owner',version=1,modified=1,stock=10))
             self.assertEqual(db.execute('SELECT sincronizadoFirebase FROM articulos').fetchone()[0],0)
-            db.execute(SYNC,dict(id='item',owner='owner',version=2,modified=2,stock=8))
+            db.execute(SYNC,dict(id='item',owner='owner',version=1,modified=1,stock=8))
             self.assertEqual(db.execute('SELECT sincronizadoFirebase FROM articulos').fetchone()[0],1)
     def test_additive_migration_keeps_existing_stock_and_sales(self):
         with self.connect() as db:

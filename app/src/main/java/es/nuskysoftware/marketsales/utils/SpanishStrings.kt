@@ -9,6 +9,22 @@ internal object SpanishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "recovery_decision_required" -> "Antes de guardar, decide si quieres recuperar los datos anteriores o empezar de cero."
+        "category_protected" -> "La categoría Sin categorizar no se puede borrar."
+        "category_delete_move" -> "¿Eliminar la categoría {nombre}? Si tiene productos, todos pasarán a Sin categorizar. Las ventas anteriores se conservarán."
+        "no_pending_balances" -> "No hay saldos pendientes de asignar."
+        "balance_delete_confirm" -> "¿Eliminar este saldo pendiente? No se modificará el saldo histórico del mercadillo de origen."
+        "local_save_failed" -> "No se han podido guardar los datos en este dispositivo. Inténtalo de nuevo."
+        "refund_payment_method" -> "¿Cómo devuelves el dinero?"
+        "permanent_delete_title" -> "ATENCIÓN: BORRADO DEFINITIVO"
+        "permanent_delete_warning" -> "Si continúas como usuario estándar, se borrarán definitivamente todos los datos anteriores de tu cuenta almacenados en el servidor. Ya no podrás recuperarlos, aunque después te hagas Premium. Si no hay conexión, el borrado quedará pendiente. ¿Confirmas que quieres borrarlos definitivamente?"
+        "permanent_delete_action" -> "Borrar definitivamente"
+        "recover_previous_data" -> "Recuperar datos anteriores"
+        "recovery_first_chance" -> "Tu cuenta tiene datos anteriores. Con Premium puedes recuperarlos. Si continúas como usuario gratuito, empezarás con una copia vacía y conservaremos los datos anteriores hasta que decidas crear datos nuevos."
+        "recovery_last_chance" -> "Antes de crear tu primer dato nuevo, todavía puedes hacerte Premium y recuperar los datos anteriores. Si decides seguir como usuario gratuito, pediremos confirmación antes de borrarlos definitivamente. Después tendrás que repetir el guardado."
+        "continue_free" -> "Continuar como gratuito"
+        "premium_recovery_info" -> "Los datos anteriores siguen reservados. Esta versión de pruebas no incluye contratación de Premium. Cuando tu cuenta tenga Premium activado, se recuperarán al conectar, sin mezclar datos de la demo."
+
         // Pantalla principal
         "app_name" -> "Market Sales"
         "mercadillos" -> "Mercadillos"

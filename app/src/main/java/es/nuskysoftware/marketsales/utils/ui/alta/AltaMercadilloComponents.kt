@@ -156,7 +156,7 @@ fun ConfiguracionEconomica(
             OutlinedTextField(
                 value = importeSuscripcion,
                 enabled = enabled,
-                onValueChange = onImporteSuscripcionChange,
+                onValueChange = { if (es.nuskysoftware.marketsales.utils.Money.validInput(it)) onImporteSuscripcionChange(it) },
                 label = { Text(t("importe_suscripcion") + " (${simboloMoneda})") },
                 placeholder = { Text(t("importe_placeholder")) },
                 modifier = Modifier.fillMaxWidth()
@@ -263,7 +263,7 @@ fun CampoSaldoInicial(
         OutlinedTextField(
             value = saldoInicial,
             enabled = enabled,
-            onValueChange = onSaldoInicialChange,
+            onValueChange = { if (es.nuskysoftware.marketsales.utils.Money.validInput(it)) onSaldoInicialChange(it) },
             placeholder = { Text(t("importe_placeholder")) },
             modifier = Modifier.fillMaxWidth(),
             suffix = { Text(simboloMoneda) }

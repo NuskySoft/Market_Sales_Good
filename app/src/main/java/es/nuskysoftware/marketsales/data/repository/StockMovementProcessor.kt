@@ -7,9 +7,9 @@ import kotlinx.coroutines.CancellationException
 
 /** No network or UI dependencies. A failure never rolls back an already confirmed sale. */
 class StockMovementProcessor(private val db: AppDatabase) {
-    suspend fun processPending(): Boolean {
+    suspend fun processPending(owner: String? = null): Boolean {
         val dao = db.stockMovementDao()
-        for (candidate in dao.pending()) {
+        for (candidate in dao.pending().filter { owner == null || it.idUsuario == owner }) {
             try {
                 db.withTransaction {
                     // Another worker may have applied it while we waited for the transaction.
@@ -28,6 +28,6 @@ class StockMovementProcessor(private val db: AppDatabase) {
                 Log.w("StockMovementProcessor", "Stock remains pending: ${candidate.idMovimiento}", failure)
             }
         }
-        return dao.pendingCount() == 0
+        return dao.pending().none { owner == null || it.idUsuario == owner }
     }
 }

@@ -12,6 +12,9 @@ import es.nuskysoftware.marketsales.data.local.database.AppDatabase
 import es.nuskysoftware.marketsales.data.local.entity.UserEntity
 import es.nuskysoftware.marketsales.utils.ConnectivityObserver
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -31,6 +34,7 @@ import java.util.*
 class UserRepository(
     context: Context
 ) {
+    private val appContext = context.applicationContext
     private val userDao: UserDao = AppDatabase.getDatabase(context).userDao()
     private val firestore = FirebaseFirestore.getInstance()
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -40,21 +44,11 @@ class UserRepository(
     private val connectivityObserver = ConnectivityObserver(context)
 
     // Exponer usuario actual como StateFlow
-    val currentUser = userDao.getCurrentUserFlow()
+    val currentUser = ConfigurationManager.usuarioLogueado.flatMapLatest { uid -> if (uid == null) flowOf(null) else userDao.getUserByIdFlow(uid) }
         .stateIn(repositoryScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
-        // Cuando volvemos online, sincronizamos usuarios pendientes
-        repositoryScope.launch {
-            connectivityObserver.isConnected.collect { online ->
-                if (online) {
-                    val pendingUsers = userDao.getUsersPendingSync()
-                    pendingUsers.forEach { user ->
-                        sincronizarUsuarioConFirebase(user)
-                    }
-                }
-            }
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     // ========== MÉTODOS PRINCIPALES V10 ==========
@@ -148,16 +142,22 @@ class UserRepository(
      * Actualiza el estado Premium del usuario
      */
     suspend fun updateUserPremium(uid: String, esPremium: Boolean) = withContext(Dispatchers.IO) {
+        DemoAccess.requireOwner(uid)
+        check(DemoAccess.canSync(uid))
+        firestore.collection("usuarios").document(uid).update("esPremium", esPremium).await()
+        DemoAccess.requireOwner(uid)
         userDao.updateUserPremium(uid, esPremium)
-        sincronizarCampoEspecifico(uid, "esPremium", esPremium)
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
      * Actualiza el email del usuario
      */
     suspend fun updateUserEmail(uid: String, email: String) = withContext(Dispatchers.IO) {
-        userDao.updateUserEmail(uid, email)
-        sincronizarCampoEspecifico(uid, "email", email)
+        DemoAccess.requireOwner(uid)
+        val old = userDao.getUserByIdSync(uid) ?: error("Account not found")
+        userDao.insertOrUpdate(old.copy(email = email, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
@@ -165,16 +165,20 @@ class UserRepository(
      */
     suspend fun updateUserDisplayName(uid: String, displayName: String) =
         withContext(Dispatchers.IO) {
-            userDao.updateUserDisplayName(uid, displayName)
-            sincronizarCampoEspecifico(uid, "displayName", displayName)
-        }
+        DemoAccess.requireOwner(uid)
+        val old = userDao.getUserByIdSync(uid) ?: error("Account not found")
+        userDao.insertOrUpdate(old.copy(displayName = displayName, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+    }
 
     /**
      * Actualiza la foto del usuario
      */
     suspend fun updateUserPhotoUrl(uid: String, photoUrl: String) = withContext(Dispatchers.IO) {
-        userDao.updateUserPhotoUrl(uid, photoUrl)
-        sincronizarCampoEspecifico(uid, "photoUrl", photoUrl)
+        DemoAccess.requireOwner(uid)
+        val old = userDao.getUserByIdSync(uid) ?: error("Account not found")
+        userDao.insertOrUpdate(old.copy(photoUrl = photoUrl, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
@@ -212,64 +216,14 @@ class UserRepository(
      * Sincroniza usuario completo con Firebase
      */
     private fun sincronizarUsuarioConFirebase(user: UserEntity) {
-        if (!DemoAccess.canSync(user.uid)) return
-        try {
-            val datos = mapOf(
-                "uid" to user.uid,
-                "email" to user.email,
-                "displayName" to user.displayName,
-                "photoUrl" to user.photoUrl,
-                "esPremium" to user.esPremium,
-                "version" to user.version,
-                "lastModified" to user.lastModified,
-                "fechaCreacion" to user.fechaCreacion,
-                "fechaUltimaSync" to dateFormat.format(Date()),
-                "activo" to user.activo
-            )
-
-            val docRef = firestore.collection("usuarios")
-                .document(user.uid)
-
-            docRef.set(datos)
-                .addOnSuccessListener {
-                    repositoryScope.launch {
-                        userDao.markUserSyncSuccessful(user.uid, user.version + 1)
-                        userDao.updateFechaUltimaSync(user.uid, dateFormat.format(Date()))
-                    }
-                }
-                .addOnFailureListener {
-                    repositoryScope.launch {
-                        // El usuario queda marcado como no sincronizado hasta próximo intento
-                    }
-                }
-
-        } catch (e: Exception) {
-            // Error en sincronización, se reintentará cuando haya conexión
-        }
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     /**
      * Sincroniza un campo específico del usuario
      */
     private suspend fun sincronizarCampoEspecifico(userId: String, campo: String, valor: Any) {
-        try {
-            val datos = mapOf(
-                campo to valor,
-                "lastModified" to System.currentTimeMillis(),
-                "fechaUltimaSync" to dateFormat.format(Date())
-            )
-
-            firestore.collection("usuarios")
-                .document(userId)
-                .update(datos)
-                .await()
-
-            // Marcar como sincronizado
-            userDao.markUserSyncSuccessful(userId, userDao.getUserVersion(userId) ?: 1L + 1)
-
-        } catch (e: Exception) {
-            // El campo queda marcado como no sincronizado
-        }
+        if (DemoAccess.canSync(userId)) es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
 
     // ========== MÉTODOS AUXILIARES ==========
@@ -377,79 +331,19 @@ class UserRepository(
     // ========== REEMPLAZA el método getHybridUserData() en UserRepository.kt ==========
 
     suspend fun getHybridUserData(uid: String): UserEntity? = withContext(Dispatchers.IO) {
-        try {
-            // 1. Verificar si hay datos pendientes de sincronizar en Room
-            val roomUser = userDao.getUserByIdSync(uid)
-            val hasPendingChanges = roomUser?.sincronizadoFirebase == false
-
-            if (hasPendingChanges) {
-                // ✅ HAY CAMBIOS PENDIENTES → Leer de Room (fuente de verdad)
-                Log.d("UserRepository", "📱 Leyendo de ROOM (cambios pendientes): $uid")
-                return@withContext roomUser
-            } else {
-                // ✅ NO HAY CAMBIOS PENDIENTES → Leer de Firebase (más actualizado)
-                Log.d("UserRepository", "☁️ Leyendo de FIREBASE (sin cambios pendientes): $uid")
-
-                if (connectivityObserver.isConnected.first()) {
-                    try {
-                        val firebaseDoc = firestore.collection("usuarios")
-                            .document(uid)
-                            .get()
-                            .await()
-
-                        if (firebaseDoc.exists()) {
-                            val firebaseUser = mapFirebaseToUserEntity(uid, firebaseDoc.data!!)
-
-                            // Actualizar Room con datos frescos de Firebase
-                            userDao.insertOrUpdate(firebaseUser.copy(sincronizadoFirebase = true))
-
-                            Log.d("UserRepository", "✅ Datos frescos de Firebase aplicados a Room")
-                            return@withContext firebaseUser
-                        }
-                    } catch (e: Exception) {
-                        Log.w(
-                            "UserRepository",
-                            "❌ Error leyendo Firebase, usando Room como fallback",
-                            e
-                        )
-                    }
-                }
-
-                // Fallback: usar Room si Firebase falla o no hay conexión
-                return@withContext roomUser ?: getOrCreateUser(uid, "", "", "", false)
-            }
-
-        } catch (e: Exception) {
-            Log.e("UserRepository", "Error en estrategia híbrida", e)
-            // En caso de error, devolver lo que tengamos en Room o crear usuario básico
-            val fallbackUser = userDao.getUserByIdSync(uid)
-            return@withContext fallbackUser ?: getOrCreateUser(uid, "", "", "", false)
-        }
+        DemoAccess.requireOwner(uid)
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+        userDao.getUserByIdSync(uid)
     }
     // En UserRepository.kt
     suspend fun updateUserProfile(userId: String, displayName: String, email: String) {
-        try {
-            userDao.updateUserProfile(userId, displayName, email)
-            Log.d(TAG, "✅ Perfil actualizado en Room: $displayName, $email")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Error actualizando perfil en Room", e)
-        }
+        DemoAccess.requireOwner(userId)
+        val old = userDao.getUserByIdSync(userId) ?: error("Account not found")
+        userDao.insertOrUpdate(old.copy(displayName = displayName, email = email, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))
+        es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }
     suspend fun updateUserProfileAndMarkDirty(userId: String, displayName: String, email: String) = withContext(Dispatchers.IO) {
-        try {
-            // 1. Actualizar los datos en Room
-            userDao.updateUserProfile(userId, displayName, email)
-
-            // 2. ✅ CLAVE: Marcar como NO SINCRONIZADO para que getHybridUserData use Room
-            userDao.markUserNotSynced(userId)
-
-            Log.d("UserRepository", "✅ Perfil actualizado y marcado como no sincronizado")
-            Log.d("UserRepository", "   - displayName: $displayName")
-            Log.d("UserRepository", "   - sincronizadoFirebase: false")
-
-        } catch (e: Exception) {
-            Log.e("UserRepository", "❌ Error actualizando perfil", e)
-        }
+        updateUserProfile(userId, displayName, email)
     }
     suspend fun refreshUserData(uid: String) = withContext(Dispatchers.IO) {
         try {

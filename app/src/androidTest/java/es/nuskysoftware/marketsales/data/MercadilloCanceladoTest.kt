@@ -50,8 +50,8 @@ class MercadilloCanceladoTest {
                 lastModified = 123456L,
                 sincronizadoFirebase = false
             )
-            assertEquals(esperado, dao.getMercadilloById(original.idMercadillo))
-            assertEquals(otro, dao.getMercadilloById(otro.idMercadillo))
+            assertEquals(esperado, dao.getMercadilloById(original.idMercadillo, original.userId))
+            assertEquals(otro, dao.getMercadilloById(otro.idMercadillo, otro.userId))
             val calendario = dao.getMercadillosByUserAndMes(original.userId, "%11-2026").first()
             assertEquals(setOf(esperado, otro), calendario.toSet())
         } finally {

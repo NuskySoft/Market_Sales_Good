@@ -20,35 +20,35 @@ interface LineasGastosDao {
     suspend fun insertarLineas(lineas: List<LineaGastoEntity>)
 
     // === DELETE POR MERCADILLO ===
-    @Query("DELETE FROM LineasGastos WHERE idMercadillo = :idMercadillo")
-    suspend fun borrarPorMercadillo(idMercadillo: String)
+    @Query("DELETE FROM LineasGastos WHERE idMercadillo = :idMercadillo AND idUsuario = :sessionOwner ")
+    suspend fun borrarPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     @Query("DELETE FROM LineasGastos WHERE idUsuario = :userId")
     suspend fun borrarPorUsuario(userId: String)
 
     // === QUERIES ===
-    @Query("SELECT * FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY numeroLinea ASC")
-    fun observarGastosPorMercadillo(idMercadillo: String): Flow<List<LineaGastoEntity>>
+    @Query("SELECT * FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY numeroLinea ASC")
+    fun observarGastosPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<LineaGastoEntity>>
 
-    @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1")
-    suspend fun getTotalGastosMercadillo(idMercadillo: String): Double
+    @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND idUsuario = :sessionOwner ")
+    suspend fun getTotalGastosMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
-    @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND formaPago = :forma")
-    suspend fun getTotalGastosPorMetodo(idMercadillo: String, forma: String): Double
+    @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND formaPago = :forma AND idUsuario = :sessionOwner ")
+    suspend fun getTotalGastosPorMetodo(idMercadillo: String, forma: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
     // ✅ NUEVO: solo gastos en efectivo que SÍ se descuentan de caja (para arqueo)
     @Query("""
-        SELECT COALESCE(SUM(importe), 0.0) 
-        FROM LineasGastos 
-        WHERE idMercadillo = :idMercadillo 
-          AND activo = 1 
+        SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0)
+        FROM LineasGastos
+        WHERE idMercadillo = :idMercadillo
+          AND activo = 1
           AND formaPago = 'efectivo'
           AND descontarDeCaja = 1
-    """)
-    suspend fun getTotalGastosEfectivoDeCaja(idMercadillo: String): Double
+     AND idUsuario = :sessionOwner """)
+    suspend fun getTotalGastosEfectivoDeCaja(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
-    @Query("SELECT MAX(numeroLinea) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1")
-    suspend fun obtenerMaxNumeroLineaPorMercadillo(idMercadillo: String): String?
+    @Query("SELECT MAX(numeroLinea) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND idUsuario = :sessionOwner ")
+    suspend fun obtenerMaxNumeroLineaPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): String?
 
     // === Sincronización híbrida ===
     @Query("SELECT * FROM LineasGastos WHERE idUsuario = :userId AND sincronizadoFirebase = 0")
@@ -63,8 +63,8 @@ interface LineasGastosDao {
     @Query("SELECT EXISTS(SELECT 1 FROM LineasGastos WHERE idUsuario = :uid AND activo = 1 LIMIT 1)")
     suspend fun existeAlgunoDeUsuario(uid: String): Boolean
 
-    @Query("UPDATE LineasGastos SET sincronizadoFirebase = 0 WHERE idMercadillo = :mercadillo AND numeroLinea = :numeroLinea")
-    suspend fun marcarPendiente(mercadillo: String, numeroLinea: String)
+    @Query("UPDATE LineasGastos SET sincronizadoFirebase = 0 WHERE idMercadillo = :mercadillo AND numeroLinea = :numeroLinea AND idUsuario = :sessionOwner ")
+    suspend fun marcarPendiente(mercadillo: String, numeroLinea: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 }
 
 
@@ -94,12 +94,12 @@ interface LineasGastosDao {
 //    @Query("SELECT * FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY numeroLinea ASC")
 //    fun observarGastosPorMercadillo(idMercadillo: String): Flow<List<LineaGastoEntity>>
 //
-//    // @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo")
-//    @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1")
+//    // @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo")
+//    @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1")
 //    suspend fun getTotalGastosMercadillo(idMercadillo: String): Double
 //
-//    // @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND formaPago = :forma")
-//    @Query("SELECT COALESCE(SUM(importe), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND formaPago = :forma")
+//    // @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND formaPago = :forma")
+//    @Query("SELECT COALESCE((SUM(CAST(ROUND(importe * 100, 0) AS INTEGER)) / 100.0), 0.0) FROM LineasGastos WHERE idMercadillo = :idMercadillo AND activo = 1 AND formaPago = :forma")
 //    suspend fun getTotalGastosPorMetodo(idMercadillo: String, forma: String): Double
 //
 //    // @Query("SELECT MAX(numeroLinea) FROM LineasGastos WHERE idMercadillo = :idMercadillo")

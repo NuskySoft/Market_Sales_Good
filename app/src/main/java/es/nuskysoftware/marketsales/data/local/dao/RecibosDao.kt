@@ -29,13 +29,13 @@ interface RecibosDao {
     suspend fun existeAlgunoDeUsuario(uid: String): Boolean
 
     //@Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo ORDER BY fechaHora DESC")
-    @Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY fechaHora DESC")
-    fun obtenerRecibosPorMercadillo(idMercadillo: String): Flow<List<ReciboEntity>>
+    @Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY fechaHora DESC")
+    fun obtenerRecibosPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<ReciboEntity>>
 
     //@Query("SELECT * FROM recibos WHERE idRecibo = :idRecibo")
-    @Query("SELECT * FROM recibos WHERE idRecibo = :idRecibo AND activo = 1")
+    @Query("SELECT * FROM recibos WHERE idRecibo = :idRecibo AND activo = 1 AND idUsuario = :sessionOwner ")
 
-    suspend fun obtenerReciboPorId(idRecibo: String): ReciboEntity?
+    suspend fun obtenerReciboPorId(idRecibo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): ReciboEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarRecibo(recibo: ReciboEntity)
@@ -47,23 +47,23 @@ interface RecibosDao {
     suspend fun eliminarRecibo(recibo: ReciboEntity)
 
     //@Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo ORDER BY fechaHora ASC")
-    @Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo AND activo = 1 ORDER BY fechaHora ASC")
-    fun observarRecibosPorMercadillo(idMercadillo: String): Flow<List<ReciboEntity>>
+    @Query("SELECT * FROM recibos WHERE idMercadillo = :idMercadillo AND activo = 1  AND idUsuario = :sessionOwner ORDER BY fechaHora ASC")
+    fun observarRecibosPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Flow<List<ReciboEntity>>
 
     //@Query("SELECT * FROM recibos WHERE idUsuario = :userId ORDER BY fechaHora DESC")
     @Query("SELECT * FROM recibos WHERE idUsuario = :userId AND activo = 1 ORDER BY fechaHora DESC")
     fun observarRecibosUsuario(userId: String): Flow<List<ReciboEntity>>
 
-    @Query("DELETE FROM recibos WHERE idMercadillo = :idMercadillo")
-    suspend fun eliminarRecibosPorMercadillo(idMercadillo: String)
+    @Query("DELETE FROM recibos WHERE idMercadillo = :idMercadillo AND idUsuario = :sessionOwner ")
+    suspend fun eliminarRecibosPorMercadillo(idMercadillo: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
     // === Sincronización híbrida ===
     @Query("SELECT * FROM recibos WHERE idUsuario = :userId AND sincronizadoFirebase = 0")
     suspend fun getPendientesSync(userId: String): List<ReciboEntity>
 
-    @Query("UPDATE recibos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idRecibo = :id")
-    suspend fun marcarSincronizado(id: String, timestamp: Long)
+    @Query("UPDATE recibos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idRecibo = :id AND idUsuario = :sessionOwner ")
+    suspend fun marcarSincronizado(id: String, timestamp: Long, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
-    @Query("UPDATE recibos SET sincronizadoFirebase = 0 WHERE idRecibo = :id")
-    suspend fun marcarPendiente(id: String)
+    @Query("UPDATE recibos SET sincronizadoFirebase = 0 WHERE idRecibo = :id AND idUsuario = :sessionOwner ")
+    suspend fun marcarPendiente(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 }

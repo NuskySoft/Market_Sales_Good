@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
  */
 @Entity(tableName = "usuarios")
 data class UserEntity(
-    @PrimaryKey val uid: String,
+    @PrimaryKey val uid: String = "",
     val email: String = "",
     val displayName: String = "",
     val photoUrl: String = "",

@@ -201,6 +201,13 @@ class VentasRepository(
                         }
                     }
                     db.stockMovementDao().enqueue(movements)
+                    // La instantánea del recibo se guarda en la misma transacción; el PDF se genera después.
+                    val original = lineasEntity.firstNotNullOfOrNull { it.idLineaOriginalAbonada }?.let { originalId ->
+                        lineasVentaDao.obtenerLineasPorMercadillo(idMercadillo, userId).first().firstOrNull { it.idLinea == originalId }?.idRecibo
+                    }.orEmpty()
+                    val logo = runCatching { es.nuskysoftware.marketsales.receipts.ReceiptFiles.logo(appContext,userId).takeIf { it.isFile && it.length() <= 524288 }?.readBytes()?.let { android.util.Base64.encodeToString(it,android.util.Base64.NO_WRAP) }.orEmpty() }.getOrDefault("")
+                    val snapshot = es.nuskysoftware.marketsales.receipts.ReceiptFiles.snapshot(recibo,lineasEntity,db.empresaDao().getEmpresa(userId),market.lugar,ConfigurationManager.getMoneda(),ConfigurationManager.getIdioma(),logo,original)
+                    db.receiptDocumentDao().insert(es.nuskysoftware.marketsales.data.local.entity.ReceiptDocumentEntity(userId,idRecibo,snapshot))
                 }
                 idRecibo
             }

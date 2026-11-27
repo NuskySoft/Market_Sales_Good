@@ -24,9 +24,10 @@ import es.nuskysoftware.marketsales.data.local.entity.*
         LineaGastoEntity::class,
         SaldoGuardadoEntity::class, // v12
         EmpresaEntity::class,       // v14
-        StockMovementEntity::class  // v19
+        StockMovementEntity::class, // v19
+        ReceiptDocumentEntity::class, ReceiptMailEntity::class
     ],
-    version = 21,
+    version = 22,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -43,8 +44,18 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun empresaDao(): EmpresaDao
     abstract fun stockMovementDao(): StockMovementDao
 
+    abstract fun receiptDocumentDao(): ReceiptDocumentDao
+
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
+
+        /** Añade únicamente tablas locales de documentos y correo; conserva las ventas previas. */
+        val MIGRATION_21_22 = object : Migration(21, 22) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS receipt_documents (owner TEXT NOT NULL, receiptId TEXT NOT NULL, snapshot TEXT NOT NULL, copiedTo TEXT, PRIMARY KEY(owner, receiptId))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS receipt_mail (owner TEXT NOT NULL, id TEXT NOT NULL, receiptId TEXT NOT NULL, recipient TEXT NOT NULL, created INTEGER NOT NULL, state TEXT NOT NULL, detail TEXT NOT NULL, PRIMARY KEY(owner, id))")
+            }
+        }
 
         // Añade la fecha de creación sin modificar ni inventar fechas de registros históricos.
         val MIGRATION_20_21 = object : Migration(20, 21) {

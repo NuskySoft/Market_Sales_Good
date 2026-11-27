@@ -51,8 +51,12 @@ android {
         // Nivel de API para el que se declara el comportamiento objetivo.
         targetSdk = 36
         // El código numérico aumenta en cada entrega; la interfaz muestra VERSION_NAME.
-        versionCode = 10
-        versionName = "2.6"
+        versionCode = 11
+        versionName = "2.7"
+        // Identificador público Microsoft Entra, no es una contraseña; vacío hasta registrar el cliente.
+        val msMailClient = providers.gradleProperty("MS_MAIL_CLIENT_ID").orElse("").get()
+        require(msMailClient.isEmpty() || msMailClient.matches(Regex("[0-9a-fA-F-]{36}")))
+        buildConfigField("String", "MS_MAIL_CLIENT_ID", "\"$msMailClient\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -86,6 +90,9 @@ android {
 }
 
 dependencies {
+    // SMTP autenticado desde Android, sin intermediario de Market Sales.
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
     // ===== Compose BOM (versiona TODAS las libs de androidx.compose.*) =====
     implementation(platform(libs.androidx.compose.bom))
 

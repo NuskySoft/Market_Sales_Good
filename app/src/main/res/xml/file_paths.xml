@@ -2,4 +2,6 @@
 <!-- Rutas autorizadas para compartir archivos a través de FileProvider. -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-files-path name="external_files" path="." />
+    <!-- Se concede acceso temporal únicamente a los PDF compartidos explícitamente. -->
+    <files-path name="receipt_files" path="receipts/" />
 </paths>

@@ -1,0 +1,66 @@
+package es.nuskysoftware.marketsales.receipts
+
+import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
+import org.json.JSONObject
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
+
+/** Configuración local por dispositivo/cuenta; las credenciales nunca se guardan en Room ni Firebase. */
+class ReceiptSettings(private val context: Context, private val owner: String) {
+    private val id = ReceiptFiles.key(owner)
+    private val preferences = context.getSharedPreferences("receipt_settings", Context.MODE_PRIVATE)
+    private val secrets = context.getSharedPreferences("receipt_secrets", Context.MODE_PRIVATE)
+    var ask: Boolean
+        get() = preferences.getBoolean(id+":ask", false)
+        set(value) { preferences.edit().putBoolean(id+":ask",value).apply() }
+    var folder: String?
+        get() = preferences.getString(id+":folder",null)
+        set(value) { preferences.edit().putString(id+":folder",value).apply() }
+    var welcomeShown: Boolean
+        get() = preferences.getBoolean(id+":welcome",false)
+        set(value) { preferences.edit().putBoolean(id+":welcome",value).apply() }
+
+    /** Clave no exportable Android Keystore y cifrado autenticado AES-GCM. */
+    @Synchronized private fun key(): SecretKey {
+        val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        val alias = "receipt-mail-" + id
+        (store.getKey(alias,null) as? SecretKey)?.let { return it }
+        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES,"AndroidKeyStore").run {
+            init(KeyGenParameterSpec.Builder(alias,KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                .setBlockModes(KeyProperties.BLOCK_MODE_GCM).setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE).build())
+            generateKey()
+        }
+    }
+    fun mail(): MailConfig? = runCatching {
+        val stored=secrets.getString(id,null) ?: return null
+        val parts=stored.split(":")
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.DECRYPT_MODE,key(),GCMParameterSpec(128,Base64.decode(parts[0],Base64.NO_WRAP)))
+        MailConfig.fromJson(JSONObject(String(cipher.doFinal(Base64.decode(parts[1],Base64.NO_WRAP)),Charsets.UTF_8)))
+    }.getOrNull()
+
+    fun save(config: MailConfig) {
+        val cipher=Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(Cipher.ENCRYPT_MODE,key())
+        val bytes=cipher.doFinal(config.json().toString().toByteArray(Charsets.UTF_8))
+        check(secrets.edit().putString(id,Base64.encodeToString(cipher.iv,Base64.NO_WRAP)+":"+Base64.encodeToString(bytes,Base64.NO_WRAP)).commit())
+    }
+    fun clearMail() { secrets.edit().remove(id).commit() }
+}
+
+/** Cuenta autorizada; secret contiene contraseña de aplicación o refresh token, nunca se muestra. */
+data class MailConfig(val provider:String,val name:String,val address:String,val host:String,
+    val port:Int,val tls:String,val username:String,val secret:String) {
+    fun json()=JSONObject().put("provider",provider).put("name",name).put("address",address)
+        .put("host",host).put("port",port).put("tls",tls).put("username",username).put("secret",secret)
+    companion object {
+        fun fromJson(j:JSONObject)=MailConfig(j.getString("provider"),j.getString("name"),j.getString("address"),
+            j.getString("host"),j.getInt("port"),j.getString("tls"),j.getString("username"),j.getString("secret"))
+    }
+}

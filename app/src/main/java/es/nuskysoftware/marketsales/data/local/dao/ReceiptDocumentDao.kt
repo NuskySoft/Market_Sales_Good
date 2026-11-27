@@ -12,8 +12,8 @@ interface ReceiptDocumentDao {
     suspend fun insert(document: ReceiptDocumentEntity)
     @Query("SELECT * FROM receipt_documents WHERE owner=:owner AND receiptId=:id")
     suspend fun find(owner: String, id: String): ReceiptDocumentEntity?
-    @Query("SELECT * FROM receipt_documents WHERE owner=:owner")
-    suspend fun documents(owner: String): List<ReceiptDocumentEntity>
+    @Query("SELECT receiptId FROM receipt_documents WHERE owner=:owner")
+    suspend fun documentIds(owner: String): List<String>
     @Query("SELECT receiptId FROM receipt_documents WHERE owner=:owner")
     fun ids(owner: String): Flow<List<String>>
     @Query("UPDATE receipt_documents SET copiedTo=:destination WHERE owner=:owner AND receiptId=:id")

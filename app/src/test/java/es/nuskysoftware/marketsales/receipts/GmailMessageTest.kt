@@ -12,10 +12,12 @@ class GmailMessageTest {
         val raw=GmailMessage.raw("shop@example.com","shop@example.com",null,false)
         assertTrue(raw.matches(Regex("[A-Za-z0-9_-]+")))
         val mime=decode(raw)
-        assertTrue(mime.contains("Subject: Market Sales - test\r\n"))
+        assertTrue(mime.contains("Subject: Market Sales - Correo configurado\r\n"))
         assertTrue(mime.contains("Content-Type: text/plain; charset=UTF-8"))
         assertFalse(mime.contains("multipart/mixed"))
-        assertTrue(mime.contains(Base64.getEncoder().encodeToString("Market Sales - OK".toByteArray())))
+        val body=Base64.getMimeDecoder().decode(mime.substringAfter("\r\n\r\n"))
+        assertEquals(ReceiptMailText.body(false,false),String(body,Charsets.UTF_8))
+        assertFalse(mime.contains("Subject: Recibo de venta"))
     }
     @Test fun receiptWithPdf(){
         val pdf=File.createTempFile("receipt",".pdf")
@@ -25,6 +27,7 @@ class GmailMessageTest {
             val mime=decode(GmailMessage.raw("shop@example.com","client@example.com",pdf,false))
             assertTrue(mime.contains("To: client@example.com\r\n"))
             assertTrue(mime.contains("Subject: Recibo de venta\r\n"))
+            assertFalse(mime.contains("Correo configurado"))
             assertTrue(mime.contains("Content-Type: multipart/mixed; boundary="))
             assertTrue(mime.contains("filename=\"recibo.pdf\""))
             assertTrue(mime.contains(Base64.getEncoder().encodeToString(bytes)))

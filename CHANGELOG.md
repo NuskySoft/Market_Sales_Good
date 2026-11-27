@@ -1,5 +1,7 @@
 # 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
 
+- Gmail OAuth y envío real de recibos confirmados por el usuario en emulador. Se sustituye el texto de prueba por confirmación profesional de configuración, común a todos los proveedores y dirigida únicamente a la propia cuenta. Verificación pública de Google pendiente.
+
 - Gmail sustituye SMTP/contraseña de aplicación por Google Identity Services + Gmail API, selección de cuenta independiente de Firebase, permiso de envío mínimo y reobtención de tokens desde Android. Configuración de Google Cloud y pruebas reales pendientes. Sin migración Room.
 
 - Corrección SMTP durante pruebas: preparación MIME explícita compatible con Android, diagnóstico por fase sin secretos, selección 465 SSL/TLS o 587 STARTTLS para Gmail y emparejamiento de puertos habituales en SMTP manual. No se ha comprobado el envío real.

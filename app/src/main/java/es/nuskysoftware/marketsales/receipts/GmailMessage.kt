@@ -16,8 +16,8 @@ internal object GmailMessage {
     fun raw(sender:String,recipient:String,file:File?,english:Boolean):String {
         require(listOf(sender,recipient).all{it.isNotBlank() && it.all{c->c.code in 33..126} && '@' in it})
         if(file!=null)require(file.isFile && file.length() in 1..MAX_PDF)
-        val subject=if(file==null)"Market Sales - test" else if(english)"Sales receipt" else "Recibo de venta"
-        val body=if(file==null)"Market Sales - OK" else if(english)"Thank you for your purchase." else "Gracias por su compra."
+        val subject=ReceiptMailText.subject(file!=null,english)
+        val body=ReceiptMailText.body(file!=null,english)
         val boundary="marketsales-"+UUID.randomUUID()
         val message=buildString{
             fun line(value:String=""){append(value);append(CRLF)}

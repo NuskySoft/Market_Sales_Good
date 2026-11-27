@@ -188,7 +188,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                     settings.save(result);result
                 }
                 if(tested.provider=="outlook")authorized=tested
-                previous=tested;secret="";message=t(en,"Prueba aceptada. Correo guardado.","Test accepted. Mail settings saved.")
+                previous=tested;secret="";message=t(en,"Correo configurado correctamente.","Email configured successfully.")
                 runCatching { ReceiptWorker.requestMail(context) }
             }catch(e:CancellationException){throw e}
             catch(e:Exception){

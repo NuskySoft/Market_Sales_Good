@@ -76,6 +76,8 @@ object ReceiptMail {
 
     suspend fun send(config:MailConfig, recipient:String, file:File?, settings:ReceiptSettings, english:Boolean=false, persistRefresh:Boolean=true):MailConfig {
         require(validAddress(recipient) && validAddress(config.address))
+        // El correo de confirmación sin PDF solo se puede dirigir a la propia cuenta.
+        require(file!=null || recipient.equals(config.address,true))
         require(config.name.none { it=='\r' || it=='\n' })
         if(config.provider==GmailMail.PROVIDER) return GmailMail.send(settings,config,recipient,file,english,persistRefresh)
         if(config.provider=="gmail")throw MailFailure("ERROR","Conecta Gmail con Google en Configuración de correo. La contraseña de aplicación ya no se utiliza.")
@@ -103,12 +105,12 @@ object ReceiptMail {
             val message=try {
                 val handlers=mimeHandlers()
                 // ByteArrayDataSource evita depender de un manejador de objetos String para texto plano.
-                val body=if(file==null) "Market Sales - OK" else if(english) "Thank you for your purchase." else "Gracias por su compra."
+                val body=ReceiptMailText.body(file!=null,english)
                 fun textHandler()=DataHandler(ByteArrayDataSource(body.toByteArray(Charsets.UTF_8),"text/plain; charset=UTF-8")).apply { setCommandMap(handlers) }
                 MimeMessage(session).apply {
                     setFrom(InternetAddress(config.address,config.name,"UTF-8"))
                     setRecipient(Message.RecipientType.TO,InternetAddress(recipient,true))
-                    subject=if(file==null) "Market Sales - test" else if(english) "Sales receipt" else "Recibo de venta"
+                    subject=ReceiptMailText.subject(file!=null,english)
                     if(file==null) dataHandler=textHandler() else {
                         val text=MimeBodyPart().apply { dataHandler=textHandler() }
                         val attachment=MimeBodyPart().apply {
@@ -205,8 +207,8 @@ object MicrosoftMail {
         val refreshed=if(updated.isNotBlank()) config.copy(secret=updated) else config
         if(persistRefresh && refreshed!=config && settings.mail()==config) settings.save(refreshed)
         val token=r.body.getString("access_token")
-        val message=JSONObject().put("subject",if(file==null) "Market Sales - test" else if(english) "Sales receipt" else "Recibo de venta")
-            .put("body",JSONObject().put("contentType","Text").put("content",if(english) "Thank you for your purchase." else "Gracias por su compra."))
+        val message=JSONObject().put("subject",ReceiptMailText.subject(file!=null,english))
+            .put("body",JSONObject().put("contentType","Text").put("content",ReceiptMailText.body(file!=null,english)))
             .put("toRecipients",JSONArray().put(JSONObject().put("emailAddress",JSONObject().put("address",recipient))))
         if(file!=null) {
             if(file.length()>2_500_000L) throw MailFailure("ERROR","PDF demasiado grande para el envío directo de Outlook")

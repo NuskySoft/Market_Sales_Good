@@ -25,7 +25,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 
 ## Funciones futuras — propuestas no aprobadas salvo lo indicado
 
-- PDF: conservar el registro de venta en todas las modalidades. Determinar si generar/consultar PDF es común o exclusivo de Premium. Enviar PDF por correo/WhatsApp es Premium, confirmado. Ajuste de preguntar siempre y alternativa correo si WhatsApp no puede enviar: confirmados (ver RECIBOS_2_6.md).
+- PDF: generación, consulta, personalización y envío exclusivos de Premium; registro y consulta de ventas comunes. Confirmado (ver RECIBOS_2_6.md).
 - Inventario: Premium, propuesto, coherente con el stock y costes actuales. Definir entradas/ajustes, valoración e historial.
 - Listados e informes: propuesta Free = resúmenes básicos ya existentes; Premium = informes agregados, estadísticas, comparativas y exportaciones. Concretar el alcance de cada informe.
 - Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
@@ -57,8 +57,16 @@ Confirmado: todas las opciones de configuración actuales (tema claro/oscuro, id
 
 Requisito futuro confirmado: arquitectura de idiomas ampliable mediante módulos independientes descargables y de pago, adquiribles por separado del plan Premium. Una vez adquirido e instalado un idioma debe aparecer entre las opciones de selección y poder utilizarse sin conexión. Ejemplo orientativo: francés por 0,50 EUR; precio, idiomas incluidos de serie, alcance de compras/restauración y mecanismo de distribución pendientes de concretar. No implementar todavía ni asumir que el precio propuesto es definitivo. Preparar la futura gestión de traducciones para evitar depender de una nueva versión de la app por cada idioma.
 
-### 5. Siguiente cuestión: recibos PDF y datos de empresa
+### 5. Recibos PDF y datos de empresa
 
-Envío y preferencia de solicitud Premium confirmados. Propuesta pendiente: mantener registro y consulta de ventas en Free; generación y consulta del recibo PDF también en Free, sin envío integrado, y datos de empresa/personalización comercial en Premium. Confirmar si el documento PDF debe ser exclusivo de Premium o común a ambas modalidades.
+Confirmado: guardar y consultar ventas en Free y Premium. Generar, consultar, enviar y reenviar PDF, configurar datos de empresa y añadir logotipo son exclusivos de Premium. Se mantienen los acuerdos de RECIBOS_2_6.md.
+
+### 6. Multiempresa futura
+
+Confirmado: Premium podrá gestionar varias empresas desde una misma cuenta en el futuro. Es una de las últimas funcionalidades que se implementarán. No confundir multiempresa con usuarios colaboradores de una empresa (pendiente de decidir). Mantener abierta la evolución hacia aislamiento de datos por empresa sin introducir ahora cambios de esquema ni lógica multiempresa. Número de empresas, permisos, precios y migración pendientes de concretar.
+
+### 7. Siguiente cuestión: inventario
+
+Propuesta: mantener alta/edición de artículos, categorías, precios de venta y venta limitada por catálogo en Free; control de coste, existencias, descuento automático, entradas/ajustes de stock, historial y valoración de inventario exclusivos de Premium. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

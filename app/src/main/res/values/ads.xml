@@ -1,3 +1,4 @@
+<!-- Identificadores publicitarios del conjunto principal de recursos; las variantes pueden proporcionar valores propios. -->
 <resources>
     <!-- Tu App ID REAL (con ~). El del Manifest sigue viniendo por placeholder, ok. -->
     <string name="admob_app_id">ca-app-pub-9343856188038526~1418564772</string>

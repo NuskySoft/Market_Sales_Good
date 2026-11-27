@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Manifiesto Android: declara permisos, componentes, metadatos y configuración de la aplicación. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="es.nuskysoftware.marketsales"
     xmlns:tools="http://schemas.android.com/tools">

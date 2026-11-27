@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Tema XML de Android que complementa el tema aplicado por Compose. -->
 <resources>
 
     <style name="Theme.MarketSales" parent="android:Theme.Material.Light.NoActionBar" />

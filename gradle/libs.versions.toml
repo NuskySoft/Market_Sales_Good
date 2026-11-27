@@ -1,3 +1,4 @@
+# Catálogo de versiones y alias de dependencias y plugins consumidos por los archivos Gradle.
 [versions]
 kotlin = "2.0.21"
 agp = "8.12.0"

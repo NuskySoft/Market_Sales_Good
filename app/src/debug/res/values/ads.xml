@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Identificadores publicitarios de la variante debug, separados de los utilizados en producción. -->
 <resources>
     <!-- App ID de PRUEBA (el del placeholder del Manifest ya lo tienes, esto es solo por coherencia) -->
     <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>

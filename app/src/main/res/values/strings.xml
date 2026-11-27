@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Recursos de texto nativos de Android, incluidos los que necesita el manifiesto o la infraestructura del sistema. -->
 <resources>
     <string name="app_name">Market Sales</string>
 

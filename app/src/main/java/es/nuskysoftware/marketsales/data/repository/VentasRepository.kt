@@ -63,10 +63,14 @@ class VentasRepository(
 
 
     /**
-     *  * Guarda una venta completa (recibo + líneas) en Room y sincroniza cuando es posible.
-     *
+     * Confirma una venta local y conserva las obligaciones de stock en la misma transacción.
+     * El envío remoto es posterior y no puede invalidar una venta ya guardada.
+     * @param idMercadillo Identificador del mercadillo propietario de la venta.
+     * @param lineas Conceptos manuales o artículos, con cantidad, precio e importe.
+     * @param metodoPago Método empleado en esta operación, también cuando es una devolución.
+     * @param total Importe recibido desde la interfaz, utilizado por la validación Demo.
+     * @return Identificador del recibo confirmado, o fallo de la operación local.
      */
-    // Confirma la venta local; la transacción conserva las líneas y las obligaciones de stock antes de solicitar la subida.
     suspend fun guardarVenta(
         idMercadillo: String,
         lineas: List<LineaVentaUI>,
@@ -74,25 +78,31 @@ class VentasRepository(
         total: Double
     ): Result<String> {
         val userId = ConfigurationManager.getCurrentUserId() ?: return Result.failure(IllegalStateException("No owner"))
+        // Captura el plan en el momento de confirmar la operación; los conceptos manuales nunca generan stock.
         val isPremiumAtConfirmation = ConfigurationManager.getIsPremium() && !DemoAccess.isDemo()
         val idRecibo = try {
+            // Una instalación gratuita con historial remoto reservado debe resolver la recuperación antes de escribir.
             RecoveryGate(appContext, db).beforeWrite(userId)
             //val userId = auth.currentUser?.uid ?: throw Exception("Usuario no autenticado")
             db.withTransaction {
                 DemoAccess.requireOwner(userId)
                 val market = db.mercadilloDao().getMercadilloById(idMercadillo) ?: error("Market not found")
                 DemoAccess.requireOwner(market.userId)
+                // En cuentas registradas no se admiten ventas durante el arqueo, cierre o cancelación; Demo es la excepción.
                 check(DemoAccess.isDemo() || market.estado !in 4..7) { "Market does not allow sales" }
+                // Comprueba las referencias de abono para que una línea original no se devuelva dos veces.
                 for (refund in lineas.filter { it.idLineaOriginalAbonada != null }) {
                     val previous = lineasVentaDao.obtenerLineasPorMercadillo(idMercadillo).first()
                     check(previous.none { it.idLineaOriginalAbonada == refund.idLineaOriginalAbonada }) { "Already refunded" }
                 }
+                // El límite Demo cuenta recibos existentes y se verifica dentro de la transacción.
                 DemoAccess.checkLimit("ventas", recibosDao.contarDemo(userId))
                 if (DemoAccess.isDemo() && (total <= 0 || lineas.any { it.cantidad <= 0 || it.subtotal < 0 || it.idLineaOriginalAbonada != null })) {
                     DemoAccess.deny("demo_abonos_registrados")
                 }
                 val now = System.currentTimeMillis()
 
+                // El idioma se utiliza únicamente como sufijo de presentación del identificador del recibo.
                 val idiomaCfgPersistido = if (DemoAccess.isDemo()) null else configuracionDao.getConfiguracionSync()?.idioma
                 val idioma2Letras = (idiomaCfgPersistido ?: ConfigurationManager.idioma.value)
                     .trim()
@@ -102,15 +112,17 @@ class VentasRepository(
                     ?.uppercase(Locale.ROOT)
                     ?: "ES"
 
+                    // UUID evita colisiones de recibo entre ventas cercanas y entre dispositivos.
                     val idRecibo = "RC${java.util.UUID.randomUUID()}-$idioma2Letras"
 
-                // === Siguiente idLinea por mercadillo: MAX(idLinea) + 1 ===
-                // Nota: funciona porque idLinea está zero-padded a 4 dígitos.
+                // Cálculo secuencial conservado en esta versión. La identidad persistida de cada línea es un UUID;
+                // numeroLinea representa su posición dentro del recibo, no una clave remota global.
                 val maxId = lineasVentaDao.obtenerMaxIdLineaPorMercadillo(idMercadillo) // p.ej. "0007" o null
                 val base = maxId?.toIntOrNull() ?: 0
                 fun nextSeq(n: Int) = String.format("%04d", n)
 
                 // --- Construir entidades ---
+                // La cabecera calcula el total desde las líneas con aritmética monetaria decimal.
                 val recibo = ReciboEntity(
                     idRecibo = idRecibo,
                     idMercadillo = idMercadillo,
@@ -123,6 +135,7 @@ class VentasRepository(
                     sincronizadoFirebase = false
                 )
 
+                // Cada línea recibe un identificador propio y conserva el vínculo con un eventual abono original.
                 val lineasEntity = lineas.mapIndexed { index, l ->
                     val numeroLineaRecibo = index + 1
                     val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)
@@ -147,14 +160,14 @@ class VentasRepository(
                 // --- Persistencia local (offline-first) ---
                 recibosDao.insertarRecibo(recibo)
                 lineasVentaDao.insertarLineas(lineasEntity)
-                // Capture the obligation in the SAME commit as the sale, not the stock update.
+                // Persiste la obligación de stock junto al recibo, sin exigir que el descuento ya se haya aplicado.
                 if (isPremiumAtConfirmation) {
                     val movements = mutableListOf<StockMovementEntity>()
                     for (line in lineasEntity) {
                         val productId = line.idProducto
                         if (line.tipoLinea == TipoLinea.PRODUCTO.name && productId != null) {
                             val article = db.articuloDao().getArticuloById(productId)
-                            // If missing, retain the obligation for diagnosis/recovery rather than lose it.
+                            // Si falta el artículo, conserva la obligación para diagnóstico y recuperación posterior.
                             if (article == null || article.controlarStock) {
                                 movements += StockMovementEntity(
                                     idMovimiento = "$idRecibo:${line.idLinea}",
@@ -171,11 +184,11 @@ class VentasRepository(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Exception) {
-            // Only an unsuccessful LOCAL sale commit may be presented as a failed sale.
+            // Solo se comunica fallo de venta cuando no se ha completado la transacción local.
             return Result.failure(failure)
         }
 
-        // Past this point the sale is final. No stock/network/scheduling failure may change it.
+        // A partir de aquí la venta es definitiva: un fallo de stock, red o planificación no puede invalidarla.
         try {
             if (onLocalSaleCommitted != null) {
                 onLocalSaleCommitted.invoke(idRecibo)
@@ -195,15 +208,22 @@ class VentasRepository(
         return Result.success(idRecibo)
     }
 
+    // El flujo vuelve a filtrar los recibos cuando cambia la cuenta activa para evitar mostrar datos ajenos.
     fun obtenerVentasMercadillo(idMercadillo: String): Flow<List<ReciboEntity>> =
         ConfigurationManager.usuarioLogueado.flatMapLatest { uid -> recibosDao.obtenerRecibosPorMercadillo(idMercadillo).map { rows -> rows.filter { it.idUsuario == uid } } }
 
+    // Las líneas del recibo solo se muestran si pertenecen al propietario de la sesión.
     fun obtenerLineasVenta(idRecibo: String): Flow<List<LineaVentaEntity>> =
         ConfigurationManager.usuarioLogueado.flatMapLatest { uid -> lineasVentaDao.obtenerLineasPorRecibo(idRecibo).map { rows -> rows.filter { it.idUsuario == uid } } }
 
     /**
      * Crea un abono por la línea original indicada.
-     * Aplica las mismas reglas de idRecibo e idLinea que una venta normal.
+     * Utiliza un recibo nuevo con el método real de devolución y una línea de cantidad e importe negativos.
+     * @param lineaOriginal Línea de venta que se devuelve en su totalidad.
+     * @param cantidadAbonar Unidades de la línea original; no se admiten abonos parciales.
+     * @param idMercadillo Mercadillo al que pertenece la operación original.
+     * @param metodoDevolucion Efectivo, Bizum o tarjeta, según cómo se devuelve el dinero.
+     * @return Identificador del recibo de abono o fallo de validación/guardado local.
      */
     // Registra la devolución mediante el flujo de abonos y conserva su relación con la operación original.
     suspend fun crearAbono(
@@ -217,12 +237,14 @@ class VentasRepository(
         require(metodoDevolucion.uppercase(Locale.ROOT) in setOf("EFECTIVO", "BIZUM", "TARJETA"))
         require(cantidadAbonar == lineaOriginal.cantidad && cantidadAbonar > 0)
         require(lineaOriginal.idMercadillo == idMercadillo && lineaOriginal.idLineaOriginalAbonada == null)
+        // Una devolución conserva el precio unitario y referencia original; invierte cantidad e importe.
         val refund = LineaVentaUI(tipoLinea = TipoLinea.valueOf(lineaOriginal.tipoLinea), descripcion = lineaOriginal.descripcion,
             idProducto = lineaOriginal.idProducto, cantidad = -cantidadAbonar, precioUnitario = lineaOriginal.precioUnitario,
             subtotal = -lineaOriginal.subtotal, idLineaOriginalAbonada = lineaOriginal.idLinea)
         guardarVenta(idMercadillo, listOf(refund), metodoDevolucion.uppercase(Locale.ROOT), refund.subtotal)
     } catch (cancelled: CancellationException) { throw cancelled } catch (failure: Exception) { Result.failure(failure) }
 
+    // La subida se delega al trabajo persistente de conciliación; no bloquea la confirmación de venta.
     private suspend fun sincronizarPendientes() {
         es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
     }

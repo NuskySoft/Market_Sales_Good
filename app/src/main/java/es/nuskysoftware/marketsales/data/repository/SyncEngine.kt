@@ -18,14 +18,22 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.lang.reflect.Modifier
 
-/** Only business-data network writer. Dirty Room rows are the durable outbox. */
+/**
+ * Motor de conciliación de datos de negocio. Las filas pendientes de Room forman
+ * la cola persistente de salida: la caída de red no elimina una modificación local.
+ * La generación de cuenta evita restaurar datos anteriores a un reinicio confirmado.
+ * @param context Contexto Android; se conserva únicamente su contexto de aplicación.
+ */
 class SyncEngine(context: Context) {
     private val app = context.applicationContext
     private val db = AppDatabase.getDatabase(app)
     private val fs = FirebaseFirestore.getInstance()
+    // Exclusión mutua compartida por todas las instancias: evita dos conciliaciones simultáneas.
     companion object { private val mutex = Mutex() }
 
+    // Describe la correspondencia tabla Room ↔ colección Firebase, campo de propietario y clave primaria.
     internal data class Table(val name: String, val remote: String, val owner: String, val keys: List<String>, val type: Class<*>)
+    // Se recorren también las filas inactivas; son necesarias para propagar una baja a otro dispositivo.
     private val tables = listOf(
         Table("categorias", "categorias", "userId", listOf("idCategoria"), CategoriaEntity::class.java),
         Table("articulos", "articulos", "userId", listOf("idArticulo"), ArticuloEntity::class.java),
@@ -40,17 +48,21 @@ class SyncEngine(context: Context) {
     private fun fields(t: Table) = t.type.declaredFields.filter { !Modifier.isStatic(it.modifiers) && !it.isSynthetic }
     // Obtiene valores de referencia de la entidad para completar campos compatibles.
     private fun defaults(t: Table): Map<String, Any?> {
+        // Los constructores sin argumentos proporcionan valores compatibles con documentos antiguos.
         val obj = t.type.getDeclaredConstructor().newInstance()
         return fields(t).associate { it.isAccessible = true; it.name to it.get(obj) }
     }
     // Lee las filas del propietario; dirtyOnly limita la consulta a los cambios pendientes.
     private fun rows(t: Table, uid: String, dirtyOnly: Boolean = false): List<Map<String, Any?>> {
         val result = mutableListOf<Map<String, Any?>>()
+        // El parámetro UID acota la lectura a una sola cuenta; el nombre de tabla procede de la lista interna.
         db.openHelper.readableDatabase.query("SELECT * FROM `${t.name}` WHERE `${t.owner}` = ?" + if (dirtyOnly) " AND sincronizadoFirebase = 0" else "", arrayOf(uid)).use { c ->
             while (c.moveToNext()) result += fields(t).associate { f ->
                 val i = c.getColumnIndexOrThrow(f.name)
                 f.name to when {
+                    // Se conserva null como ausencia de valor, no como cero o cadena vacía.
                     c.isNull(i) -> null
+                    // SQLite guarda los booleanos como enteros; Firebase espera valores booleanos.
                     f.type == Boolean::class.javaPrimitiveType -> (c.getInt(i) != 0)
                     c.getType(i) == Cursor.FIELD_TYPE_INTEGER -> c.getLong(i)
                     c.getType(i) == Cursor.FIELD_TYPE_FLOAT -> c.getDouble(i)
@@ -70,6 +82,7 @@ class SyncEngine(context: Context) {
     private fun newer(a: Map<String, Any?>, b: Map<String, Any?>): Boolean = modified(a) > modified(b) || (modified(a) == modified(b) && fingerprint(a) > fingerprint(b))
     // Persiste la representación de una fila en su tabla local.
     private fun write(t: Table, row: Map<String, Any?>) {
+        // Convierte los campos remotos a los tipos que espera SQLite antes de sustituir la fila por su clave.
         val cv = ContentValues()
         for (f in fields(t)) when (val v = row[f.name]) {
             null -> cv.putNull(f.name)
@@ -82,14 +95,19 @@ class SyncEngine(context: Context) {
     // Aplica una fila remota en una transacción; la instantánea esperada protege frente a cambios locales posteriores.
     private suspend fun apply(t: Table, uid: String, remote: Map<String, Any?>, expected: Map<String, Any?>? = null) = db.withTransaction {
         val local = rows(t, uid).firstOrNull { id(t, it) == id(t, remote) }
+        // Si hubo una edición mientras se enviaba la instantánea, no confirmamos ni sobrescribimos esa edición.
         if (local != null && expected != null && fingerprint(local) != fingerprint(expected)) return@withTransaction
+        // Una revisión local más reciente conserva su prioridad frente al documento remoto.
         if (local != null && newer(local, remote)) return@withTransaction
+        // Un mercadillo definitivo ya confirmado no se vuelve a modificar por una descarga.
         if (t.name == "mercadillos" && local != null && (local["estado"] as? Number)?.toInt() in 6..7 && local["sincronizadoFirebase"] == true) return@withTransaction
+        // Antes de escribir, se comprueba que la clave no esté ocupada por un propietario distinto.
         val keys = t.keys.joinToString(" AND ") { "`$it` = ?" }
         val args = t.keys.map { remote[it].toString() }.toTypedArray()
         db.openHelper.readableDatabase.query("SELECT `${t.owner}` FROM `${t.name}` WHERE $keys", args).use { c ->
             check(!c.moveToFirst() || c.getString(0) == uid) { "Local owner mismatch" }
         }
+        // El stock visible se reconstruye a partir del stock base y los movimientos aplicados aún no incorporados.
         val adjusted = if (t.name == "articulos" && remote["stockBase"] is Number) {
             val articleId = remote["idArticulo"].toString()
             val quantity = db.openHelper.readableDatabase.query("SELECT COALESCE(SUM(cantidad),0) FROM stock_movements WHERE idArticulo = ? AND idUsuario = ? AND aplicado = 1 AND incorporadoEnBase = 0", arrayOf(articleId, uid)).use { c -> c.moveToFirst(); c.getInt(0) }
@@ -99,42 +117,51 @@ class SyncEngine(context: Context) {
     }
     // Concilia un propietario en IO bajo exclusión mutua, incluidas bajas y cambios pendientes.
     suspend fun sync(uid: String) = withContext(Dispatchers.IO) { mutex.withLock {
+        // Verifica la sesión antes de cualquier red. El perfil se concilia antes de resolver el acceso a datos.
         if (!DemoAccess.canSync(uid)) return@withLock
         syncProfile(uid)
+        // Una generación no autorizada, reservada o en reinicio detiene la conciliación sin borrar pendientes.
         val generation = RecoveryGate(app).prepare(uid) ?: return@withLock
         for (t in tables) {
             if (!DemoAccess.canSync(uid)) return@withLock
+            // La subida parte únicamente de las filas marcadas como pendientes en Room.
             for (row in rows(t, uid, true)) {
                 if (!DemoAccess.canSync(uid)) return@withLock
                 val ref = fs.collection(t.remote).document(id(t, row))
+                // Firebase compara y escribe la revisión ganadora de forma transaccional.
                 val winner = fs.runTransaction { tx ->
                     check(DemoAccess.canSync(uid))
+                    // El control de generación impide que una instalación antigua vuelva a subir datos borrados.
                     val control = tx.get(fs.collection("account_data_state").document(uid))
                     check((control.getString("generation") ?: "legacy") == generation) { "Account generation changed" }
                     check(control.getString("deleting") == null) { "Deletion pending" }
                     val snap = tx.get(ref)
                     val remote = snap.data
                     check(remote == null || remote[t.owner] == uid) { "Owner mismatch" }
+                    // Solo se compara el contenido que pertenece a la generación actualmente autorizada.
                     val current = remote?.takeIf { (it["_generation"] ?: "legacy") == generation }
                     val winner = if (current != null && newer(current, row)) defaults(t) + current else row
                     tx.set(ref, winner + mapOf("_generation" to generation, "sincronizadoFirebase" to true))
                     if (t.name == "articulos" && winner["stockBase"] == null) winner + ("stockBase" to winner["stock"]) else winner
                 }.await()
+                // La confirmación local incluye la instantánea enviada; protege ediciones posteriores.
                 apply(t, uid, winner, row)
             }
-            // Fetch every record's revision, including tombstones. Counts cannot detect edits.
+            // Descarga revisiones individuales, incluidas las bajas. Contar registros no detecta modificaciones.
             if (RecoveryGate(app).canPull(uid)) {
                 val docs = fs.collection(t.remote).whereEqualTo(t.owner, uid).get(Source.SERVER).await()
                 for (doc in docs.documents) {
                     if (!DemoAccess.canSync(uid)) return@withLock
                     val raw = doc.data ?: continue
                     if ((raw["_generation"] ?: "legacy") != generation) continue
+                    // Completa campos nuevos con sus valores por defecto sin inventar una fecha de modificación.
                     val row = defaults(t).toMutableMap().apply { putAll(raw) }
                     row["lastModified"] = (raw["lastModified"] as? Number)?.toLong() ?: 0L
                     if (t.name == "articulos" && raw["stockBase"] == null) row["stockBase"] = raw["stock"]
-                    // Support earlier expense IDs without fabricating missing data.
+                    // Admite el identificador de gasto de versiones anteriores sin fabricar datos que falten.
                     if (t.name == "LineasGastos" && row["numeroLinea"].toString().isBlank()) row["numeroLinea"] = raw["idLineaGasto"] ?: continue
                     if (t.keys.any { row[it].toString().isBlank() }) continue
+                    // Normaliza la fecha visible y su representación ordenable cuando se descarga un mercadillo.
                     if (t.name == "mercadillos") {
                         val day = CalendarDates.epochDay(row["fecha"].toString())
                         row["fechaEpochDay"] = day
@@ -150,11 +177,12 @@ class SyncEngine(context: Context) {
             }
         }
         syncStock(uid, generation)
-        // Recompute from the same baseline + union of movements on every device.
+        // Recalcula las existencias con la misma base y unión de movimientos en todos los dispositivos.
         db.withTransaction {
             val sql = db.openHelper.writableDatabase
             sql.execSQL("UPDATE articulos SET stock = stockBase - COALESCE((SELECT SUM(cantidad) FROM stock_movements m WHERE m.idUsuario = articulos.userId AND m.idArticulo = articulos.idArticulo AND m.aplicado = 1 AND m.incorporadoEnBase = 0),0) WHERE userId = ? AND stockBase IS NOT NULL", arrayOf(uid))
         }
+        // Notifica las escrituras SQL directas a los observadores de Room para refrescar la interfaz.
         db.invalidationTracker.refreshVersionsAsync()
     } }
     // Concilia el perfil y publica el estado de la fila realmente guardada.
@@ -174,7 +202,7 @@ class SyncEngine(context: Context) {
         }.await() ?: return
         if (!DemoAccess.canSync(uid)) return
         apply(t, uid, winner, local)
-        // apply() may reject an outdated snapshot; publish the actual committed row, not winner.
+        // apply() puede descartar una instantánea antigua; publica el perfil realmente guardado, no el resultado remoto.
         db.userDao().getUserById(uid)?.let { account ->
             ConfigurationManager.applyAccountFromRoom(uid, account.esPremium, account.email, account.displayName)
         }
@@ -182,6 +210,7 @@ class SyncEngine(context: Context) {
     // Concilia movimientos de stock de la generación activa y reconstruye existencias.
     private suspend fun syncStock(uid: String, generation: String) {
         val dao = db.stockMovementDao()
+        // Los movimientos se identifican individualmente; una venta de otro dispositivo no sustituye otra.
         for (m in dao.allForOwner(uid)) {
             if (!DemoAccess.canSync(uid)) return
             if (m.sincronizadoFirebase) continue
@@ -193,6 +222,7 @@ class SyncEngine(context: Context) {
                 check(!old.exists() || old.getString("idUsuario") == uid)
                 tx.set(ref, mapOf("idMovimiento" to m.idMovimiento, "idUsuario" to uid, "idRecibo" to m.idRecibo, "idArticulo" to m.idArticulo, "cantidad" to m.cantidad, "creadoEn" to m.creadoEn, "_generation" to generation))
             }.await()
+            // Solo se marca enviado tras la confirmación de Firebase; la identidad permite reintentar sin duplicar.
             dao.markUploaded(m.idMovimiento, uid)
         }
         if (!RecoveryGate(app).canPull(uid)) return
@@ -200,8 +230,10 @@ class SyncEngine(context: Context) {
         for (doc in docs.documents) {
             if ((doc.getString("_generation") ?: "legacy") != generation || !DemoAccess.canSync(uid)) continue
             val m = StockMovementEntity(idMovimiento = doc.id, idUsuario = uid, idRecibo = doc.getString("idRecibo") ?: "", idArticulo = doc.getString("idArticulo") ?: continue, cantidad = (doc.getLong("cantidad") ?: continue).toInt(), creadoEn = doc.getLong("creadoEn") ?: 0, sincronizadoFirebase = true)
+            // Inserta el movimiento recibido en la cola local; el DAO controla identidades ya existentes.
             dao.enqueue(listOf(m))
         }
+        // Aplica las obligaciones que aún falten; si quedan pendientes, el trabajo debe reintentarse.
         check(StockMovementProcessor(db).processPending(uid)) { "Stock still pending" }
     }
 }

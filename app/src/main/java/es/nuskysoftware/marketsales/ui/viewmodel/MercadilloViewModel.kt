@@ -342,9 +342,10 @@ class MercadilloViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true, error = null)
             try {
-                repository.sincronizarSinEstadosAutomaticos()
-                _uiState.value = _uiState.value.copy(loading = false, message = tr("sincronizacion_completada"), error = null)
-                Log.d(TAG, "✅ Sincronización suave completada")
+                // No anunciar sincronización remota completada cuando la red no está disponible.
+                val synced = repository.sincronizarSinEstadosAutomaticos()
+                _uiState.value = _uiState.value.copy(loading = false, message = tr(if (synced) "sincronizacion_completada" else "manual_sync_pending"), error = null)
+                Log.d(TAG, "Actualización manual: $synced")
                 manager.refreshNow()
             } catch (e: Exception) {
                 fail(tr1("error_sincronizacion_detalle", e.message ?: "—"), e)
@@ -358,10 +359,10 @@ class MercadilloViewModel(
             try {
                 val userId = ConfigurationManager.getCurrentUserId()
                 if (userId != null) {
-                    repository.sincronizarSinEstadosAutomaticos()
+                    val synced = repository.sincronizarSinEstadosAutomaticos()
                     _uiState.value = _uiState.value.copy(
                         loading = false,
-                        message = tr("sincronizacion_completada_sin_cambios"),
+                        message = tr(if (synced) "sincronizacion_completada_sin_cambios" else "manual_sync_pending"),
                         error = null
                     )
                     Log.d(TAG, "✅ Sincronización desde Firebase sin estados automáticos")

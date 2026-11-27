@@ -15,9 +15,10 @@ class SaldoGuardadoRepository(context: Context) {
     private val db = AppDatabase.getDatabase(app)
     private val dao = db.saldoGuardadoDao()
     // Expone un flujo de saldos disponibles que cambia con el propietario activo.
-    fun pendientes(): Flow<List<SaldoGuardadoEntity>> = ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
-        dao.pendientes(uid ?: AppModePolicy.DEMO_USER_ID)
-    }
+    fun pendientes(): Flow<List<SaldoGuardadoEntity>> = combine(
+        ConfigurationManager.usuarioLogueado, ConfigurationManager.esPremium, ConfigurationManager.esPremiumReady
+    ) { uid, premium, ready -> uid.takeIf { premium && ready && !AppModePolicy.isLocalOnly(uid) } }
+        .flatMapLatest { uid -> if (uid == null) flowOf(emptyList()) else dao.pendientes(uid) }
     // Devuelve el primer saldo disponible, o null si no hay ninguno.
     suspend fun getUltimoNoConsumido(): SaldoGuardadoEntity? = pendientes().first().firstOrNull()
     // Compatibility name: now appends instead of deleting any previous balance.
@@ -28,6 +29,7 @@ class SaldoGuardadoRepository(context: Context) {
         RecoveryGate(app).beforeWrite(item.idUsuario)
         db.withTransaction {
             DemoAccess.requireOwner(item.idUsuario)
+            DemoAccess.requirePremium()
             dao.upsert(item.copy(saldoInicialGuardado = Money.round(item.saldoInicialGuardado), sincronizadoFirebase = false))
         }
         BusinessSyncScheduler.request(app)
@@ -39,6 +41,7 @@ class SaldoGuardadoRepository(context: Context) {
         val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
         db.withTransaction {
             DemoAccess.requireOwner(uid)
+            DemoAccess.requirePremium()
             val balance = dao.byId(id, uid) ?: error("Balance unavailable")
             check(!balance.consumido && !balance.eliminado)
             val market = db.mercadilloDao().getMercadilloById(destino) ?: error("Market unavailable")
@@ -59,6 +62,7 @@ class SaldoGuardadoRepository(context: Context) {
         val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")
         db.withTransaction {
             DemoAccess.requireOwner(uid)
+            DemoAccess.requirePremium()
             val old = dao.byId(id, uid) ?: error("Balance unavailable")
             check(!old.consumido && !old.eliminado)
             dao.upsert(old.copy(consumido = !delete, eliminado = delete, version = old.version + 1, lastModified = System.currentTimeMillis(), sincronizadoFirebase = false))

@@ -238,6 +238,23 @@ class MercadilloRepository(
         true
     }
 
+    /** Finaliza un arqueo pendiente de asignación cuando la cuenta ha vuelto a Free.
+     * Conserva el saldo final y no crea ni consume ningún saldo guardado.
+     */
+    suspend fun cerrarPendienteFree(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
+        val uid = ConfigurationManager.getCurrentUserId() ?: return@withContext false
+        localDb.withTransaction {
+            DemoAccess.requireOwner(uid)
+            check(DemoAccess.mode() == es.nuskysoftware.marketsales.utils.AppMode.FREE)
+            val market = mercadilloDao.getMercadilloById(mercadilloId, uid) ?: return@withTransaction false
+            if (!market.activo || market.estado != 5 || market.saldoFinal == null) return@withTransaction false
+            mercadilloDao.marcarSaldoAsignado(mercadilloId, sessionOwner = uid)
+            true
+        }.also { closed ->
+            if (closed) es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+        }
+    }
+
     // ===== AUTOESTADOS =====
 
     // Delega las transiciones temporales en el procesador local compartido.
@@ -353,11 +370,15 @@ class MercadilloRepository(
     suspend fun sincronizarSinEstadosAutomaticos(): Boolean = withContext(Dispatchers.IO) {
         try {
             val userId = ConfigurationManager.getCurrentUserId() ?: return@withContext false
-            sincronizarMercadillosNoSincronizados(userId)
-            getHybridMercadillos(userId)
-            Log.d(TAG, "✅ Sync sin autoestados")
-            true
-        } catch (e: Exception) { Log.e(TAG, "❌ Sync sin autoestados", e); false }
+            // El gesto solicita el motor común; nunca promete restauración a una cuenta Free.
+            if (!DemoAccess.canSync(userId)) return@withContext false
+            es.nuskysoftware.marketsales.work.BusinessSyncScheduler.request(appContext)
+            if (!connectivityObserver.isConnected.first()) return@withContext false
+            SyncEngine(appContext).sync(userId)
+            RecoveryGate(appContext).canPull(userId)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (e: Exception) { Log.e(TAG, "Sync sin autoestados pendiente", e); false }
     }
 
     suspend fun getMercadillosPorFecha(userId: String, fecha: String): List<MercadilloEntity> =

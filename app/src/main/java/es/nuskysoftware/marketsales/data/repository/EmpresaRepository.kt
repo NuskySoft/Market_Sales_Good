@@ -15,10 +15,10 @@ class EmpresaRepository(context: Context) {
     private val db = AppDatabase.getDatabase(app)
     private val dao = db.empresaDao()
     // Expone los datos de empresa en función de la cuenta activa.
-    fun getEmpresaFlow(): Flow<EmpresaEntity?> = ConfigurationManager.usuarioLogueado.flatMapLatest { uid ->
-        // La interfaz solo presenta datos de empresa en una cuenta Premium.
-        if (uid.isNullOrBlank() || !ConfigurationManager.getIsPremium()) flowOf(null) else dao.getEmpresaFlow(uid)
-    }
+    fun getEmpresaFlow(): Flow<EmpresaEntity?> = combine(
+        ConfigurationManager.usuarioLogueado, ConfigurationManager.esPremium, ConfigurationManager.esPremiumReady
+    ) { uid, premium, ready -> uid.takeIf { premium && ready && !AppModePolicy.isLocalOnly(uid) } }
+        .flatMapLatest { uid -> if (uid == null) flowOf(null) else dao.getEmpresaFlow(uid) }
     // Persiste los datos de empresa para la cuenta activa.
     suspend fun guardarOActualizar(nif: String, nombre: String, razon: String, direccion: String, poblacion: String, codigoPostal: String, provincia: String, pais: String) = withContext(Dispatchers.IO) {
         val uid = ConfigurationManager.getCurrentUserId() ?: error("No owner")

@@ -166,7 +166,8 @@ object AdsInterstitialController {
             (ConfigurationManager.esPremium as? StateFlow<Boolean>)?.value ?: false
         } catch (_: Throwable) { false }
 
-        return consentOk && !isPremium
+        // No servir anuncios mientras se resuelve el plan, ni a Premium.
+        return consentOk && ConfigurationManager.esPremiumReady.value && !isPremium
     }
 
     /** Política de frecuencia: intervalo mínimo + tope diario. */

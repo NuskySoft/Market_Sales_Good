@@ -12,6 +12,8 @@ internal object EnglishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "manual_sync_pending" -> "Local data refreshed. Synchronization will resume when available."
+        "close_without_balance_transfer" -> "Close market without transferring balance"
         // Free quotas and calendar shortcut.
         "free_catalog_limit" -> "The Free limit is 10 catalogue units per market. Adjust quantities or continue with manual sales; Premium has no such limit."
         "free_catalog_remaining" -> "Catalogue units available: {0} of 10"

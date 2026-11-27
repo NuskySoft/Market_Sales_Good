@@ -11,6 +11,8 @@ internal object SpanishStrings {
     // (y el resto de módulos/pantallas que ya tenías)
 
     fun get(key: String): String = when (key) {
+        "manual_sync_pending" -> "Datos locales actualizados. La sincronización se realizará cuando esté disponible."
+        "close_without_balance_transfer" -> "Cerrar mercadillo sin asignar saldo"
         // Límites Free y alta desde calendario.
         "free_catalog_limit" -> "Has alcanzado el límite de 10 unidades de catálogo por mercadillo. Ajusta las cantidades o continúa con venta manual; Premium no tiene este límite."
         "free_catalog_remaining" -> "Unidades de catálogo disponibles: {0} de 10"

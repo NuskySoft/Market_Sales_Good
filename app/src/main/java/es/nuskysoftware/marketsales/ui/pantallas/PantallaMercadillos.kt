@@ -55,8 +55,6 @@ import kotlinx.coroutines.launch
 import es.nuskysoftware.marketsales.ads.AdsConsentManager
 import androidx.compose.ui.res.stringResource
 import es.nuskysoftware.marketsales.ads.AdsBottomBar
-import es.nuskysoftware.marketsales.ads.AdsInterstitialController
-import es.nuskysoftware.marketsales.utils.findActivity
 import java.time.Month
 import java.time.format.TextStyle
 import java.util.Locale
@@ -80,7 +78,6 @@ fun PantallaMercadillos(
 
     // Anuncios
     val canRequestAds by AdsConsentManager.canRequestAds.collectAsState()
-    val activity = LocalContext.current.findActivity()
 
     // Config global
     val currentLanguage by ConfigurationManager.idioma.collectAsState()

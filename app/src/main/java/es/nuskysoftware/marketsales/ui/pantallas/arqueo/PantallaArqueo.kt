@@ -190,8 +190,12 @@ fun PantallaArqueo(
 
             // ===== Acciones =====
             val puedeArqueo = data.estado == 4 || es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()
-            val esPremium = remember { ConfigurationManager.isPremium() }
-            val puedeAsignar = data.estado == 5 || (!esPremium && data.estado == 6)
+            val esPremium by ConfigurationManager.esPremium.collectAsState()
+            val ready by ConfigurationManager.esPremiumReady.collectAsState()
+            val demo = es.nuskysoftware.marketsales.utils.DemoAccess.isDemo()
+            val puedeAsignar = data.estado == 5 && esPremium && ready && !demo
+            // Si el plan caduca tras el arqueo, Free puede cerrar sin transferir el dinero.
+            val puedeCerrarFree = data.estado == 5 && ready && !esPremium && !demo
 
             ElevatedCard(shape = RoundedCornerShape(16.dp)) {
                 Column(
@@ -223,10 +227,25 @@ fun PantallaArqueo(
 
                     Button(
                         onClick = { navController.navigate("arqueo/asignar-saldo/$mercadilloId") },
-                        enabled = puedeAsignar && !es.nuskysoftware.marketsales.utils.DemoAccess.isDemo(),
+                        enabled = puedeAsignar,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(StringResourceManager.getString("asignar_saldo", currentLanguage))
+                    }
+                    if (puedeCerrarFree) {
+                        Button(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                scope.launch {
+                                    try {
+                                        val closed = MercadilloRepository(context).use { it.cerrarPendienteFree(mercadilloId) }
+                                        if (closed) vm.cargar(mercadilloId)
+                                        else es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed")
+                                    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                                    catch (_: Exception) { es.nuskysoftware.marketsales.utils.DemoAccess.show("local_save_failed") }
+                                }
+                            }
+                        ) { Text(StringResourceManager.getString("close_without_balance_transfer", currentLanguage)) }
                     }
 
                     OutlinedButton(

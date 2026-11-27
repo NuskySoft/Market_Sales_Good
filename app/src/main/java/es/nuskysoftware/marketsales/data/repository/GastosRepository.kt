@@ -60,7 +60,8 @@ class GastosRepository(context: Context) {
             val linea = db.withTransaction {
                 val market = mercadilloDao.getMercadilloById(idMercadillo) ?: error("Market not found")
                 DemoAccess.requireOwner(market.userId)
-                check(market.estado !in 4..7) { "Market does not allow expenses" }
+                // Una baja lógica de planificación también invalida una pantalla antigua de gastos.
+                check(market.activo && market.estado !in 4..7) { "Market does not allow expenses" }
                 val now = System.currentTimeMillis()
                 val max = gastosDao.obtenerMaxNumeroLineaPorMercadillo(idMercadillo)
                 val base = max?.substringBefore('-')?.toIntOrNull() ?: 0

@@ -37,7 +37,7 @@ interface MercadilloDao {
     suspend fun ocupaFecha(uid: String, day: Long, exceptId: String): Boolean
 
     // Candidatos futuros de un usuario Free; la revisión no afecta a mercadillos de hoy ni históricos.
-    @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND fechaEpochDay > :today ORDER BY fechaEpochDay, creadoEn, idMercadillo")
+    @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND estado IN (1, 2, 3, 4, 5) AND fechaEpochDay > :today ORDER BY fechaEpochDay, creadoEn, idMercadillo")
     suspend fun planificadosFuturos(uid: String, today: Long): List<MercadilloEntity>
 
     // No retirar planificación si existe cualquier operación económica o saldo vinculado.

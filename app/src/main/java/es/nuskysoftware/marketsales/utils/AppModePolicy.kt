@@ -28,5 +28,6 @@ object AppModePolicy {
     // Comprueba si se permite sincronizar sin mezclar datos Demo con cuentas registradas.
     fun canSync(uid: String?, authenticatedUid: String?) = !isLocalOnly(uid) && uid == authenticatedUid
     fun canRefund(mode: AppMode) = mode != AppMode.DEMO
-    fun canAssignBalance(mode: AppMode) = mode != AppMode.DEMO
+    // El arqueo es común; reservar o transferir saldos requiere Premium.
+    fun canAssignBalance(mode: AppMode) = mode == AppMode.PREMIUM
 }

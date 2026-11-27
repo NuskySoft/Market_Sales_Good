@@ -47,8 +47,12 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 
 Confirmado: el gesto de deslizar hacia abajo en el calendario estará disponible tanto en Free como en Premium. Ambas modalidades mantienen sincronización automática y actualización manual. La restauración de datos previos en instalación vacía sigue siendo exclusiva de Premium.
 
-### 3. Siguiente cuestión: saldos guardados y asignación
+### 3. Saldos guardados y asignación
 
-Actualmente las pantallas de gestión de saldos guardados y asignación a otros mercadillos son Premium. Se propone mantener el arqueo, cierre y saldo inicial introducido manualmente en Free y Premium, reservando guardar/remitir saldos entre mercadillos y gestionar saldos pendientes a Premium. Pendiente de confirmación.
+Confirmado: Free y Premium permiten introducir saldo inicial manualmente, realizar arqueo, consultar saldo final y cerrar mercadillo. Guardar saldo para otro mercadillo, asignarlo y gestionar saldos pendientes son exclusivos de Premium.
+
+### 4. Siguiente cuestión: configuración visual, idioma y moneda
+
+Actualmente Free puede cambiar el modo claro/oscuro, mientras idioma, tipografía y moneda son exclusivos de Premium. Propuesta: permitir idioma y moneda en ambas modalidades porque son necesidades básicas de uso según el país; conservar la personalización tipográfica como ventaja Premium. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

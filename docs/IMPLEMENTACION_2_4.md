@@ -60,3 +60,7 @@ El control de generaciones requiere permisos de Firebase para `account_data_stat
 12. Anuncios debug/release y compilación con firma habitual; comprobar de nuevo F01/F03/F07/F11/F12.
 
 Estado final de este documento: **cambios preparados para revisión/compilación; validación Android y Firebase pendiente**.
+
+## Corrección de compilación — 27-11-2026
+
+El registro de Android Studio alcanza KSP y detecta `Unused parameter: now` en StockMovementDao.applyStock. Se retira el argumento obsoleto del DAO y de StockMovementProcessor. No se cambia la lógica de negocio ni la versión 2.4. Se amplía la comprobación de SQL para contrastar todos los parámetros de las consultas Room con los argumentos de sus métodos; pasa. Las pruebas SQLite de stock siguen pasando. Pendiente repetir assembleDebug en Android Studio.

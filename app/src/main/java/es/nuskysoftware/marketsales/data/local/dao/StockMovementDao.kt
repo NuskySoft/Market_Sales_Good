@@ -29,5 +29,5 @@ interface StockMovementDao {
     suspend fun markApplied(id: String)
 
     @Query("UPDATE articulos SET stock = COALESCE(stock, 0) - :quantity, sincronizadoFirebase = 0 WHERE idArticulo = :articleId AND userId = :owner")
-    suspend fun applyStock(articleId: String, owner: String, quantity: Int, now: Long): Int
+    suspend fun applyStock(articleId: String, owner: String, quantity: Int): Int
 }

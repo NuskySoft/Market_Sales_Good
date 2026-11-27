@@ -15,7 +15,7 @@ class StockMovementProcessor(private val db: AppDatabase) {
                     // Another worker may have applied it while we waited for the transaction.
                     val movement = dao.byId(candidate.idMovimiento)
                     if (movement != null && !movement.aplicado) {
-                        check(dao.applyStock(movement.idArticulo, movement.idUsuario, movement.cantidad, System.currentTimeMillis()) == 1) {
+                        check(dao.applyStock(movement.idArticulo, movement.idUsuario, movement.cantidad) == 1) {
                             "Article missing or belongs to another owner: ${movement.idMovimiento}"
                         }
                         // Stock and acknowledgement commit together, so a retry cannot apply twice.

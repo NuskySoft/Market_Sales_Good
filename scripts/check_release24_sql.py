@@ -87,3 +87,19 @@ for table,cols in monetary.items():
 db.execute("UPDATE articulos SET precioVenta=1.235,precioCoste=0.105 WHERE idArticulo='p'")
 assert db.execute("SELECT precioVenta,precioCoste FROM articulos WHERE idArticulo='p'").fetchone()==(1.24,0.11)
 print('PASS: persistence guards normalize monetary amounts to two decimals.')
+# Room rejects unused DAO arguments as well as missing bind parameters.
+for file in (base/'data/local/dao').glob('*.kt'):
+    source=file.read_text()
+    for match in re.finditer(r'(?m)^[ \t]*@Query\(("""[\s\S]*?"""|"[^"\n]*")\)',source):
+        query=match.group(1)
+        method=re.match(r'\s*(?:suspend\s+)?fun\s+\w+\s*\(',source[match.end():])
+        if not method: continue
+        start=match.end()+method.end(); end=start; depth=1
+        while depth:
+            if source[end]=='(':depth+=1
+            elif source[end]==')':depth-=1
+            end+=1
+        arguments=set(re.findall(r'(?:^|,)\s*(\w+)\s*:',source[start:end-1]))
+        bindings=set(re.findall(r':(\w+)',query))
+        assert arguments==bindings, (file.name,arguments,bindings)
+print('PASS: all DAO arguments match SQL bind parameters; no unused arguments.')

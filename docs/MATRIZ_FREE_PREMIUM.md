@@ -26,7 +26,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 ## Funciones futuras — propuestas no aprobadas salvo lo indicado
 
 - PDF: generación, consulta, personalización y envío exclusivos de Premium; registro y consulta de ventas comunes. Confirmado (ver RECIBOS_2_6.md).
-- Inventario: Premium, propuesto, coherente con el stock y costes actuales. Definir entradas/ajustes, valoración e historial.
+- Inventario: exclusivo de Premium, confirmado; incluye entradas y ajustes, historial, valoración y avisos de stock mínimo.
 - Listados e informes: propuesta Free = resúmenes básicos ya existentes; Premium = informes agregados, estadísticas, comparativas y exportaciones. Concretar el alcance de cada informe.
 - Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
 - Leyenda del calendario: común, propuesta (ya existe un diálogo accesible desde calendario).
@@ -65,8 +65,12 @@ Confirmado: guardar y consultar ventas en Free y Premium. Generar, consultar, en
 
 Confirmado: Premium podrá gestionar varias empresas desde una misma cuenta en el futuro. Es una de las últimas funcionalidades que se implementarán. No confundir multiempresa con usuarios colaboradores de una empresa (pendiente de decidir). Mantener abierta la evolución hacia aislamiento de datos por empresa sin introducir ahora cambios de esquema ni lógica multiempresa. Número de empresas, permisos, precios y migración pendientes de concretar.
 
-### 7. Siguiente cuestión: inventario
+### 7. Inventario
 
-Propuesta: mantener alta/edición de artículos, categorías, precios de venta y venta limitada por catálogo en Free; control de coste, existencias, descuento automático, entradas/ajustes de stock, historial y valoración de inventario exclusivos de Premium. Pendiente de confirmación.
+Confirmado: Free y Premium permiten crear categorías y artículos sin límite general (salvo Demo), establecer precios de venta y marcar favoritos. Free puede vender hasta 10 unidades de catálogo por mercadillo; Premium sin ese límite. Control de coste, existencias, descuento automático, entradas de mercancía, ajustes, historial de movimientos, valoración económica y avisos de stock mínimo son exclusivos de Premium.
+
+### 8. Siguiente cuestión: listados, estadísticas e informes
+
+Propuesta: Free y Premium pueden consultar los resúmenes individuales de cada mercadillo, sus ventas, gastos, arqueos y totales, así como listados básicos de mercadillos. Reservar a Premium los informes agregados por periodos, comparativas entre mercadillos, clasificación de artículos vendidos, análisis por métodos de pago a través de varios mercadillos, rentabilidad basada en costes y gastos, gráficos y exportaciones PDF/CSV. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/local/database/Migrations.kt
 package es.nuskysoftware.marketsales.data.local.database
 
+// Responsabilidad: Cambios versionados del esquema local; permiten conservar los datos existentes.
+
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 

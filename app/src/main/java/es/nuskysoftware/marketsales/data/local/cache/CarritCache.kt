@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.data.local.cache
 
+// Responsabilidad: Almacenamiento temporal del carrito utilizado durante la venta.
+
 import es.nuskysoftware.marketsales.data.repository.LineaVentaUI
 import es.nuskysoftware.marketsales.data.repository.PestanaVenta
 import java.util.concurrent.ConcurrentHashMap

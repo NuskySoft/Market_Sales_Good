@@ -2,6 +2,8 @@
 
 package es.nuskysoftware.marketsales.data.local.dao
 
+// Responsabilidad: Persistencia de mercadillos, estados, saldos, arqueos y totales.
+
 import androidx.room.*
 import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +27,7 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface MercadilloDao {
+    // Consulta local de lectura; devuelve el recuento del propietario indicado. Los filtros y parámetros de la consulta definen su alcance.
     @Query("SELECT COUNT(*) FROM mercadillos WHERE userId = :uid")
     suspend fun contarDemo(uid: String): Int
 
@@ -32,6 +35,7 @@ interface MercadilloDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<MercadilloEntity>)
 
+    // Eliminación local de filas del propietario indicado. Los filtros y parámetros de la consulta definen su alcance.
     @Query("DELETE FROM mercadillos WHERE userId = :userId")
     suspend fun borrarPorUsuario(userId: String)
 
@@ -40,6 +44,7 @@ interface MercadilloDao {
     @Upsert
     suspend fun upsert(mercadillo: MercadilloEntity)
 
+    // Consulta local de lectura; comprueba la existencia de registros del propietario indicado. Los filtros y parámetros de la consulta definen su alcance.
     @Query("SELECT EXISTS(SELECT 1 FROM mercadillos WHERE userId = :uid LIMIT 1)")
     suspend fun existeAlgunoDeUsuario(uid: String): Boolean
 
@@ -55,6 +60,7 @@ interface MercadilloDao {
     @Delete
     suspend fun deleteMercadillo(mercadillo: MercadilloEntity)
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET activo = 0,
@@ -70,6 +76,7 @@ interface MercadilloDao {
 
     // ========== CONSULTAS FILTRADAS POR USUARIO ==========
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -82,6 +89,7 @@ interface MercadilloDao {
         fecha: String
     ): List<MercadilloEntity>
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COUNT(*) > 0
         FROM mercadillos
@@ -94,6 +102,7 @@ interface MercadilloDao {
         fecha: String
     ): Boolean
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -103,6 +112,7 @@ interface MercadilloDao {
     """)
     fun getMercadillosByUser(userId: String): Flow<List<MercadilloEntity>>
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -116,6 +126,7 @@ interface MercadilloDao {
         mesPattern: String
     ): Flow<List<MercadilloEntity>>
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -123,12 +134,14 @@ interface MercadilloDao {
      AND userId = :sessionOwner """)
     suspend fun getMercadilloById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): MercadilloEntity?
 
+    // Eliminación local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         DELETE FROM mercadillos
         WHERE idMercadillo = :id
      AND userId = :sessionOwner """)
     suspend fun deleteMercadilloById(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET totalGastos = :total,
@@ -144,6 +157,7 @@ interface MercadilloDao {
 
     // ========== CONSULTAS POR ESTADO ==========
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -157,6 +171,7 @@ interface MercadilloDao {
         estado: Int
     ): Flow<List<MercadilloEntity>>
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -167,6 +182,7 @@ interface MercadilloDao {
     """)
     fun getMercadillosProgramadosParciales(userId: String): Flow<List<MercadilloEntity>>
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -177,6 +193,7 @@ interface MercadilloDao {
     """)
     fun getMercadillosPendientesArqueo(userId: String): Flow<List<MercadilloEntity>>
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -189,6 +206,7 @@ interface MercadilloDao {
 
     // ========== LÓGICA DE NEGOCIO ==========
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -203,6 +221,7 @@ interface MercadilloDao {
         fechaActual: String
     ): MercadilloEntity?
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -216,6 +235,7 @@ interface MercadilloDao {
         fecha: String
     ): List<MercadilloEntity>
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COUNT(*) > 0
         FROM mercadillos
@@ -234,6 +254,7 @@ interface MercadilloDao {
 
     // ========== SINCRONIZACIÓN ==========
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -242,6 +263,7 @@ interface MercadilloDao {
     """)
     suspend fun getMercadillosNoSincronizadosByUser(userId: String): List<MercadilloEntity>
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET sincronizadoFirebase = 1,
@@ -253,6 +275,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET sincronizadoFirebase = 0
@@ -260,6 +283,7 @@ interface MercadilloDao {
      AND userId = :sessionOwner """)
     suspend fun marcarComoNoSincronizado(id: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT version
         FROM mercadillos
@@ -269,6 +293,7 @@ interface MercadilloDao {
 
     // ========== ESTADOS / SALDOS ==========
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET saldoInicial = :saldoInicial,
@@ -284,6 +309,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET estado = :nuevoEstado,
@@ -298,6 +324,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET arqueoCaja = :arqueoCaja,
@@ -317,6 +344,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET pendienteAsignarSaldo = 0,
@@ -331,6 +359,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET totalVentas = :totalVentas,
@@ -349,6 +378,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET estado = 7,
@@ -362,6 +392,7 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET estado = 4,
@@ -376,11 +407,13 @@ interface MercadilloDao {
         timestamp: Long = System.currentTimeMillis(),
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Consulta local de lectura del propietario indicado. Los filtros y parámetros de la consulta definen su alcance.
     @Query("SELECT * FROM mercadillos WHERE userId = :uid AND activo = 1 AND estado IN (1, 2, 3)")
     suspend fun pendientesAutoestado(uid: String): List<MercadilloEntity>
 
     // ========== UTILIDADES ==========
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COUNT(*)
         FROM mercadillos
@@ -389,6 +422,7 @@ interface MercadilloDao {
     """)
     suspend fun getMercadilloCountByUser(userId: String): Int
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT estado, COUNT(*) AS cantidad
         FROM mercadillos
@@ -400,6 +434,7 @@ interface MercadilloDao {
 
     // ========== MANTENIMIENTO ==========
 
+    // Eliminación local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         DELETE FROM mercadillos
         WHERE userId = :userId
@@ -411,6 +446,7 @@ interface MercadilloDao {
         limiteFecha: Long
     )
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET sincronizadoFirebase = 0
@@ -418,6 +454,7 @@ interface MercadilloDao {
     """)
     suspend fun resetearSincronizacion(userId: String)
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COUNT(*)
         FROM mercadillos
@@ -425,6 +462,7 @@ interface MercadilloDao {
     """)
     suspend fun contarPorUsuario(uid: String): Int
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -437,6 +475,7 @@ interface MercadilloDao {
     """)
     suspend fun getUltimoMercadilloConSaldoFinal(userId: String): MercadilloEntity?
 
+    // Consulta local de lectura. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT *
         FROM mercadillos
@@ -462,6 +501,7 @@ interface MercadilloDao {
     // - Abono: cantidad negativa, subtotal negativo.
     // - Total real: SUM(subtotal).
 
+    // Consulta local de lectura; devuelve el recuento. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COUNT(*)
         FROM recibos
@@ -471,6 +511,7 @@ interface MercadilloDao {
      AND idUsuario = :sessionOwner """)
     suspend fun contarRecibosPorMercadillo(mercadilloId: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Int
 
+    // Consulta local de lectura; agrega los importes o cantidades seleccionados. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COALESCE((SUM(CAST(ROUND(lv.subtotal * 100, 0) AS INTEGER)) / 100.0), 0)
         FROM lineas_venta AS lv
@@ -484,6 +525,7 @@ interface MercadilloDao {
      AND lv.idUsuario = :sessionOwner AND r.idUsuario = :sessionOwner """)
     suspend fun calcularTotalVentasDesdeRecibos(mercadilloId: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
+    // Actualización local de filas. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         UPDATE mercadillos
         SET totalVentas = :total,
@@ -498,6 +540,7 @@ interface MercadilloDao {
         now: Long,
         sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty())
 
+    // Consulta local de lectura; agrega los importes o cantidades seleccionados. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COALESCE((SUM(CAST(ROUND(lv.subtotal * 100, 0) AS INTEGER)) / 100.0), 0)
         FROM lineas_venta AS lv
@@ -512,6 +555,7 @@ interface MercadilloDao {
      AND lv.idUsuario = :sessionOwner AND r.idUsuario = :sessionOwner """)
     suspend fun getTotalVentasPorMetodoEF(mercadilloId: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
+    // Consulta local de lectura; agrega los importes o cantidades seleccionados. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COALESCE((SUM(CAST(ROUND(lv.subtotal * 100, 0) AS INTEGER)) / 100.0), 0)
         FROM lineas_venta AS lv
@@ -526,6 +570,7 @@ interface MercadilloDao {
      AND lv.idUsuario = :sessionOwner AND r.idUsuario = :sessionOwner """)
     suspend fun getTotalVentasPorMetodoBIZ(mercadilloId: String, sessionOwner: String = es.nuskysoftware.marketsales.utils.ConfigurationManager.getCurrentUserId().orEmpty()): Double
 
+    // Consulta local de lectura; agrega los importes o cantidades seleccionados. Los filtros y parámetros de la consulta definen su alcance.
     @Query("""
         SELECT COALESCE((SUM(CAST(ROUND(lv.subtotal * 100, 0) AS INTEGER)) / 100.0), 0)
         FROM lineas_venta AS lv
@@ -552,8 +597,6 @@ data class EstadisticaEstado(
 
 
 //// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/MercadilloDao.kt
-//
-//
 ////// app/src/main/java/es/nuskysoftware/marketsales/data/local/dao/MercadilloDao.kt
 ///**
 // * MercadilloDao (COMPLETO con añadidos de ventas):
@@ -567,223 +610,14 @@ data class EstadisticaEstado(
 // *
 // * Copia y pega este archivo entero para evitar “unresolved” y mantener consistencia.
 // */
-//package es.nuskysoftware.marketsales.data.local.dao
-//
-//import androidx.room.*
-//import es.nuskysoftware.marketsales.data.local.entity.MercadilloEntity
-//import kotlinx.coroutines.flow.Flow
-//
-//@Dao
-//interface MercadilloDao {
-//
-//    @Insert(onConflict = OnConflictStrategy.REPLACE)
-//    suspend fun upsertAll(items: List<MercadilloEntity>)
-//
-//    @Query("DELETE FROM mercadillos WHERE userId = :userId")
-//    suspend fun borrarPorUsuario(userId: String)
-//
 //    // ========== OPERACIONES BÁSICAS ==========
-//    @Upsert
-//    suspend fun upsert(mercadillo: MercadilloEntity)
-//
-//    @Query("SELECT EXISTS(SELECT 1 FROM mercadillos WHERE userId = :uid LIMIT 1)")
-//    suspend fun existeAlgunoDeUsuario(uid: String): Boolean
-//
-//    @Insert(onConflict = OnConflictStrategy.REPLACE)
-//    suspend fun insertMercadillo(mercadillo: MercadilloEntity)
-//
-//    @Insert(onConflict = OnConflictStrategy.REPLACE)
-//    suspend fun insertOrUpdate(mercadillo: MercadilloEntity)
-//
-//    @Update
-//    suspend fun updateMercadillo(mercadillo: MercadilloEntity)
-//
-//    @Delete
-//    suspend fun deleteMercadillo(mercadillo: MercadilloEntity)
-//
-//    @Query("UPDATE mercadillos SET activo = 0, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun desactivarMercadillo(id: String, timestamp: Long = System.currentTimeMillis())
-//
-//
 //    // ========== CONSULTAS FILTRADAS POR USUARIO ==========
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND fecha = :fecha AND activo = 1")
-//    suspend fun getMercadillosByUserAndFecha(userId: String, fecha: String): List<MercadilloEntity>
-//
-//    @Query("SELECT COUNT(*) > 0 FROM mercadillos WHERE userId = :userId AND fecha = :fecha AND activo = 1")
-//    suspend fun existeMercadilloEnFecha(userId: String, fecha: String): Boolean
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND activo = 1 ORDER BY fechaEpochDay DESC, horaInicio DESC")
-//    fun getMercadillosByUser(userId: String): Flow<List<MercadilloEntity>>
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND fecha LIKE :mesPattern AND activo = 1 ORDER BY fechaEpochDay ASC")
-//    fun getMercadillosByUserAndMes(userId: String, mesPattern: String): Flow<List<MercadilloEntity>>
-//
-//    @Query("SELECT * FROM mercadillos WHERE idMercadillo = :id")
-//    suspend fun getMercadilloById(id: String): MercadilloEntity?
-//
-//    @Query("DELETE FROM mercadillos WHERE idMercadillo = :id")
-//    suspend fun deleteMercadilloById(id: String)
-//
-//    @Query("""
-//    UPDATE mercadillos
-//    SET totalGastos = :total,
-//        version = version + 1,
-//        lastModified = strftime('%s','now')*1000,
-//        sincronizadoFirebase = 0
-//    WHERE idMercadillo = :idMercadillo
-//""")
-//    suspend fun actualizarTotalGastos(idMercadillo: String, total: Double)
-//
 //    // ========== CONSULTAS POR ESTADO ==========
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND estado = :estado AND activo = 1 ORDER BY fechaEpochDay ASC")
-//    fun getMercadillosByUserAndEstado(userId: String, estado: Int): Flow<List<MercadilloEntity>>
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND saldoInicial IS NULL AND activo = 1 ORDER BY fechaEpochDay ASC")
-//    fun getMercadillosProgramadosParciales(userId: String): Flow<List<MercadilloEntity>>
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND pendienteArqueo = 1 AND activo = 1 ORDER BY fechaEpochDay ASC")
-//    fun getMercadillosPendientesArqueo(userId: String): Flow<List<MercadilloEntity>>
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND pendienteAsignarSaldo = 1 AND activo = 1 ORDER BY fechaEpochDay ASC")
-//    fun getMercadillosPendientesAsignarSaldo(userId: String): Flow<List<MercadilloEntity>>
-//
 //    // ========== LÓGICA DE NEGOCIO ==========
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND fechaEpochDay >= CAST(julianday(substr(:fechaActual,7,4)||'-'||substr(:fechaActual,4,2)||'-'||substr(:fechaActual,1,2))-2440587.5 AS INTEGER) AND activo = 1 ORDER BY fechaEpochDay ASC, horaInicio ASC LIMIT 1")
-//    suspend fun getProximoMercadillo(userId: String, fechaActual: String): MercadilloEntity?
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND fecha = :fecha AND activo = 1 ORDER BY horaInicio ASC")
-//    suspend fun getMercadillosByFecha(userId: String, fecha: String): List<MercadilloEntity>
-//
-//    @Query("""
-//        SELECT COUNT(*) > 0 FROM mercadillos
-//        WHERE userId = :userId AND fecha = :fecha AND horaInicio = :horaInicio AND activo = 1
-//        AND idMercadillo != :excludeId
-//    """)
-//    suspend fun existeMercadilloEnFechaHora(userId: String, fecha: String, horaInicio: String, excludeId: String = ""): Boolean
-//
 //    // ========== SINCRONIZACIÓN ==========
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND sincronizadoFirebase = 0")
-//    suspend fun getMercadillosNoSincronizadosByUser(userId: String): List<MercadilloEntity>
-//
-//    @Query("UPDATE mercadillos SET sincronizadoFirebase = 1, lastModified = :timestamp WHERE idMercadillo = :id")
-//    suspend fun marcarComoSincronizado(id: String, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun marcarComoNoSincronizado(id: String)
-//
-//    @Query("SELECT version FROM mercadillos WHERE idMercadillo = :id")
-//    suspend fun getMercadilloVersion(id: String): Long?
-//
 //    // ========== ESTADOS / SALDOS ==========
-//    @Query("UPDATE mercadillos SET saldoInicial = :saldoInicial, estado = 2, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun asignarSaldoInicial(id: String, saldoInicial: Double, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET estado = :nuevoEstado, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun actualizarEstado(id: String, nuevoEstado: Int, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET arqueoCaja = :arqueoCaja, saldoFinal = :saldoFinal, pendienteArqueo = 0, pendienteAsignarSaldo = 1, estado = 5, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun realizarArqueoCaja(id: String, arqueoCaja: Double, saldoFinal: Double, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET pendienteAsignarSaldo = 0, estado = 6, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun marcarSaldoAsignado(id: String, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET totalVentas = :totalVentas, totalGastos = :totalGastos, arqueoMercadillo = :arqueoMercadillo, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun actualizarTotales(id: String, totalVentas: Double, totalGastos: Double, arqueoMercadillo: Double, timestamp: Long = System.currentTimeMillis())
-//
-//    @Query("UPDATE mercadillos SET estado = 7, /*activo = 0,*/ version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun cancelarMercadillo(id: String, timestamp: Long = System.currentTimeMillis())
-//
 //    // Útil cuando cierra ventana y hay ventas: ponemos 4 + pendienteArqueo = 1
-//    @Query("UPDATE mercadillos SET estado = 4, pendienteArqueo = 1, version = version + 1, lastModified = :timestamp, sincronizadoFirebase = 0 WHERE idMercadillo = :id")
-//    suspend fun marcarPendienteArqueo(id: String, timestamp: Long = System.currentTimeMillis())
-//
 //    // ========== UTILIDADES ==========
-//    @Query("SELECT COUNT(*) FROM mercadillos WHERE userId = :userId AND activo = 1")
-//    suspend fun getMercadilloCountByUser(userId: String): Int
-//
-//    @Query("SELECT estado, COUNT(*) as cantidad FROM mercadillos WHERE userId = :userId AND activo = 1 GROUP BY estado")
-//    suspend fun getEstadisticasPorEstado(userId: String): List<EstadisticaEstado>
-//
 //    // ========== MANTENIMIENTO ==========
-//    @Query("DELETE FROM mercadillos WHERE userId = :userId AND estado = 7 AND lastModified < :limiteFecha")
-//    suspend fun limpiarMercadillosCanceladosAntiguos(userId: String, limiteFecha: Long)
-//
-//    @Query("UPDATE mercadillos SET sincronizadoFirebase = 0 WHERE userId = :userId")
-//    suspend fun resetearSincronizacion(userId: String)
-//
-//    @Query("SELECT COUNT(*) FROM categorias WHERE userId = :uid")
-//    suspend fun contarPorUsuario(uid: String): Int
-//
-//    @Query("SELECT * FROM mercadillos WHERE userId = :userId AND saldoFinal IS NOT NULL AND pendienteAsignarSaldo = 1 AND activo = 1 ORDER BY fechaEpochDay DESC, horaFin DESC LIMIT 1")
-//    suspend fun getUltimoMercadilloConSaldoFinal(userId: String): MercadilloEntity?
-//
-//    @Query("""
-//        SELECT * FROM mercadillos
-//        WHERE userId = :userId
-//          AND fechaEpochDay >= CAST(julianday(substr(:fechaActual,7,4)||'-'||substr(:fechaActual,4,2)||'-'||substr(:fechaActual,1,2))-2440587.5 AS INTEGER)
-//          AND activo = 1
-//        ORDER BY fechaEpochDay ASC, horaInicio ASC
-//    """)
-//    suspend fun getMercadillosDesdeHoy(userId: String, fechaActual: String): List<MercadilloEntity>
-//
 //    // ========== VENTAS (desde recibos) ==========
-//    @Query("""
-//        SELECT COUNT(*)
-//        FROM recibos
-//        WHERE idMercadillo = :mercadilloId AND estado = 'COMPLETADO'
-//    """)
-//    suspend fun contarRecibosPorMercadillo(mercadilloId: String): Int
-//
-//    @Query("""
-//        SELECT COALESCE((SUM(CAST(ROUND(totalTicket * 100, 0) AS INTEGER)) / 100.0), 0)
-//        FROM recibos
-//        WHERE idMercadillo = :mercadilloId AND estado = 'COMPLETADO'
-//    """)
-//    suspend fun calcularTotalVentasDesdeRecibos(mercadilloId: String): Double
-//
-//    @Query("""
-//        UPDATE mercadillos
-//        SET totalVentas = :total,
-//            version = version + 1,
-//            lastModified = :now,
-//            sincronizadoFirebase = 0
-//        WHERE idMercadillo = :mercadilloId
-//    """)
-//    suspend fun actualizarTotalVentas(mercadilloId: String, total: Double, now: Long)
-//
-//    @Query("""
-//        SELECT COALESCE((SUM(CAST(ROUND(totalTicket * 100, 0) AS INTEGER)) / 100.0), 0)
-//        FROM recibos
-//        WHERE idMercadillo = :mercadilloId
-//          AND estado = 'COMPLETADO'
-//          AND metodoPago = 'EFECTIVO'
-//    """)
-//    suspend fun getTotalVentasPorMetodoEF(mercadilloId: String): Double
-//
-//    @Query("""
-//        SELECT COALESCE((SUM(CAST(ROUND(totalTicket * 100, 0) AS INTEGER)) / 100.0), 0)
-//        FROM recibos
-//        WHERE idMercadillo = :mercadilloId
-//          AND estado = 'COMPLETADO'
-//          AND metodoPago = 'BIZUM'
-//    """)
-//    suspend fun getTotalVentasPorMetodoBIZ(mercadilloId: String): Double
-//
-//    @Query("""
-//        SELECT COALESCE((SUM(CAST(ROUND(totalTicket * 100, 0) AS INTEGER)) / 100.0), 0)
-//        FROM recibos
-//        WHERE idMercadillo = :mercadilloId
-//          AND estado = 'COMPLETADO'
-//          AND metodoPago = 'TARJETA'
-//    """)
-//    suspend fun getTotalVentasPorMetodoTAR(mercadilloId: String): Double
-//
-//}
-//
 ///** Estadística simple por estado */
-//data class EstadisticaEstado(
-//    val estado: Int,
-//    val cantidad: Int
-//)
-//
-//

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/local/database/AppDatabase.kt
 package es.nuskysoftware.marketsales.data.local.database
 
+// Responsabilidad: Configuración de Room, entidades, DAO y migraciones registradas.
+
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room

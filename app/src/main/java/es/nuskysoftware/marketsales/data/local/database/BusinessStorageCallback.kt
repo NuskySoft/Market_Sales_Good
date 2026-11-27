@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.data.local.database
+
+// Responsabilidad: Preparación y normalización de datos locales al abrir Room.
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 

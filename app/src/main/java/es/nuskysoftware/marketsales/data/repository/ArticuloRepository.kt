@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/ArticuloRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Gestiona artículos, precios, existencias y cambios locales del catálogo de cada propietario.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -59,6 +61,7 @@ class ArticuloRepository(
     }
 
     /** Push only: a background stock retry must never pull a stale server snapshot. */
+    // Solicita o ejecuta la subida de cambios locales pendientes para el propietario indicado.
     suspend fun sincronizarPendientesLocales(uid: String) {
         if (DemoAccess.canSync(uid)) SyncEngine(appContext).sync(uid)
     }

@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Coordina autenticación, estado de sesión, configuración del usuario y recuperación de datos.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -168,6 +170,7 @@ class AuthRepository(
         Log.e(TAG, "Error conexión Firebase Auth", e); false
     }
 
+    // Actualiza la información de configuración de la sesión.
     suspend fun refreshUserConfiguration() {
         val currentUser = Firebase.auth.currentUser
         if (currentUser != null) {
@@ -257,6 +260,7 @@ class AuthRepository(
         }
     }
 
+    // Coordina la recuperación y sincronización tras autenticar la cuenta.
     suspend fun handlePostLoginDataSync(uid: String, isPremium: Boolean) = withContext(Dispatchers.IO) {
         if (!DemoAccess.canSync(uid)) return@withContext
         try {

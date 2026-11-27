@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/GastosRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Registra gastos asociados a un mercadillo, actualiza sus totales y solicita sincronización después de guardar localmente.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -43,6 +45,7 @@ class GastosRepository(context: Context) {
     fun observarGastos(idMercadillo: String) =
         gastosDao.observarGastosPorMercadillo(idMercadillo)
 
+    // Guarda el gasto y actualiza los totales del mercadillo dentro de la transacción local.
     suspend fun guardarGasto(
         idMercadillo: String,
         descripcion: String,

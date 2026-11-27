@@ -3,6 +3,8 @@
 
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/MercadilloRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Gestiona mercadillos, estados, saldos, arqueos y consultas locales por propietario.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -165,6 +167,7 @@ class MercadilloRepository(
     }
 
     // ===== SALDOS / ARQUEO =====
+    // Aplica el saldo inicial al mercadillo indicado.
     suspend fun asignarSaldoInicial(mercadilloId: String, saldoInicial: Double, esAsignacionAutomatica: Boolean = false): Boolean =
         withContext(Dispatchers.IO) {
             val ownedMarket = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
@@ -214,6 +217,7 @@ class MercadilloRepository(
 
     // ===== AUTOESTADOS =====
 
+    // Delega las transiciones temporales en el procesador local compartido.
     suspend fun actualizarEstadosAutomaticos(userId: String) = withContext(Dispatchers.IO) {
         val cambios = AutoEstadoProcessor(database).apply(userId)
         if (cambios > 0 && DemoAccess.canSync(userId)) {
@@ -229,6 +233,7 @@ class MercadilloRepository(
         repositoryScope.cancel()
     }
 
+    // Registra el importe de arqueo y el nuevo estado según el flujo de cierre.
     suspend fun confirmarArqueoCaja(
         mercadilloId: String,
         arqueoFinal: Double,
@@ -454,22 +459,11 @@ class MercadilloRepository(
             false
         }
     }
-//    suspend fun corregirTotalVentasSiIncongruente(mercadilloId: String): Boolean = withContext(Dispatchers.IO) {
-//        try {
-//            val m = mercadilloDao.getMercadilloById(mercadilloId) ?: return@withContext false
-//            val tieneRecibos = lineasVentaDao.contarLineasPorMercadillo(mercadilloId) > 0
-//            if (tieneRecibos && (m.totalVentas == 0.0)) {
-//                val nuevoTotal = mercadilloDao.calcularTotalVentasDesdeRecibos(mercadilloId)
-//                val now = System.currentTimeMillis()
-//                mercadilloDao.actualizarTotalVentas(mercadilloId, nuevoTotal, now)
-//                mercadilloDao.getMercadilloById(mercadilloId)?.let { sincronizarMercadilloConFirebase(it) }
 //                true
 //            } else false
 //        } catch (e: Exception) {
 //            Log.e(TAG, "❌ Error corrigiendo totalVentas: ${e.message}", e)
 //            false
-//        }
-//    }
 
     /** Total de ventas por método de pago (EFECTIVO/BIZUM/TARJETA). */
     suspend fun getTotalVentasPorMetodo(mercadilloId: String, metodo: String): Double = withContext(Dispatchers.IO) {

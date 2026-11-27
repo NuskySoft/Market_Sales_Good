@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/CategoriaRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Gestiona las categorías del catálogo y la reasignación de artículos cuando se elimina una categoría.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -133,6 +135,7 @@ class CategoriaRepository(
     /**
      * Elimina una categoría - PATRÓN HÍBRIDO
      */
+    // Procesa la baja de la categoría y protege la referencia de sus artículos.
     suspend fun eliminarCategoria(categoria: CategoriaEntity): Boolean = withContext(Dispatchers.IO) {
         try {
             DemoAccess.requireOwner(categoria.userId)

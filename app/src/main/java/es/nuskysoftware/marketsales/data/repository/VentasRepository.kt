@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/VentasRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Registra recibos, líneas de venta y abonos y conserva la obligación de stock junto con la venta confirmada.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 
@@ -39,10 +41,6 @@ class VentasRepository(
     private val appContext = context.applicationContext
 
 
-//    private val database: AppDatabase = AppDatabase.getDatabase(context)
-//    private val recibosDao: RecibosDao = database.recibosDao()
-//    private val lineasVentaDao: LineasVentaDao = database.lineasVentaDao()
-//    private val configuracionDao = database.configuracionDao()
 
     companion object { private const val TAG = "VentasRepository" }
 
@@ -68,6 +66,7 @@ class VentasRepository(
      *  * Guarda una venta completa (recibo + líneas) en Room y sincroniza cuando es posible.
      *
      */
+    // Confirma la venta local; la transacción conserva las líneas y las obligaciones de stock antes de solicitar la subida.
     suspend fun guardarVenta(
         idMercadillo: String,
         lineas: List<LineaVentaUI>,
@@ -125,8 +124,6 @@ class VentasRepository(
                 )
 
                 val lineasEntity = lineas.mapIndexed { index, l ->
-    //                val numeroLineaRecibo = index + 1                         // orden dentro de este recibo
-    //                val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)  // 0001, 0002, ...
                     val numeroLineaRecibo = index + 1
                     val idLineaSecuencial = nextSeq(base + numeroLineaRecibo)
                     LineaVentaEntity(
@@ -208,6 +205,7 @@ class VentasRepository(
      * Crea un abono por la línea original indicada.
      * Aplica las mismas reglas de idRecibo e idLinea que una venta normal.
      */
+    // Registra la devolución mediante el flujo de abonos y conserva su relación con la operación original.
     suspend fun crearAbono(
         lineaOriginal: LineaVentaEntity,
         cantidadAbonar: Int,

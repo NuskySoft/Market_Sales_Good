@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/UserRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Gestiona la información de perfil y las operaciones de persistencia del usuario autenticado.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 

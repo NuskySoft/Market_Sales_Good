@@ -1,5 +1,7 @@
 // app/src/main/java/es/nuskysoftware/marketsales/data/repository/ConfiguracionRepository.kt
 package es.nuskysoftware.marketsales.data.repository
+
+// Responsabilidad: Gestiona los ajustes locales de la aplicación y su exposición a la interfaz.
 import es.nuskysoftware.marketsales.utils.DemoAccess
 
 

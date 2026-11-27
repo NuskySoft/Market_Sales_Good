@@ -31,7 +31,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Contratar/cancelar Premium: acceso a contratación para Free; ventajas activas tras suscripción válida. Definir precios, periodo, caducidad y política de descenso.
 - Leyenda del calendario: común, propuesta (ya existe un diálogo accesible desde calendario).
 - Integraciones con cualquier plataforma de venta online: exclusivamente Premium, confirmado; no implementadas.
-- Usuarios colaboradores/roles de empresa: antigua propuesta sin confirmar; decidir si entra en el producto futuro.
+- Usuarios colaboradores/roles de empresa: exclusivo de Premium, confirmado; fase final junto con multiempresa.
 
 ## Decisiones de la revisión
 
@@ -89,8 +89,12 @@ Confirmado: Demo y Free pueden mostrar banners e intersticiales cuando proceda s
 Confirmado: cualquier integración con plataformas de venta online será exclusiva de Premium (WooCommerce y cualquier otra futura plataforma). Free conserva catálogo independiente y ventas manuales/limitadas de catálogo. Reglas de importación y sincronización se definirán en su fase de desarrollo.
 - Requisito futuro específico: conector privado para la nueva tienda propia de Tokamadera, independiente de WordPress/WooCommerce. No mostrar ni permitir el uso de este conector al resto de usuarios; definir autorización y configuración en su fase de desarrollo. No implementar ahora.
 
-### 12. Siguiente cuestión: usuarios colaboradores
+### 12. Usuarios colaboradores
 
-Multiempresa Premium ya confirmada para fase final. Propuesta pendiente: permitir a Premium invitar a otros usuarios con cuentas individuales a colaborar en una misma empresa, sin compartir credenciales; permisos por rol, límites y coste por definir en fase posterior. Distinguir de usar una misma cuenta en varios dispositivos, que no es colaboración entre cuentas. Confirmar si incluirlo en la hoja de ruta o descartarlo.
+Confirmado: Premium permitirá invitar a otros usuarios con cuentas individuales a colaborar en una misma empresa, sin compartir credenciales, y gestionar permisos por rol. Se implementará en una de las últimas fases junto con multiempresa. Límites, roles y coste por definir entonces. El uso de una misma cuenta en varios dispositivos sigue disponible para ambas modalidades y no constituye colaboración entre cuentas.
+
+### 13. Siguiente cuestión: descenso de Premium a Free
+
+Propuesta: al finalizar la vigencia de Premium, pasar a Free sin borrar datos ni modificar ventas, gastos, mercadillos, stock, costes o recibos históricos. Conservar acceso a las consultas básicas Free y bloquear operaciones Premium nuevas; conservar información Premium para recuperarla al reactivar la suscripción. Los mercadillos ya creados se mantienen y pueden completarse aunque superen los límites Free; las nuevas altas quedan sujetas a los límites vigentes. Los recibos ya solicitados y pendientes de envío se completan sin solicitar nuevos envíos. Definir qué información Premium histórica puede consultarse sin suscripción. Pendiente de confirmación.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

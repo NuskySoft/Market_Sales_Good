@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/componentsBarraAccionesVenta.kt
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Barra de acciones disponibles durante el flujo de venta.
+
 import android.R.attr.contentDescription
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -16,6 +18,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Barra de acciones disponibles durante el flujo de venta.
 fun BarraAccionesVenta(
     onRealizarCargo: () -> Unit,
     onAbrirCarrito: () -> Unit,

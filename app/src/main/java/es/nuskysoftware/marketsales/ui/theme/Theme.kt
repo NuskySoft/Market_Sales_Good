@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/theme/Theme.kt
 package es.nuskysoftware.marketsales.ui.theme
 
+// Responsabilidad: Aplica la configuración de tema y tipografía a los componentes Compose.
+
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -12,6 +14,7 @@ import androidx.compose.runtime.getValue
 
 
 @Composable
+// Aplica el tema a la composición y permite que sus descendientes consuman la configuración visual.
 fun MarketSalesTheme(
     configurationManager: es.nuskysoftware.marketsales.utils.ConfigurationManager,
     content: @Composable () -> Unit

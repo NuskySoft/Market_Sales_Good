@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/cajamercadillos/ui/components/DialogSelectorColor.kt
 package es.nuskysoftware.cajamercadillos.ui.components
 
+// Responsabilidad: Diálogo reutilizable para elegir un color desde la interfaz.
+
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape

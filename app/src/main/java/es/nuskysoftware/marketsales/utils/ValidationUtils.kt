@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Agrupa funciones de validación reutilizables para datos introducidos en la interfaz.
+
 import java.util.Locale
 
 object ValidationUtils {

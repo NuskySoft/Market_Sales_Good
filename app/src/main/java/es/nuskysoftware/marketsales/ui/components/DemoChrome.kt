@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Presenta el aviso fijo Demo y los accesos o restricciones de esta modalidad.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,6 +14,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 /** Fixed outside every screen's scrolling content, including authentication screens. */
 @Composable
+// Envuelve el contenido de navegación con la presentación correspondiente a Demo.
 fun DemoChrome(nav: NavController, ready: Boolean = true, content: @Composable () -> Unit) {
     val owner by ConfigurationManager.usuarioLogueado.collectAsState()
     val language by ConfigurationManager.idioma.collectAsState()
@@ -45,6 +48,7 @@ fun DemoChrome(nav: NavController, ready: Boolean = true, content: @Composable (
 }
 
 @Composable
+// Comprueba la modalidad antes de presentar el contenido de una pantalla restringida.
 fun DemoRestricted(nav: NavController, key: String = "demo_solo_registrados", content: @Composable () -> Unit) {
     if (!DemoAccess.isDemo()) { content(); return }
     val language by ConfigurationManager.idioma.collectAsState()

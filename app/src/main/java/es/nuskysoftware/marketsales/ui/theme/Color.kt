@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/theme/Color.kt
 package es.nuskysoftware.marketsales.ui.theme
 
+// Responsabilidad: Define los colores utilizados por los temas y componentes de Compose.
+
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color

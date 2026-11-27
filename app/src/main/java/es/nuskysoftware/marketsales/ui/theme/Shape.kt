@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.theme
 
+// Responsabilidad: Define las formas y radios de los componentes del tema.
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/composables/BotonCarritoVentas.kt
 package es.nuskysoftware.marketsales.ui.composables
 
+// Responsabilidad: Botón que representa el carrito de venta y su contenido.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*

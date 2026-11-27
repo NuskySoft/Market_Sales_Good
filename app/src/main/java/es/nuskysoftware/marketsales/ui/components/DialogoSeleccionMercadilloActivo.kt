@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/DialogoSeleccionMercadilloActivo.kt
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Permite seleccionar el mercadillo activo para la operación correspondiente.
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,6 +27,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager.moneda
 import es.nuskysoftware.marketsales.utils.MonedaUtils
 
 @Composable
+// Permite seleccionar el mercadillo activo para la operación correspondiente.
 fun DialogoSeleccionMercadilloActivo(
     mercadillosEnCurso: List<MercadilloEntity>,
     onMercadilloSeleccionado: (MercadilloEntity) -> Unit,
@@ -91,8 +94,6 @@ fun DialogoSeleccionMercadilloActivo(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 val moneda by ConfigurationManager.moneda.collectAsState()
                                 Text(
-//                                    text = "💰 " +
-//                                            StringResourceManager.getString("saldo_inicial", currentLanguage) +
 //                                            ": €${String.format("%.2f", m.saldoInicial)}",
                                     text = "💰 ${StringResourceManager.getString("saldo_inicial", currentLanguage).ifBlank { "Saldo inicial" }}: " +
                                             MonedaUtils.formatearImporte(m.saldoInicial, moneda),

@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/theme/LocalConfiguration.kt
 package es.nuskysoftware.marketsales.ui.theme
 
+// Responsabilidad: Proporciona acceso local de composición a la configuración visual.
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import es.nuskysoftware.marketsales.utils.ConfigurationManager

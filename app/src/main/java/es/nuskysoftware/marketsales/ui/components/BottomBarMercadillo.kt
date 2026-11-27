@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/BottomBarMercadillo.kt
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Barra inferior de acciones del mercadillo, condicionada por su estado.
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
  * - Ese botón solo aparece si hay un mercadillo seleccionado y existen >1 mercadillos en curso.
  */
 @Composable
+// Barra inferior de acciones del mercadillo, condicionada por su estado.
 fun BottomBarMercadillo(
     mercadilloActivo: MercadilloEntity?,
     onVentasClick: () -> Unit,

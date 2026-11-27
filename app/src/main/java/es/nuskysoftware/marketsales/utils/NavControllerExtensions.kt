@@ -2,6 +2,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/NavControllerExtensions.kt
 package es.nuskysoftware.marketsales.utils
 
+// Responsabilidad: Agrupa operaciones auxiliares de navegación seguras frente al estado de la pila.
+
 import android.os.Handler
 import android.os.Looper
 import androidx.navigation.NavController

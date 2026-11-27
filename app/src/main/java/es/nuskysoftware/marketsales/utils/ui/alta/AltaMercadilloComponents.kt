@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/utils/ui/alta/CamposAlta.kt
 package es.nuskysoftware.marketsales.utils.ui.alta
 
+// Responsabilidad: Componentes reutilizables del formulario de alta y edición de mercadillos.
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

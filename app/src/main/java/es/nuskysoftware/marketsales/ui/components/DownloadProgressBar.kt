@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/components/DownloadProgressBar.kt
 package es.nuskysoftware.marketsales.ui.components
 
+// Responsabilidad: Presenta el estado y progreso de descarga o sincronización inicial.
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Card
@@ -18,6 +20,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Presenta el estado y progreso de descarga o sincronización inicial.
 fun DownloadProgressBar(
     visible: Boolean,
     progressPercent: Int,

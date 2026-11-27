@@ -1,3 +1,13 @@
+# 2.6 — 27-11-2026 — adaptación de modalidades
+
+- Free: 10 unidades positivas de catálogo por mercadillo, venta manual ilimitada y abonos sin recuperar cupo. Premium sin límite de catálogo.
+- Free: 50 mercadillos por año natural de celebración, incluyendo cancelados y eliminados, y uno activo por día; Premium sin esos límites y alta rápida desde calendario.
+- Configuración básica y actualización manual disponibles para cuentas registradas. Inventario, empresa y saldos reservados a Premium. Arqueo y cierre común, incluidos arqueos pendientes tras perder Premium.
+- Conservación de costes, stock y datos históricos al bajar a Free. Conciliación de planificación futura sin borrar operaciones y protección de grupos antiguos con fecha de alta desconocida.
+- Anuncios de pantalla completa fuera de los flujos de venta, cobro y gastos. Demo mantiene sus reglas.
+- Room 20 → 21 mediante migración aditiva; versionCode 10, versionName 2.6. Documentación interna en castellano.
+- Consultas SQLite nuevas y política Kotlin aislada comprobadas; compilación, ejecución Android y pruebas Firebase pendientes. Ver docs/IMPLEMENTACION_2_6.md.
+
 # 2.5 — 27-11-2026 — limpieza y documentación interna
 
 - Base: 2.4 aceptada por el usuario; respaldo `backup/v2.4-validada`.

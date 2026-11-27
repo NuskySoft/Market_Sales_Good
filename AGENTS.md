@@ -41,3 +41,10 @@
 - Documentar la responsabilidad de módulos, clases, funciones, parámetros, resultados y errores; explicar también las operaciones, cálculos, consultas, condiciones, decisiones de negocio y puntos de persistencia/sincronización que se incorporen o modifiquen.
 - Actualizar los comentarios afectados al cambiar el comportamiento. No dejar implementaciones antiguas como bloques de dos o más líneas de código comentado; conservar los comentarios explicativos vigentes. No sustituir los comentarios internos por un manual externo.
 - No considerar terminada una modificación si falta su documentación interna. Esta regla se aplica a todas las futuras entregas.
+
+## Modalidades aprobadas para 2.6 y hoja de ruta
+
+- Aplicar docs/MATRIZ_FREE_PREMIUM.md y docs/IMPLEMENTACION_2_6.md. Los 16 acuerdos generales están cerrados; no pedir confirmaciones intermedias de lo ya aprobado.
+- Los cupos se verifican en transacciones Room; conservar operaciones confirmadas aunque se supere un cupo por ventas independientes sin conexión. No inventar fechas de alta de mercadillos antiguos.
+- Room 21 requiere conservar una copia de la base anterior si se quiere volver a 2.5. No utilizar migraciones destructivas.
+- Recibos PDF y envío, inventario completo, informes, facturación Premium, módulos de idiomas e integraciones se desarrollan en entregas posteriores, no en 2.6.

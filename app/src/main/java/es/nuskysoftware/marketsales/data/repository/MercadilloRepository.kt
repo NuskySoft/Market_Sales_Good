@@ -150,20 +150,22 @@ class MercadilloRepository(
 
     suspend fun actualizarMercadillo(mercadillo: MercadilloEntity): Boolean = withContext(Dispatchers.IO) {
         DemoAccess.requireOwner(mercadillo.userId)
-        val anterior = mercadilloDao.getMercadilloById(mercadillo.idMercadillo) ?: error("Market not found")
-        check(anterior.activo && (anterior.estado !in 6..7 || DemoAccess.isDemo())) { "Final market" }
-        val actualizado = mercadillo.copy(
-            creadoEn = anterior.creadoEn,
-            bajaPorPlan = anterior.bajaPorPlan,
-            fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),
-            version = mercadillo.version + 1,
-            lastModified = System.currentTimeMillis(),
-            sincronizadoFirebase = false
-        )
-        localDb.withTransaction {
+        // Lee la versión persistida y valida el cupo dentro de la misma transacción de edición.
+        val actualizado = localDb.withTransaction {
+            val anterior = mercadilloDao.getMercadilloById(mercadillo.idMercadillo) ?: error("Market not found")
             DemoAccess.requireOwner(anterior.userId)
-            validarCupoFree(anterior.userId, actualizado.fecha, anterior)
-            mercadilloDao.updateMercadillo(actualizado)
+            check(anterior.activo && (anterior.estado !in 6..7 || DemoAccess.isDemo())) { "Final market" }
+            val nuevo = mercadillo.copy(
+                creadoEn = anterior.creadoEn,
+                bajaPorPlan = anterior.bajaPorPlan,
+                fechaEpochDay = es.nuskysoftware.marketsales.utils.CalendarDates.epochDay(mercadillo.fecha),
+                version = anterior.version + 1,
+                lastModified = System.currentTimeMillis(),
+                sincronizadoFirebase = false
+            )
+            validarCupoFree(anterior.userId, nuevo.fecha, anterior)
+            mercadilloDao.updateMercadillo(nuevo)
+            nuevo
         }
         repositoryScope.launch { sincronizarMercadilloConFirebase(actualizado) }
         true

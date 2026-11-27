@@ -51,8 +51,8 @@ android {
         // Nivel de API para el que se declara el comportamiento objetivo.
         targetSdk = 36
         // El código numérico aumenta en cada entrega; la interfaz muestra VERSION_NAME.
-        versionCode = 9
-        versionName = "2.5"
+        versionCode = 10
+        versionName = "2.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

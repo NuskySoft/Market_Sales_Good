@@ -47,6 +47,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
     var ask by remember(uid){mutableStateOf(settings.ask)}
     var folder by remember(uid){mutableStateOf(settings.folder)}
     var message by remember{mutableStateOf("")}
+    val copies by remember(uid,folder){AppDatabase.getDatabase(context).receiptDocumentDao().pendingCopies(uid,folder.orEmpty())}.collectAsState(initial=0)
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()){uri->
         if(uri!=null && service.allowed(uid)) {
             try {
@@ -67,6 +68,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             Text(t(en,"Almacenamiento local siempre activo","Local storage always enabled"))
             Text(if(folder!=null)t(en,"Copia externa configurada","External copy configured") else t(en,"Sin copia externa. Si pierde el dispositivo o desinstala la app puede perder los PDF.","No external copy. PDF files may be lost if the device is lost or the app is uninstalled."),style=MaterialTheme.typography.bodySmall)
             OutlinedButton(onClick={picker.launch(null)}) {Text(t(en,"Seleccionar carpeta externa","Choose external folder"))}
+            if(folder!=null && copies>0)Text(t(en,"Copias pendientes: ","Pending copies: ")+copies,style=MaterialTheme.typography.bodySmall)
             if(folder!=null)TextButton(onClick={if(service.allowed(uid)){settings.folder=null;folder=null}}){Text(t(en,"Desactivar copia externa","Disable external copy"))}
             Text(t(en,"La nube disponible depende del proveedor instalado. Las copias pendientes se reintentan.","Available cloud folders depend on the installed provider. Pending copies are retried."),style=MaterialTheme.typography.bodySmall)
             if(message.isNotBlank())Text(message,color=MaterialTheme.colorScheme.error)
@@ -299,7 +301,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
             if(!afterSale){
                 OutlinedButton(enabled=!busy,onClick={open(false)},modifier=Modifier.fillMaxWidth()){Text(t(en,"Ver PDF","View PDF"))}
                 Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){
-                    TextButton(enabled=!busy,onClick={exportPicker.launch(ReceiptFiles.externalName(owner,id))}){Text(t(en,"Exportar copia","Export copy"))}
+                    TextButton(enabled=!busy,onClick={busy=true;scope.launch{try{service.original(owner,id);exportPicker.launch(ReceiptFiles.externalName(owner,id))}catch(e:CancellationException){throw e}catch(e:Exception){message=t(en,"PDF original no disponible","Original PDF unavailable")}finally{busy=false}}}){Text(t(en,"Exportar copia","Export copy"))}
                     TextButton(enabled=!busy,onClick={importPicker.launch(arrayOf("application/pdf"))}){Text(t(en,"Recuperar copia","Restore copy"))}
                 }
             }
@@ -318,7 +320,7 @@ private fun t(en:Boolean,es:String,english:String)=if(en)english else es
                     if(doc==null)service.original(owner,id)
                     service.enqueue(owner,id,email.trim());onDismiss()
                 }catch(e:CancellationException){throw e}
-                catch(e:Exception){message=t(en,"No se pudo guardar la solicitud. El recibo no cambia.","Could not save request. Receipt is unchanged.")}
+                catch(e:Exception){message=if(e.message=="Ya existe una solicitud pendiente o incierta")t(en,"Ya existe un envío pendiente o incierto. Revisa Utilidades.","A pending or uncertain request already exists. Check Utilities.") else t(en,"No se pudo guardar la solicitud. El recibo no cambia.","Could not save request. Receipt is unchanged.")}
                 finally{busy=false}
             }
         }){Text(t(en,"Enviar","Send"))}},

@@ -16,6 +16,9 @@ interface ReceiptDocumentDao {
     suspend fun documentIds(owner: String): List<String>
     @Query("SELECT receiptId FROM receipt_documents WHERE owner=:owner")
     fun ids(owner: String): Flow<List<String>>
+    // Copias que aún no han sido aceptadas por el proveedor de almacenamiento elegido.
+    @Query("SELECT COUNT(*) FROM receipt_documents WHERE owner=:owner AND (copiedTo IS NULL OR copiedTo!=:destination)")
+    fun pendingCopies(owner:String,destination:String):Flow<Int>
     @Query("UPDATE receipt_documents SET copiedTo=:destination WHERE owner=:owner AND receiptId=:id")
     suspend fun copied(owner: String, id: String, destination: String)
     @Insert(onConflict = OnConflictStrategy.ABORT)

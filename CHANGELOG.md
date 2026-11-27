@@ -1,3 +1,13 @@
+# 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
+
+- Recibos Premium con instantánea local transaccional, PDF A4 y abonos con referencia al original; Free/Demo sin PDF.
+- Visor interno, logotipo opcional local, aviso de empresa, preferencia de solicitud por dispositivo y consulta/reenvío desde ventas.
+- SMTP TLS (Gmail con contraseña de aplicación y otros proveedores), integración Microsoft Graph preparada para Outlook/Hotmail, pendiente de registrar cliente público y validar.
+- Cola local por cuenta/dispositivo, reintentos controlados con WorkManager, WhatsApp mediante compartición explícita, sin infraestructura de correo de pago.
+- Copia externa voluntaria mediante SAF y exportación/recuperación manual; ningún archivo PDF ni logotipo en Firebase.
+- Room 22, migración 21→22 aditiva y metadato de elegibilidad PDF sincronizado; 16 comprobaciones SQLite ejecutadas. Pruebas instrumentadas añadidas, no ejecutadas; compilación Android pendiente.
+- Correo Market Sales con suplemento reservado para fase comercial. Ver docs/IMPLEMENTACION_2_7.md.
+
 # 2.6 — 27-11-2026 — adaptación de modalidades
 
 - Aceptada por el usuario tras pruebas parciales en Android Studio, incluido el alta rápida Premium desde calendario. Respaldo `backup/v2.6-validada`. No implica ejecución de todas las pruebas técnicas pendientes.

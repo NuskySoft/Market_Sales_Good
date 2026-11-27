@@ -38,7 +38,12 @@ class ReceiptService(private val context: Context) {
         val doc=dao.find(owner,id)
         val result=when {
             local.isFile && local.length()>0 -> local
-            doc!=null -> ReceiptFiles.render(context,doc)
+            doc!=null -> {
+                // Si la copia original existe, recuperarla antes de recurrir a la instantánea inmutable.
+                val destination=doc.copiedTo ?: settings(owner).folder
+                val restored=destination?.let { runCatching { ReceiptFiles.external(context,owner,id,Uri.parse(it),null,true) }.getOrNull() }
+                restored ?: ReceiptFiles.render(context,doc)
+            }
             receipt.pdfOriginal -> settings(owner).folder?.let { ReceiptFiles.external(context,owner,id,Uri.parse(it),null,true) }
                 ?: error("PDF original no disponible")
             else -> error("Esta venta no generó PDF")

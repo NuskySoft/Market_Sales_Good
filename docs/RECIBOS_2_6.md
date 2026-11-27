@@ -81,3 +81,7 @@ El usuario solicita tener en cuenta las cuentas Gmail y Outlook/Hotmail, además
 ## Cierre definitivo de requisitos
 
 El usuario considera completa la definición funcional de 2.7, incluidas las incorporaciones posteriores de Gmail, Outlook/Hotmail y la alternativa futura de correo Market Sales mediante suplemento. No reabrir acuerdos cerrados ni solicitar confirmación de detalles visuales menores. Mantener el respaldo `backup/v2.6-validada`. El servicio adicional de correo Market Sales queda para la fase comercial, no para 2.7. La compatibilidad de correo y destinos de copia externa queda sujeta a comprobaciones técnicas reales; no contratar infraestructura de pago. La definición queda cerrada; la implementación funcional y las pruebas siguen pendientes.
+
+## Estado de la candidata 2.7
+
+El código de la candidata se ha incorporado a la rama feature/v2.7-recibos-pdf. Consultar docs/IMPLEMENTACION_2_7.md para limitaciones, configuración externa de Outlook/Hotmail y pruebas pendientes. Las referencias anteriores a la fase de definición son históricas, no indican el estado actual. No se han contratado servicios de pago.

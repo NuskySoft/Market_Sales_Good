@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaVentas.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla que coordina la introducción de conceptos manuales y productos para una venta.
+
 import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.compose.foundation.layout.*
@@ -26,6 +28,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 @SuppressLint("UnrememberedGetBackStackEntry")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Permite cambiar entre introducción manual y catálogo sin perder el contenido del carrito.
 fun PantallaVentas(
     navController: NavController,
     mercadilloActivo: MercadilloEntity

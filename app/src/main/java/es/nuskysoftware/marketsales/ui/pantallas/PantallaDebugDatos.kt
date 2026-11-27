@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla de diagnóstico de datos, utilizada para inspeccionar el estado local y remoto durante el desarrollo.
+
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
@@ -17,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @Composable
+// Pantalla de diagnóstico de datos, utilizada para inspeccionar el estado local y remoto durante el desarrollo.
 fun PantallaDebugDatos(navController: NavController) {
     val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     val scope = rememberCoroutineScope()

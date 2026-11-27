@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla intermedia que acompaña el cierre de sesión.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,6 +17,7 @@ import es.nuskysoftware.marketsales.utils.ConfigurationManager
 import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @Composable
+// Pantalla intermedia que acompaña el cierre de sesión.
 fun PantallaLogoutSplash(
     navController: NavController
 ) {

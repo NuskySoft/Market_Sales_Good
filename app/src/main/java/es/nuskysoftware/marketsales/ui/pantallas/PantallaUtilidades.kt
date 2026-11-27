@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Menú de acceso a herramientas auxiliares de la aplicación.
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -20,6 +22,7 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Menú de acceso a herramientas auxiliares de la aplicación.
 fun PantallaUtilidades(navController: NavController? = null) {
     val currentLanguage = ConfigurationManager.idioma.collectAsState().value
     val esPremium = ConfigurationManager.esPremium.collectAsState().value

@@ -1,4 +1,6 @@
 package es.nuskysoftware.marketsales.ui.pantallas
+
+// Responsabilidad: Lista los saldos guardados disponibles y las acciones para retirarlos.
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +16,7 @@ import es.nuskysoftware.marketsales.utils.*
 import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta los saldos disponibles de la cuenta y permite seleccionar las acciones admitidas.
 fun PantallaSaldosPendientes(navController: NavController? = null) {
     val context = LocalContext.current
     val repo = remember { SaldoGuardadoRepository(context) }

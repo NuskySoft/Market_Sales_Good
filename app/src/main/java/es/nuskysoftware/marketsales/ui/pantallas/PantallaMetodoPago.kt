@@ -2,6 +2,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaMetodoPago.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Interfaz de selección del método de pago antes de confirmar la operación.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,6 +19,7 @@ enum class MetodoPago { EFECTIVO, BIZUM, TARJETA }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz de selección del método de pago antes de confirmar la operación.
 fun PantallaMetodoPago(
     totalFormateado: String,
     onMetodoSeleccionado: (MetodoPago) -> Unit,

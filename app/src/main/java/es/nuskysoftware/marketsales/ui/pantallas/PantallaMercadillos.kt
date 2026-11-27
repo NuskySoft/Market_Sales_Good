@@ -6,6 +6,8 @@
  */
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla principal de mercadillos, calendario, selección y acciones según el estado.
+
 import android.os.Build
 import androidx.annotation.RequiresApi
 import es.nuskysoftware.marketsales.R
@@ -62,6 +64,7 @@ import java.util.Locale
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Observa la lista de mercadillos y permite seleccionar fechas, consultar eventos y acceder a las acciones disponibles.
 fun PantallaMercadillos(
     navController: NavController? = null
 ) {
@@ -107,41 +110,6 @@ fun PantallaMercadillos(
     var isRefreshing by remember { mutableStateOf(false) }
 
     // 🔒 [PUNTO 1] Bloque de aviso de usuario invitado temporalmente desactivado
-    /*
-    // ⛔ AVISO USUARIO INVITADO / DEFAULT
-    // Regla:
-    // - Si NO hay usuario logueado real (solo modo invitado), mostramos aviso UNA vez.
-    // - Si hay usuario real => nunca mostrar.
-    // Suponemos que el invitado es "usuario_default" o null.
-    val currentUserId = remember { ConfigurationManager.getCurrentUserId() }
-    val isInvitado = currentUserId == null || currentUserId == es.nuskysoftware.marketsales.utils.AppModePolicy.DEMO_USER_ID
-
-    // TODO: implementar en ConfigurationManager una persistencia tipo:
-    // ConfigurationManager.hasSeenDefaultUserWarning (StateFlow<Boolean>) + setSeenDefaultUserWarning(true)
-    // Mientras tanto usamos estado local rememberSaveable para no machacar en cada recomposición.
-    var hasSeenWarning by rememberSaveable { mutableStateOf(false) }
-
-    val mostrarAvisoUsuarioDefault = isInvitado && !hasSeenWarning
-
-    if (mostrarAvisoUsuarioDefault) {
-        AlertDialog(
-            onDismissRequest = {
-                hasSeenWarning = true
-            },
-            confirmButton = {
-                TextButton(onClick = { hasSeenWarning = true }) {
-                    Text(StringResourceManager.getString("entendido", currentLanguage))
-                }
-            },
-            title = {
-                Text(StringResourceManager.getString("default_user_warning_title", currentLanguage))
-            },
-            text = {
-                Text(StringResourceManager.getString("default_user_warning_message", currentLanguage))
-            }
-        )
-    }
-    */
 
     // Mensajes snackbar desde el VM
     LaunchedEffect(uiState.message) {
@@ -150,6 +118,7 @@ fun PantallaMercadillos(
             mercadilloViewModel.limpiarMensaje()
         }
     }
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (uiState.error).
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)

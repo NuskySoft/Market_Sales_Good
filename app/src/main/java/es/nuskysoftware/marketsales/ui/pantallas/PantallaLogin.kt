@@ -1,5 +1,7 @@
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Interfaz de acceso y registro, incluida autenticación por correo y Google.
+
 import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -53,6 +55,7 @@ val TAG = "PantallaLogin"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta los formularios de acceso y registro y refleja los resultados de la autenticación.
 fun PantallaLogin(
     onNavigateToMain: () -> Unit = {},
     // ✅ NUEVO (opcional y retrocompatible): si se pasa, navegamos aquí al splash de descarga
@@ -73,12 +76,10 @@ fun PantallaLogin(
     val currentLanguage by ConfigurationManager.idioma.collectAsState()
 
 //    // ===== Bootstrap usuario_default si Room está vacío =====
-//    LaunchedEffect(Unit) {
-//        DefaultBootstrapper.runIfNeeded(context.applicationContext)
-//    }
 
     // ===== Mostrar aviso claro al cerrar sesión =====
     var prevAuthState by remember { mutableStateOf<AuthState?>(null) }
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (authState).
     LaunchedEffect(authState) {
         if (prevAuthState is AuthState.Authenticated && authState is AuthState.Unauthenticated) {
             Toast.makeText(

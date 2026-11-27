@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaPerfil.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Interfaz de consulta y edición del perfil y de la cuenta registrada.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -44,6 +46,7 @@ import es.nuskysoftware.marketsales.utils.safePopBackStack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Interfaz de consulta y edición del perfil y de la cuenta registrada.
 fun PantallaPerfil(
     navController: NavController? = null
 ) {
@@ -135,6 +138,7 @@ fun PantallaPerfil(
         }
     }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (displayName).
     LaunchedEffect(displayName) {
         Log.d("PantallaPerfil", "🔄 ConfigurationManager.displayName: $displayName")
         if (!displayName.isNullOrBlank()) {
@@ -143,6 +147,7 @@ fun PantallaPerfil(
             Log.d("PantallaPerfil", "🔄 Campo nombre después: $nombre")
         }
     }
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (currentUser, displayName, usuarioEmail).
     LaunchedEffect(currentUser, displayName, usuarioEmail) {
         nombre = displayName ?: currentUser?.displayName ?: ""
         email = usuarioEmail ?: currentUser?.email ?: ""
@@ -218,6 +223,7 @@ fun PantallaPerfil(
         }
     }
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (showError).
     LaunchedEffect(showError) {
         if (showError) {
             kotlinx.coroutines.delay(5000)

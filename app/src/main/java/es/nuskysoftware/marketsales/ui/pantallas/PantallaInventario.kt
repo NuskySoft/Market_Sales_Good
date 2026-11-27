@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaInventario.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Pantalla de acceso a funciones de inventario.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,6 +21,7 @@ import es.nuskysoftware.marketsales.utils.StringResourceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Pantalla de acceso a funciones de inventario.
 fun PantallaInventario(
     navController: NavController? = null
 ) {

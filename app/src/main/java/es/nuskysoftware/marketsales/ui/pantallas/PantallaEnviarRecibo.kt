@@ -1,6 +1,8 @@
 // app/src/main/java/es/nuskysoftware/marketsales/ui/pantallas/PantallaEnviarRecibo.kt
 package es.nuskysoftware.marketsales.ui.pantallas
 
+// Responsabilidad: Presenta las opciones de envío de recibos al usuario.
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -31,6 +33,7 @@ enum class TipoEnvio { CORREO, WHATSAPP }
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+// Presenta las opciones de envío de recibos al usuario.
 fun PantallaEnviarRecibo(
     totalFormateado: String,
     metodo: String,
@@ -49,6 +52,7 @@ fun PantallaEnviarRecibo(
     val phoneFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
+    // Ejecuta este efecto al entrar en composición o cuando cambian sus claves (tipo).
     LaunchedEffect(tipo) {
         if (tipo == TipoEnvio.WHATSAPP) {
             phoneFocus.requestFocus()

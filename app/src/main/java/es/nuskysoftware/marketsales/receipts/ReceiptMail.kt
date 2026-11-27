@@ -132,7 +132,22 @@ object ReceiptMail {
             val transport=SMTPTransport(session,URLName("smtp",config.host,config.port,null,null,null))
             try {
                 try { transport.connect(config.host,config.port,config.username,config.secret) }
-                catch(e:Exception){throw connectFailure(e,config,transport.lastReturnCode)}
+                catch(e:Exception){
+                    val code=transport.lastReturnCode
+                    val failure=connectFailure(e,config,code)
+                    // La clasificación genérica ocultaba la excepción original. Mostrar solo tipos y
+                    // código SMTP, nunca mensajes crudos que pudieran incluir información de cuenta.
+                    if(file==null){
+                        val types=causes(e).map{it.javaClass.simpleName}.filter{it.isNotBlank()}.distinct().take(6).joinToString(" > ")
+                        val diagnostic=if(config.tls=="SSL" && failure.state!="ERROR")
+                            SmtpConnectionProbe.check(config.host,config.port) else ""
+                        val details=listOf(failure.message.orEmpty(),
+                            "Diagnóstico JavaMail: $types; SMTP $code.",diagnostic)
+                            .filter{it.isNotBlank()}.joinToString("\n")
+                        throw MailFailure(failure.state,details)
+                    }
+                    throw failure
+                }
                 try { transport.sendMessage(message,message.allRecipients) }
                 catch(e:SendFailedException){
                     if(e.validSentAddresses?.isNotEmpty()==true) return config

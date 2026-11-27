@@ -1,5 +1,7 @@
 # 2.7 — 27-11-2026 — recibos PDF (candidata para pruebas)
 
+- Diagnóstico de conexión SMTP: en la comprobación inicial, mostrar clases de excepción y código SMTP sin exponer credenciales; para fallos de conexión SSL realizar una comprobación independiente TCP/TLS/saludo 220 desde Android, sin autenticar ni enviar correo. No se modifica la confianza TLS ni el transporte Gmail.
+
 - Configuración SMTP: el botón Comprobar y guardar permanece disponible salvo durante una operación en curso; las validaciones se muestran al pulsar con un mensaje específico. Usuario SMTP opcional. No se altera el transporte ni la autorización Gmail.
 
 - Gmail OAuth y envío real de recibos confirmados por el usuario en emulador. Se sustituye el texto de prueba por confirmación profesional de configuración, común a todos los proveedores y dirigida únicamente a la propia cuenta. Verificación pública de Google pendiente.

@@ -51,8 +51,14 @@ Confirmado: el gesto de deslizar hacia abajo en el calendario estará disponible
 
 Confirmado: Free y Premium permiten introducir saldo inicial manualmente, realizar arqueo, consultar saldo final y cerrar mercadillo. Guardar saldo para otro mercadillo, asignarlo y gestionar saldos pendientes son exclusivos de Premium.
 
-### 4. Siguiente cuestión: configuración visual, idioma y moneda
+### 4. Configuración visual, idioma y moneda
 
-Actualmente Free puede cambiar el modo claro/oscuro, mientras idioma, tipografía y moneda son exclusivos de Premium. Propuesta: permitir idioma y moneda en ambas modalidades porque son necesidades básicas de uso según el país; conservar la personalización tipográfica como ventaja Premium. Pendiente de confirmación.
+Confirmado: todas las opciones de configuración actuales (tema claro/oscuro, idioma, tipografía y moneda) estarán disponibles tanto en Free como en Premium. Por ahora la única opción exclusiva de Premium en configuración será «Solicitar siempre envío de recibo». Free no podrá enviar recibos. Demo conserva configuración de solo lectura.
+
+Requisito futuro confirmado: arquitectura de idiomas ampliable mediante módulos independientes descargables y de pago, adquiribles por separado del plan Premium. Una vez adquirido e instalado un idioma debe aparecer entre las opciones de selección y poder utilizarse sin conexión. Ejemplo orientativo: francés por 0,50 EUR; precio, idiomas incluidos de serie, alcance de compras/restauración y mecanismo de distribución pendientes de concretar. No implementar todavía ni asumir que el precio propuesto es definitivo. Preparar la futura gestión de traducciones para evitar depender de una nueva versión de la app por cada idioma.
+
+### 5. Siguiente cuestión: recibos PDF y datos de empresa
+
+Envío y preferencia de solicitud Premium confirmados. Propuesta pendiente: mantener registro y consulta de ventas en Free; generación y consulta del recibo PDF también en Free, sin envío integrado, y datos de empresa/personalización comercial en Premium. Confirmar si el documento PDF debe ser exclusivo de Premium o común a ambas modalidades.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.

@@ -41,7 +41,7 @@ Base: código 2.5, 27-11-2026. La Demo conserva las reglas ya cerradas; no se re
 - Premium: sin ese límite.
 - Las ventas manuales no están sujetas a este límite de catálogo.
 - Confirmado: no se impone ningún límite adicional de referencias distintas por ticket. Se pueden combinar varios artículos y conceptos manuales en una misma venta, siempre que las unidades de catálogo acumuladas en el mercadillo no superen 10. Esta decisión sustituye la propuesta anterior de una sola referencia por ticket.
-- Precisar al implementar el tratamiento de abonos y el aviso al alcanzar el límite. No alterar ventas confirmadas.
+- Abonos y aviso de límite: reglas confirmadas en el apartado 15. No alterar ventas confirmadas.
 
 ### 2. Actualización manual / sincronización
 
@@ -103,8 +103,12 @@ Confirmado: al terminar la vigencia Premium, pasar a Free conservando ventas, ga
 
 Confirmada la salvedad de conservación indicada en el apartado 13. No introducir borrado irreversible de operaciones ni modificación de estados definitivos.
 
-### 15. Siguiente cuestión: abonos y límite de ventas de catálogo Free
+### 15. Abonos y límite de ventas de catálogo Free
 
-Propuesta: mantener abonos y devoluciones en Free y Premium. El límite Free de 10 unidades vendidas mediante catálogo por mercadillo se computa sobre las ventas positivas confirmadas, sin recuperar cupo al abonar una unidad; no contar borradores o ventas no confirmadas. Permitir siempre la devolución de ventas válidas sin consumir cupo. Informar de las unidades restantes antes de confirmar la venta; si excede el cupo, permitir ajustar las líneas de catálogo o continuar mediante conceptos manuales, sin rechazar una venta manual por el límite. Pendiente de confirmación. No modificar código funcional todavía.
+Confirmado: mantener abonos y devoluciones en Free y Premium. El límite Free de 10 unidades vendidas mediante catálogo por mercadillo se computa sobre las ventas positivas confirmadas, sin recuperar cupo al abonar una unidad; no contar borradores o ventas no confirmadas. Permitir siempre la devolución de ventas válidas sin consumir cupo. Informar de las unidades restantes antes de confirmar la venta; si excede el cupo, permitir ajustar las líneas de catálogo o continuar mediante conceptos manuales, sin rechazar una venta manual por el límite. Confirmado. No modificar código funcional todavía.
+
+### 16. Siguiente cuestión: contratación Premium e idiomas de pago
+
+Pendiente decidir modelo comercial: suscripción mensual y/o anual, posible periodo de prueba, y tratamiento de compras independientes de idiomas. Propuesta: ofrecer mensual y anual, sin fijar precios todavía; conservar Premium hasta terminar el periodo ya pagado al cancelar renovación. Definir precios y condiciones antes de implementar facturación. No activar pagos ni cambiar permisos en esta fase.
 
 No se han modificado permisos ni código funcional. La matriz se revisará con el usuario, anotando decisiones antes de pasar a la implementación.
